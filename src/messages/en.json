@@ -1,0 +1,39 @@
+{
+  "Navbar": {
+    "contests": "Contests",
+    "statistics": "Statistics",
+    "settings": "Settings"
+  },
+  "Contests": {
+    "title": "Contests",
+    "refresh": "Refresh",
+    "upcoming": "Upcoming",
+    "running": "Running",
+    "viewContest": "View Contest",
+    "duration": "Duration",
+    "mins": "mins"
+  },
+  "Statistics": {
+    "title": "Statistics",
+    "platformDistribution": "Platform Distribution",
+    "difficultyDistribution": "Difficulty Distribution",
+    "recentActivity": "Recent Activity",
+    "noData": "No data available",
+    "solvedProblems": "Solved Problems"
+  },
+  "Settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "dataSync": "Data Synchronization",
+    "autoSync": "Auto Sync",
+    "autoSyncDesc": "Automatically refresh contest data",
+    "syncInterval": "Sync Interval (minutes)",
+    "linkedAccounts": "Linked Accounts",
+    "linkedAccountsDesc": "Connect your OJ accounts to track statistics.",
+    "connectAccount": "Connect Account",
+    "language": "Language"
+  }
+}

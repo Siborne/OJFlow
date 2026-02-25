@@ -1,0 +1,39 @@
+{
+  "Navbar": {
+    "contests": "比赛列表",
+    "statistics": "做题统计",
+    "settings": "系统设置"
+  },
+  "Contests": {
+    "title": "近期比赛",
+    "refresh": "刷新",
+    "upcoming": "未开始",
+    "running": "进行中",
+    "viewContest": "查看比赛",
+    "duration": "时长",
+    "mins": "分钟"
+  },
+  "Statistics": {
+    "title": "做题统计",
+    "platformDistribution": "平台分布",
+    "difficultyDistribution": "难度分布",
+    "recentActivity": "近期活跃度",
+    "noData": "暂无数据",
+    "solvedProblems": "解题数量"
+  },
+  "Settings": {
+    "title": "系统设置",
+    "appearance": "外观主题",
+    "light": "浅色模式",
+    "dark": "深色模式",
+    "system": "跟随系统",
+    "dataSync": "数据同步",
+    "autoSync": "自动同步",
+    "autoSyncDesc": "自动刷新比赛数据",
+    "syncInterval": "同步间隔（分钟）",
+    "linkedAccounts": "账号关联",
+    "linkedAccountsDesc": "关联各大OJ账号以获取统计数据",
+    "connectAccount": "关联账号",
+    "language": "语言选择"
+  }
+}
