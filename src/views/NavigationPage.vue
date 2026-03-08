@@ -4,10 +4,11 @@
       <n-layout-sider
         bordered
         collapse-mode="width"
+        :collapsed="true"
         :collapsed-width="64"
         :width="100"
         :native-scrollbar="false"
-        style="padding-top: 10px;"
+        style="padding-top: 10px; position: fixed; left: 0; top: 0; height: 100vh; z-index: 2000;"
       >
         <n-menu
           v-model:value="activeKey"
@@ -18,7 +19,7 @@
           @update:value="handleMenuUpdate"
         />
       </n-layout-sider>
-      <n-layout-content>
+      <n-layout-content style="margin-left: 64px; min-height: 100vh; width: auto;">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
             <component :is="Component" />
