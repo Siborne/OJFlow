@@ -5,19 +5,21 @@
   "author": "Your Name",
   "main": "electron/main.js",
   "scripts": {
-    "dev": "concurrently \"npm run vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "vite": "vite", 
+    "dev": "concurrently \"bun run vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "vite": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder",
-    "dist:win": "npm run build && electron-builder --win",
-    "dist:mac": "npm run build && electron-builder --mac",
-    "dist:linux": "npm run build && electron-builder --linux",
-    "test:unit": "vitest", 
+
+    "pack": "bun run build && electron-builder --dir",
+    "dist": "bun run build && electron-builder",
+    "dist:win": "bun run build && electron-builder --win",
+    "dist:mac": "bun run build && electron-builder --mac",
+    "dist:linux": "bun run build && electron-builder --linux",
+
+    "test:unit": "vitest",
     "test:e2e": "playwright test"
   },
-  "resolutions": {
+  "overrides": {
     "entities": "6.0.0"
   },
   "dependencies": {

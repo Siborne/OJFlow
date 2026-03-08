@@ -20,34 +20,34 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. 设置 Node.js 环境 (建议版本与你本地开发一致，这里设为 20)
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # 2. 设置 Bun 环境 (替换掉 setup-node)
+      # 使用 oven-sh/setup-bun，这是 Bun 官方的 Action
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 20
-          cache: 'npm' # 开启缓存加速
+          bun-version: latest # 或者指定具体版本，如 '1.1.0'
 
       # 3. 安装依赖
       - name: Install Dependencies
-        run: npm ci # npm ci 比 npm install 更快且更稳定，适合 CI 环境
+        run: bun install --frozen-lockfile
 
       # 4. 构建前端资源 (Vite)
       - name: Build Frontend
-        run: npm run build
-        # 注意：确保你的 package.json 中 "build" 脚本是运行 vite build
+        run: bun run build  # 这里改用 bun run
 
       # 5. 打包 Electron 应用
       - name: Build Electron App
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # 用于自动发布到 GitHub Releases
-          # 如果需要 Mac 签名，在这里添加 APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD 等
-        run: npx electron-builder --publish always
-        # electron-builder 会自动识别当前系统 (windows/macos/ubuntu) 并构建对应的包
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # 推荐：使用 bunx 运行 electron-builder (类似 npx)，或者直接运行命令
+        # 如果你的 package.json 里定义了 dist 脚本，也可以直接用: run: bun run dist
+        run: bunx electron-builder --publish always
 
-      # 6. (可选) 上传构建产物作为临时下载链接 (即使不发布 Release 也能下载)
+
+      # 6. 上传构建产物
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }} # 只有非标签推送时才上传 artifacts
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         with:
           name: OJFlow-${{ matrix.os }}
           path: |
