@@ -61,7 +61,21 @@ jobs:
         run: |
           # Use npx to run electron-builder from local dependencies
           # --publish always ensures artifacts are uploaded to GitHub Releases
-          npx electron-builder --publish always
+          
+          if [ "$RUNNER_OS" == "macOS" ]; then
+             # macOS: Skip code signing if secrets are missing
+             if [ -z "$CSC_LINK" ] || [ -z "$CSC_KEY_PASSWORD" ]; then
+                echo "macOS Code Signing Secrets missing. Skipping signing."
+                unset CSC_LINK
+                unset CSC_KEY_PASSWORD
+                # Use -c.mac.identity=null to disable signing explicitly
+                npx electron-builder --publish always -c.mac.identity=null
+             else
+                npx electron-builder --publish always
+             fi
+          else
+             npx electron-builder --publish always
+          fi
 
       # 7. Upload Artifacts (Optional backup, as electron-builder handles publishing)
       - name: Upload Artifacts
