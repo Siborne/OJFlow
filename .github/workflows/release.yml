@@ -1,0 +1,60 @@
+name: Build & Release Electron App
+
+on:
+  push:
+    branches:
+      - main # 或者你的主分支名，如 master
+    tags:
+      - 'v*' # 当推送 v1.0.0 这样的标签时，会自动发布到 Releases
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # 1. 检出代码
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. 设置 Node.js 环境 (建议版本与你本地开发一致，这里设为 20)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm' # 开启缓存加速
+
+      # 3. 安装依赖
+      - name: Install Dependencies
+        run: npm ci # npm ci 比 npm install 更快且更稳定，适合 CI 环境
+
+      # 4. 构建前端资源 (Vite)
+      - name: Build Frontend
+        run: npm run build
+        # 注意：确保你的 package.json 中 "build" 脚本是运行 vite build
+
+      # 5. 打包 Electron 应用
+      - name: Build Electron App
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # 用于自动发布到 GitHub Releases
+          # 如果需要 Mac 签名，在这里添加 APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD 等
+        run: npx electron-builder --publish always
+        # electron-builder 会自动识别当前系统 (windows/macos/ubuntu) 并构建对应的包
+
+      # 6. (可选) 上传构建产物作为临时下载链接 (即使不发布 Release 也能下载)
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }} # 只有非标签推送时才上传 artifacts
+        with:
+          name: OJFlow-${{ matrix.os }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+            dist/*.zip
+          if-no-files-found: error
