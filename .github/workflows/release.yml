@@ -52,44 +52,66 @@ jobs:
       - name: Build Frontend
         run: bun run build
 
-      # 6. Build & Publish Electron App
-      # 这是最关键的步骤，使用 electron-builder 打包应用并发布到 GitHub Releases
+      # 6. Build Electron App
+      # 只负责构建，不通过 electron-builder 直接发布
+      # 我们改用专门的 GitHub Action 来处理发布，这样更稳定且支持并发上传
       - name: Build Electron App
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # 自动注入的 Token，用于上传 Release
           # 强制重新编译原生模块 (如 sqlite3, node-pty 等)
           npm_config_build_from_source: true
         run: |
           # 使用 npx 运行本地安装的 electron-builder
-          # --publish always 参数确保检测到 tag 时自动创建/更新 GitHub Release
+          # -p never: 禁止 electron-builder 自动发布，我们后续单独处理
           
           if [ "$RUNNER_OS" == "macOS" ]; then
              # macOS 特殊处理：检查是否有签名证书
              if [ -n "${{ secrets.CSC_LINK }}" ] && [ -n "${{ secrets.CSC_KEY_PASSWORD }}" ]; then
                 export CSC_LINK="${{ secrets.CSC_LINK }}"
                 export CSC_KEY_PASSWORD="${{ secrets.CSC_KEY_PASSWORD }}"
-                npx electron-builder --publish always
+                npx electron-builder -p never
              else
                 echo "macOS Code Signing Secrets missing. Skipping signing."
                 # -c.mac.identity=null 显式禁用签名
-                npx electron-builder --publish always -c.mac.identity=null
+                npx electron-builder -p never -c.mac.identity=null
              fi
           elif [ "$RUNNER_OS" == "Windows" ]; then
              # Windows 特殊处理：检查是否有签名证书
              if [ -n "${{ secrets.WIN_CSC_LINK }}" ] && [ -n "${{ secrets.WIN_CSC_KEY_PASSWORD }}" ]; then
                 export WIN_CSC_LINK="${{ secrets.WIN_CSC_LINK }}"
                 export WIN_CSC_KEY_PASSWORD="${{ secrets.WIN_CSC_KEY_PASSWORD }}"
-                npx electron-builder --publish always
+                npx electron-builder -p never
              else
                 echo "Windows Code Signing Secrets missing. Skipping signing."
                 # 显式不设置 WIN_CSC_LINK 环境变量
-                npx electron-builder --publish always
+                npx electron-builder -p never
              fi
           else
              # Linux 构建
-             npx electron-builder --publish always
+             npx electron-builder -p never
           fi
+
+      # 7. 发布到 GitHub Releases
+      # 使用 softprops/action-gh-release 自动创建 Release 并上传文件
+      # 这个 Action 会自动处理并发问题（多个 Job 同时上传到同一个 Release）
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/') # 仅在 Tag 触发时运行
+        with:
+          files: |
+            release/*.exe
+            release/*.dmg
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+            release/*.zip
+            release/*.msi
+            release/*.snap
+          draft: true       # 默认为草稿，方便您发布前编辑 Release Note
+          prerelease: false # 是否为预发布版本
+          generate_release_notes: true # 自动生成基于 Commit 的更新日志
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # 7. 上传构建产物 (备份)
       # 将构建好的安装包上传到 GitHub Actions 的 Artifacts 中
