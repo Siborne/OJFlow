@@ -20,44 +20,55 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      # 1. 检出代码
+      # 1. Checkout Code
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. 设置 Bun 环境 (替换掉 setup-node)
-      # 使用 oven-sh/setup-bun，这是 Bun 官方的 Action
+      # 2. Setup Node.js (Required for electron-builder and native modules)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # 3. Setup Bun
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest # 或者指定具体版本，如 '1.1.0'
+          bun-version: latest
 
-      # 3. 安装依赖
+      # 4. Install Dependencies
       - name: Install Dependencies
         run: bun install --frozen-lockfile
 
-      # 4. 构建前端资源 (Vite)
+      # 5. Build Frontend (Vite)
       - name: Build Frontend
-        run: bun run build  # 这里改用 bun run
+        run: bun run build
 
-      # 5. 打包 Electron 应用
+      # 6. Build & Publish Electron App
       - name: Build Electron App
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # 强制使用 npm 方式重建原生模块
+          # macOS Code Signing
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          # Windows Code Signing
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          # Force rebuild of native modules
           npm_config_build_from_source: true
         run: |
-          # 在非 Windows 系统上安装 node-gyp（用于编译原生模块）
-          if [ "$RUNNER_OS" != "Windows" ]; then
-            bun add -d node-gyp
-          fi
-          # 使用 npx 确保兼容性
+          # Use npx to run electron-builder from local dependencies
+          # --publish always ensures artifacts are uploaded to GitHub Releases
           npx electron-builder --publish always
 
-      # 6. 上传构建产物
+      # 7. Upload Artifacts (Optional backup, as electron-builder handles publishing)
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
+        if: always() # Upload even if build fails partially
         with:
-          name: build-artifacts-${{ matrix.os }} # 建议加上系统标识，防止不同系统覆盖
+          name: build-artifacts-${{ matrix.os }}
           path: |
             release/*.exe
             release/*.dmg
@@ -67,4 +78,4 @@ jobs:
             release/*.zip
             release/*.msi
             release/*.snap
-          if-no-files-found: error # 如果没找到文件直接报错，方便调试
+          if-no-files-found: warn
