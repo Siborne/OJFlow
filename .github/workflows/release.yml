@@ -7,6 +7,10 @@ on:
     tags:
       - 'v*' # 当推送 v1.0.0 这样的标签时，会自动发布到 Releases
 
+permissions:
+  contents: write  # 允许创建 Release 和上传资源
+  actions: read    # (可选) 允许读取工作流状态
+
 jobs:
   build:
     strategy:
