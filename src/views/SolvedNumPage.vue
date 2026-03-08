@@ -1,18 +1,32 @@
 <template>
   <div class="solved-page">
     <div class="app-bar">
-      <h2>解题数量</h2>
+      <h2>蓝桥云课</h2>
       <div class="actions">
         <n-button quaternary circle @click="refreshAll">
           <template #icon>
             <n-icon :size="28"><search-outlined /></n-icon>
           </template>
         </n-button>
+        <n-button quaternary circle @click="showStats = !showStats">
+          <template #icon>
+            <n-icon :size="28"><bar-chart-outlined /></n-icon>
+          </template>
+        </n-button>
       </div>
     </div>
 
+    <transition name="slide-down">
+      <StatsPanel 
+        v-if="showStats" 
+        :visible="showStats" 
+        :data="statsData"
+        @close="showStats = false"
+      />
+    </transition>
+
     <div class="content">
-      <n-grid :x-gap="12" :y-gap="12" cols="1 s:1 m:2 l:2 xl:3" responsive="screen">
+      <n-grid :x-gap="24" :y-gap="24" cols="1 768:2 992:3" responsive="screen">
         <n-grid-item v-for="platform in platforms" :key="platform">
           <n-card class="platform-card" :content-style="{ padding: '0' }">
             <div class="card-header">
@@ -59,10 +73,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { NButton, NIcon, NGrid, NGridItem, NCard, NInput, NProgress } from 'naive-ui';
-import { SearchOutlined, RefreshOutlined } from '@vicons/material';
+import { SearchOutlined, RefreshOutlined, BarChartOutlined } from '@vicons/material';
 import { SolvedNumService } from '../services/solved';
+import StatsPanel from '../components/StatsPanel.vue';
 
 const platforms = [
   'Codeforces', 'AtCoder', 'VJudge', 'HDU', 'POJ', 'QOJ', '洛谷', '牛客', '力扣'
@@ -72,6 +87,8 @@ const usernames = reactive<Record<string, string>>({});
 const loading = reactive<Record<string, boolean>>({});
 const messages = reactive<Record<string, string>>({});
 const isError = reactive<Record<string, boolean>>({});
+const solvedCounts = reactive<Record<string, number>>({});
+const showStats = ref(false);
 
 // Import images
 const images: Record<string, string> = {
@@ -96,12 +113,19 @@ const getPlaceholder = (platform: string) => {
   return '请输入用户名';
 };
 
+const statsData = computed(() => {
+  return Object.keys(solvedCounts)
+    .filter(p => solvedCounts[p] > 0)
+    .map(p => ({ platform: p, count: solvedCounts[p] }));
+});
+
 onMounted(() => {
   platforms.forEach(p => {
     usernames[p] = localStorage.getItem(`solved_username_${p}`) || '';
     loading[p] = false;
     messages[p] = '';
     isError[p] = false;
+    solvedCounts[p] = 0;
   });
 });
 
@@ -121,9 +145,11 @@ const querySolved = async (platform: string) => {
   try {
     const result = await SolvedNumService.getSolvedNum(platform, name);
     messages[platform] = `解题数: ${result.solvedNum}`;
+    solvedCounts[platform] = result.solvedNum;
   } catch (e) {
     messages[platform] = '查询失败，请检查网络或用户名是否正确';
     isError[platform] = true;
+    solvedCounts[platform] = 0;
   } finally {
     loading[platform] = false;
   }
@@ -144,6 +170,7 @@ const refreshAll = () => {
   flex-direction: column;
   height: 100%;
   background-color: white;
+  position: relative;
 }
 
 .app-bar {
@@ -159,6 +186,11 @@ const refreshAll = () => {
 .app-bar h2 {
   margin: 0;
   font-size: 20px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
 }
 
 .content {
@@ -213,5 +245,17 @@ const refreshAll = () => {
 
 .message.error {
   color: #d03050;
+}
+
+/* Transition for stats panel */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+  transform: translateY(-20px);
+  opacity: 0;
 }
 </style>

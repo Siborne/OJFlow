@@ -16,12 +16,16 @@
     "test:unit": "bun test",
     "test:e2e": "playwright test"
   },
+  "resolutions": {
+    "entities": "6.0.0"
+  },
   "dependencies": {
     "@vicons/material": "^0.13.0",
     "@vicons/utils": "^0.1.4",
     "axios": "^1.6.0",
-    "cheerio": "^1.0.0-rc.12",
+    "cheerio": "^1.2.0",
     "date-fns": "^4.1.0",
+    "echarts": "^6.0.0",
     "electron-store": "^8.1.0",
     "naive-ui": "^2.35.0",
     "pinia": "^2.1.7",
