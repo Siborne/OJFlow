@@ -12,6 +12,7 @@ const routes = [
   { path: '/contest', component: RecentContestPage },
   { path: '/rating', component: RatingPage },
   { path: '/solved_num', component: SolvedNumPage },
+  { path: '/question-volume', redirect: '/solved_num' },
   { path: '/star', component: FavoritesPage },
   { path: '/setting', component: SettingPage },
   { path: '/service', component: ServicePage },

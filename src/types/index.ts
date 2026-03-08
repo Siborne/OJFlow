@@ -24,6 +24,6 @@ export interface Rating {
 }
 
 export interface SolvedNum {
-  platform: string;
-  solved: number;
+  name: string;
+  solvedNum: number;
 }
