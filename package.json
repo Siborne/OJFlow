@@ -2,7 +2,32 @@
   "name": "ojflow",
   "version": "1.0.0",
   "description": "OJ Helper Reborn in Electron",
-  "author": "Your Name",
+  "author": "Siborne",
+  "email": "bo7785888@gmail.com",
+  "homepage": "https://github.com/Siborne/OJFlow",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Siborne/OJFlow.git",
+    "directory": "electron",
+    "bugs": {
+      "url": "https://github.com/Siborne/OJFlow/issues"
+    },
+    "keywords": [
+      "OJ",
+      "Online Judge",
+      "OJFlow",
+      "OJ Helper",
+      "OJ Helper Reborn",
+      "OJ Helper Reborn in Electron",
+      "OJ Helper Reborn in Electron for Windows",
+      "OJ Helper Reborn in Electron for Mac",
+      "OJ Helper Reborn in Electron for Linux",
+      "OJ Helper Reborn in Electron for Windows 10",
+      "OJ Helper Reborn in Electron for Linux Mint",
+      "OJ Helper Reborn in Electron for Windows 11"
+    ]
+  },
+  "license": "MIT",
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently \"bun run vite\" \"wait-on http://localhost:5173 && electron .\"",
