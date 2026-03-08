@@ -5,15 +5,16 @@
   "author": "Your Name",
   "main": "electron/main.js",
   "scripts": {
-    "dev": "concurrently \"bun run vite\" \"wait-on http://localhost:5173 && bun x electron .\"",
+    "dev": "concurrently \"npm run vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "vite": "vite", 
     "build": "vite build",
     "preview": "vite preview",
-    "pack": "bun run build && electron-builder --dir",
-    "dist": "bun run build && electron-builder",
-    "dist:win": "bun run build && electron-builder --win",
-    "dist:mac": "bun run build && electron-builder --mac",
-    "dist:linux": "bun run build && electron-builder --linux",
-    "test:unit": "bun test",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "test:unit": "vitest", 
     "test:e2e": "playwright test"
   },
   "resolutions": {
@@ -60,17 +61,24 @@
       "electron/**/*",
       "package.json"
     ],
+    "extraResources": [
+      "src/assets/icon.ico",
+      "src/assets/icon.icns",
+      "src/assets/icon.png"
+    ],
     "win": {
       "target": "nsis",
       "icon": "src/assets/icon.ico"
     },
     "mac": {
-      "target": "zip",
-      "icon": "src/assets/icon.icns"
+      "target": ["dmg", "zip"], 
+      "icon": "src/assets/icon.icns",
+      "category": "public.app-category.developer-tools"
     },
     "linux": {
-      "target": "AppImage",
-      "icon": "src/assets/icon.png"
+      "target": ["AppImage", "deb"],
+      "icon": "src/assets/icon.png",
+      "category": "Utility"
     }
   }
 }
