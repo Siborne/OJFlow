@@ -52,18 +52,12 @@ jobs:
       - name: Build Frontend
         run: bun run build
 
-      # 6. 构建 & 发布 Electron 应用
+      # 6. Build & Publish Electron App
       # 这是最关键的步骤，使用 electron-builder 打包应用并发布到 GitHub Releases
       - name: Build Electron App
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # 自动注入的 Token，用于上传 Release
-          # macOS 代码签名证书 (从 Secrets 获取)
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          # Windows 代码签名证书 (从 Secrets 获取)
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
           # 强制重新编译原生模块 (如 sqlite3, node-pty 等)
           npm_config_build_from_source: true
         run: |
@@ -72,27 +66,24 @@ jobs:
           
           if [ "$RUNNER_OS" == "macOS" ]; then
              # macOS 特殊处理：检查是否有签名证书
-             # 如果没有证书，显式禁用签名，防止构建失败
-             if [ -z "$CSC_LINK" ] || [ -z "$CSC_KEY_PASSWORD" ]; then
+             if [ -n "${{ secrets.CSC_LINK }}" ] && [ -n "${{ secrets.CSC_KEY_PASSWORD }}" ]; then
+                export CSC_LINK="${{ secrets.CSC_LINK }}"
+                export CSC_KEY_PASSWORD="${{ secrets.CSC_KEY_PASSWORD }}"
+                npx electron-builder --publish always
+             else
                 echo "macOS Code Signing Secrets missing. Skipping signing."
-                unset CSC_LINK
-                unset CSC_KEY_PASSWORD
                 # -c.mac.identity=null 显式禁用签名
                 npx electron-builder --publish always -c.mac.identity=null
-             else
-                npx electron-builder --publish always
              fi
           elif [ "$RUNNER_OS" == "Windows" ]; then
              # Windows 特殊处理：检查是否有签名证书
-             if [ -z "$WIN_CSC_LINK" ] || [ -z "$WIN_CSC_KEY_PASSWORD" ]; then
-                echo "Windows Code Signing Secrets missing. Skipping signing."
-                # 即使 unset，某些 shell 或 electron-builder 仍可能读取到空值，
-                # 所以显式设置为空字符串或 dummy 值，或者在调用时不传这两个 env
-                unset WIN_CSC_LINK
-                unset WIN_CSC_KEY_PASSWORD
-                # 显式清除环境变量后运行
-                WIN_CSC_LINK="" WIN_CSC_KEY_PASSWORD="" npx electron-builder --publish always
+             if [ -n "${{ secrets.WIN_CSC_LINK }}" ] && [ -n "${{ secrets.WIN_CSC_KEY_PASSWORD }}" ]; then
+                export WIN_CSC_LINK="${{ secrets.WIN_CSC_LINK }}"
+                export WIN_CSC_KEY_PASSWORD="${{ secrets.WIN_CSC_KEY_PASSWORD }}"
+                npx electron-builder --publish always
              else
+                echo "Windows Code Signing Secrets missing. Skipping signing."
+                # 显式不设置 WIN_CSC_LINK 环境变量
                 npx electron-builder --publish always
              fi
           else
