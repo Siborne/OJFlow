@@ -39,10 +39,15 @@ jobs:
       - name: Build Electron App
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # 推荐：使用 bunx 运行 electron-builder (类似 npx)，或者直接运行命令
-        # 如果你的 package.json 里定义了 dist 脚本，也可以直接用: run: bun run dist
-        run: bunx electron-builder --publish always
-
+          # 强制使用 npm 方式重建原生模块
+          npm_config_build_from_source: true
+        run: |
+          # 在非 Windows 系统上安装 node-gyp（用于编译原生模块）
+          if [ "$RUNNER_OS" != "Windows" ]; then
+            bun add -d node-gyp
+          fi
+          # 使用 npx 确保兼容性
+          npx electron-builder --publish always
 
       # 6. 上传构建产物
       - name: Upload Artifacts
