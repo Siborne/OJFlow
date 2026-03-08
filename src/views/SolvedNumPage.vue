@@ -26,8 +26,18 @@
     </transition>
 
     <div class="content">
-      <n-grid :x-gap="24" :y-gap="24" cols="1 768:2 992:3 1600:3" responsive="screen">
-        <n-grid-item v-for="platform in platforms" :key="platform">
+      <div 
+        class="responsive-grid" 
+        :style="{ 
+          '--cols': gridCols,
+          '--gap': '24px'
+        }"
+      >
+        <div 
+          v-for="platform in platforms" 
+          :key="platform" 
+          class="grid-item"
+        >
           <n-card class="platform-card" :content-style="{ padding: '0' }">
             <div class="card-header">
               <img :src="getPlatformImage(platform)" class="platform-icon" />
@@ -66,15 +76,15 @@
               </div>
             </div>
           </n-card>
-        </n-grid-item>
-      </n-grid>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue';
-import { NButton, NIcon, NGrid, NGridItem, NCard, NInput, NProgress } from 'naive-ui';
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue';
+import { NButton, NIcon, NCard, NInput, NProgress } from 'naive-ui';
 import { SearchOutlined, RefreshOutlined, BarChartOutlined } from '@vicons/material';
 import { SolvedNumService } from '../services/solved';
 import StatsPanel from '../components/StatsPanel.vue';
@@ -89,6 +99,7 @@ const messages = reactive<Record<string, string>>({});
 const isError = reactive<Record<string, boolean>>({});
 const solvedCounts = reactive<Record<string, number>>({});
 const showStats = ref(false);
+const gridCols = ref(3);
 
 // Import images
 const images: Record<string, string> = {
@@ -101,7 +112,7 @@ const images: Record<string, string> = {
   '洛谷': new URL('../assets/platforms/Luogu.jpg', import.meta.url).href,
   '牛客': new URL('../assets/platforms/Nowcoder.jpg', import.meta.url).href,
   '力扣': new URL('../assets/platforms/LeetCode.jpg', import.meta.url).href,
-  'Other': new URL('../assets/platforms/Lanqiao.jpg', import.meta.url).href,
+  '蓝桥': new URL('../assets/platforms/Lanqiao.jpg', import.meta.url).href,
 };
 
 const getPlatformImage = (platform: string) => {
@@ -119,6 +130,32 @@ const statsData = computed(() => {
     .map(p => ({ platform: p, count: solvedCounts[p] }));
 });
 
+// Responsive Grid Logic
+const calculateCols = () => {
+  const width = window.innerWidth;
+  if (width >= 1300) {
+    gridCols.value = 4;
+  } else if (width >= 960) {
+    gridCols.value = 3;
+  } else if (width >= 480) {
+    gridCols.value = 2;
+  } else {
+    gridCols.value = 1;
+  }
+};
+
+const debounce = (fn: Function, delay: number) => {
+  let timer: any = null;
+  return (...args: any[]) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      fn.apply(null, args);
+    }, delay);
+  };
+};
+
+const handleResize = debounce(calculateCols, 100);
+
 onMounted(() => {
   platforms.forEach(p => {
     usernames[p] = localStorage.getItem(`solved_username_${p}`) || '';
@@ -127,6 +164,14 @@ onMounted(() => {
     isError[p] = false;
     solvedCounts[p] = 0;
   });
+  
+  // Initial calculation
+  calculateCols();
+  window.addEventListener('resize', handleResize);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
 });
 
 const saveUsername = (platform: string, username: string) => {
@@ -199,8 +244,27 @@ const refreshAll = () => {
   overflow-y: auto;
 }
 
+/* Responsive Grid Styles */
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  gap: var(--gap);
+  width: 100%;
+  transition: all 0.3s ease; /* Transition for grid changes (though tracks animate poorly, content does) */
+}
+
+.grid-item {
+  transition: all 0.3s ease; /* Smooth transition for item resizing */
+  display: flex;
+  justify-content: center; /* Center card if it hits max-width */
+}
+
 .platform-card {
   border: 1px solid #e0e0e0;
+  width: 100%;
+  min-width: 280px; /* Requirement 4 */
+  max-width: 350px; /* Requirement 4 */
+  transition: width 0.3s ease, transform 0.3s ease;
 }
 
 .card-header {
