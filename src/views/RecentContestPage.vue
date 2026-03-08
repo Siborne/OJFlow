@@ -3,6 +3,9 @@
     <div class="app-bar">
       <h2>近期比赛</h2>
       <div class="actions">
+        <n-button quaternary @click="router.push('/question-volume')" style="margin-right: 8px">
+          查询解题数量
+        </n-button>
         <n-button quaternary circle @click="showFilter = true">
           <template #icon>
             <n-icon :size="28"><filter-alt-outlined /></n-icon>
@@ -87,6 +90,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useContestStore } from '../stores/contest';
 import { ContestUtils } from '../utils/contest_utils';
 import { ContestService } from '../services/contest';
@@ -107,6 +111,7 @@ const images: Record<string, string> = {
 };
 
 const store = useContestStore();
+const router = useRouter();
 const dialog = useDialog();
 const showFilter = ref(false);
 const quote = ref('风落吴江雪，纷纷入酒杯。');
