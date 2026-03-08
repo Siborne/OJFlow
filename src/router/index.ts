@@ -7,12 +7,6 @@ import Settings from '../views/Settings.vue';
 import RatingPage from '../views/RatingPage.vue';
 import SolvedNumPage from '../views/SolvedNumPage.vue';
 
-// Existing pages if needed
-import RecentContestPage from '../views/RecentContestPage.vue';
-import FavoritesPage from '../views/FavoritesPage.vue';
-import SettingPage from '../views/SettingPage.vue';
-import ServicePage from '../views/ServicePage.vue';
-
 const routes = [
   { 
     path: '/', 
