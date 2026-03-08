@@ -1,7 +1,7 @@
 <template>
   <div class="solved-page">
     <div class="app-bar">
-      <h2>蓝桥云课</h2>
+      <h2>解题数量</h2>
       <div class="actions">
         <n-button quaternary circle @click="refreshAll">
           <template #icon>
@@ -26,7 +26,7 @@
     </transition>
 
     <div class="content">
-      <n-grid :x-gap="24" :y-gap="24" cols="1 768:2 992:3" responsive="screen">
+      <n-grid :x-gap="24" :y-gap="24" cols="1 768:2 992:3 1600:3" responsive="screen">
         <n-grid-item v-for="platform in platforms" :key="platform">
           <n-card class="platform-card" :content-style="{ padding: '0' }">
             <div class="card-header">
@@ -80,7 +80,7 @@ import { SolvedNumService } from '../services/solved';
 import StatsPanel from '../components/StatsPanel.vue';
 
 const platforms = [
-  'Codeforces', 'AtCoder', 'VJudge', 'HDU', 'POJ', 'QOJ', '洛谷', '牛客', '力扣'
+  'Codeforces', 'AtCoder', 'VJudge', 'HDU', 'POJ', '蓝桥', '洛谷', '牛客', '力扣'
 ];
 
 const usernames = reactive<Record<string, string>>({});
@@ -101,7 +101,7 @@ const images: Record<string, string> = {
   '洛谷': new URL('../assets/platforms/Luogu.jpg', import.meta.url).href,
   '牛客': new URL('../assets/platforms/Nowcoder.jpg', import.meta.url).href,
   '力扣': new URL('../assets/platforms/LeetCode.jpg', import.meta.url).href,
-  'Other': new URL('../assets/platforms/Other.jpg', import.meta.url).href,
+  'Other': new URL('../assets/platforms/Lanqiao.jpg', import.meta.url).href,
 };
 
 const getPlatformImage = (platform: string) => {

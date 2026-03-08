@@ -20,11 +20,15 @@
       <div v-show="chartType === 'pie'" ref="pieChartRef" class="chart-container"></div>
       <div v-show="chartType === 'bar'" ref="barChartRef" class="chart-container"></div>
     </div>
+    <div class="panel-footer">
+      <span class="total-label">总解题数：</span>
+      <span class="total-value">{{ totalSolved }}</span>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue';
 import { NButton, NIcon } from 'naive-ui';
 import { BarChartOutlined, PieChartOutlined, CloseOutlined } from '@vicons/material';
 import * as echarts from 'echarts';
@@ -35,6 +39,11 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(['close']);
+
+const totalSolved = computed(() => {
+  if (!props.data) return 0;
+  return props.data.reduce((sum, item) => sum + item.count, 0);
+});
 
 const chartType = ref<'pie' | 'bar'>('pie');
 const pieChartRef = ref<HTMLElement | null>(null);
@@ -240,5 +249,26 @@ watch(() => props.visible, (val) => {
 .chart-container {
   width: 100%;
   height: 100%;
+}
+
+.panel-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.total-label {
+  font-size: 14px;
+  color: #666;
+}
+
+.total-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: #1890ff;
+  margin-left: 4px;
 }
 </style>
