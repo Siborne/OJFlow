@@ -41,10 +41,13 @@
     "concurrently": "^8.2.2",
     "electron": "^30.0.0",
     "electron-builder": "^24.9.1",
+    "jimp": "^1.6.0",
+    "png-to-ico": "^3.0.1",
+    "png2icons": "^2.0.1",
     "typescript": "^5.2.2",
     "vite": "^5.0.0",
-    "wait-on": "^7.1.0",
-    "vue-tsc": "^1.8.22"
+    "vue-tsc": "^1.8.22",
+    "wait-on": "^7.1.0"
   },
   "build": {
     "appId": "com.ojflow.app",
@@ -62,7 +65,7 @@
       "icon": "src/assets/icon.ico"
     },
     "mac": {
-      "target": "dmg",
+      "target": "zip",
       "icon": "src/assets/icon.icns"
     },
     "linux": {
