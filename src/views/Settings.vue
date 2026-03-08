@@ -11,8 +11,7 @@
           <template #prefix>
             <n-avatar round size="medium" src="https://avatars.githubusercontent.com/u/1?v=4" />
           </template>
-          <!-- <n-thing title="用户" description="已登录: Guest" /> -->
-           <n-thing title="用户" description="正在开发中" />
+          <n-thing title="用户" description="已登录: Guest" />
           <template #suffix>
             <n-button size="small" type="error" ghost>退出登录</n-button>
           </template>
@@ -21,7 +20,7 @@
         <n-divider />
 
         <!-- Theme -->
-        <!-- <n-list-item>
+        <n-list-item>
           <template #prefix>
             <n-icon :size="24"><dark-mode-outlined /></n-icon>
           </template>
@@ -29,10 +28,10 @@
           <template #suffix>
             <n-switch v-model:value="isDarkMode" />
           </template>
-        </n-list-item> -->
+        </n-list-item>
 
         <!-- Language -->
-        <!-- <n-list-item>
+        <n-list-item>
           <template #prefix>
             <n-icon :size="24"><language-outlined /></n-icon>
           </template>
@@ -40,41 +39,35 @@
           <template #suffix>
             <n-select v-model:value="language" :options="langOptions" size="small" style="width: 100px" />
           </template>
-        </n-list-item> -->
+        </n-list-item>
 
         <!-- Clear Cache -->
-        <!-- <n-list-item @click="clearCache">
+        <n-list-item @click="clearCache">
           <template #prefix>
             <n-icon :size="24"><delete-outline-outlined /></n-icon>
           </template>
           <n-thing title="清除缓存" description="释放本地存储空间" />
-        </n-list-item> -->
+        </n-list-item>
+
+        <n-divider />
+
         <!-- Update -->
-        <n-list-item>
+        <n-list-item @click="checkForUpdate">
           <template #prefix>
             <n-icon :size="24"><update-outlined /></n-icon>
           </template>
-          <n-thing title="检查更新（正在开发中...）" :description="'当前版本: ' + curVersion" />
+          <n-thing title="检查更新" :description="'当前版本: ' + curVersion" />
           <template #suffix>
             <n-spin v-if="isChecking" size="small" />
           </template>
         </n-list-item>
         
         <!-- About -->
-        <n-list-item @click="openUrl('https://github.com/Siborne/OJFlow')">
-          <template #prefix>
-            <n-icon :size="24"><info-outlined /></n-icon>
-          </template>
-          <n-thing title="关于 OJ Flow" description="开源地址" />
-        </n-list-item>
-        <n-divider />
-    
-        <!-- About -->
         <n-list-item @click="openUrl('https://github.com/2754LM/oj_helper')">
           <template #prefix>
             <n-icon :size="24"><info-outlined /></n-icon>
           </template>
-          <n-thing title="友链 OJ Helper" description="开源地址" />
+          <n-thing title="关于 OJ Helper" description="开源地址" />
         </n-list-item>
       </n-list>
     </div>
