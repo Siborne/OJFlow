@@ -73,7 +73,18 @@ jobs:
              else
                 npx electron-builder --publish always
              fi
+          elif [ "$RUNNER_OS" == "Windows" ]; then
+             # Windows: Skip code signing if secrets are missing
+             if [ -z "$WIN_CSC_LINK" ] || [ -z "$WIN_CSC_KEY_PASSWORD" ]; then
+                echo "Windows Code Signing Secrets missing. Skipping signing."
+                unset WIN_CSC_LINK
+                unset WIN_CSC_KEY_PASSWORD
+                npx electron-builder --publish always
+             else
+                npx electron-builder --publish always
+             fi
           else
+             # Linux
              npx electron-builder --publish always
           fi
 
