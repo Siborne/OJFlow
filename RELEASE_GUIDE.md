@@ -61,32 +61,28 @@ git push origin v1.0.2
 4.  点击 **Choose a tag**，输入 `v1.0.2` 并点击 **Create new tag**。
 5.  点击 **Publish release**（这也会触发 Workflow）。
 
-## 4. 编写发布描述 (Release Notes)
+## 4. 发布流程自动化说明
 
-当标签推送到 GitHub 后，Actions 会自动构建。构建完成后，GitHub Releases 页面会自动出现一个新的 Release 草稿或正式版。
+当您推送 `v*` 标签后，GitHub Actions 会自动执行以下操作：
 
-**如何修改描述**:
+1.  **构建应用**：在 Windows, macOS, Linux 上同时构建应用。
+2.  **创建 Release**：
+    *   构建完成后，会自动在 GitHub 的 [Releases 页面](https://github.com/Siborne/OJFlow/releases) 创建一个新的 Release（草稿状态）。
+    *   **注意**：不是在 Tags 页面，而是在 Releases 页面。
+3.  **上传附件**：构建生成的安装包（`.exe`, `.dmg`, `.AppImage` 等）会自动上传到该 Release 中。
 
-1.  等待 GitHub Actions 构建完成（通常需要 5-10 分钟）。
-2.  前往仓库的 **Releases** 页面。
-3.  找到对应的版本（例如 `v1.0.2`）。
-4.  点击右上角的 **Edit** (铅笔图标)。
-5.  在文本框中填写更新日志。
+### 您需要做的后续操作：
 
-**推荐的描述格式**:
+1.  等待 GitHub Actions 运行完成（通常需要 5-10 分钟）。
+2.  访问 GitHub 仓库的 **Releases** 页面。
+3.  您会看到一个基于 tag（如 `v1.0.2`）的新 Release，通常标记为 `Draft`（草稿）。
+4.  点击 **Edit** 按钮：
+    *   检查自动生成的 Release Notes（更新日志）。
+    *   确认附件（Assets）中包含了预期的安装包。
+    *   取消勾选 `Set as a pre-release`（如果是正式版）。
+    *   点击 **Publish release** 按钮正式发布。
 
-```markdown
-## 🎉 新特性
-- 支持了新的 OJ 平台: QOJ
-- 增加了深色模式切换
-
-## 🐛 问题修复
-- 修复了 Windows 下无法保存设置的问题
-- 修复了 rating 曲线显示异常
-
-## 🛠️ 优化
-- 优化了启动速度
-```
+这样，用户就可以在 Releases 页面直接下载安装包了。
 
 ## 5. 常见问题排查
 
