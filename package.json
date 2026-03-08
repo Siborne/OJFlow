@@ -1,9 +1,11 @@
 {
   "name": "ojflow",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OJ Helper Reborn in Electron",
-  "author": "Siborne",
-  "email": "bo7785888@gmail.com",
+  "author": {
+    "name": "Siborne",
+    "email": "bo7785888@gmail.com"
+  },
   "homepage": "https://github.com/Siborne/OJFlow",
   "repository": {
     "type": "git",
