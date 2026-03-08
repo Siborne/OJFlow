@@ -23,6 +23,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1000,
     height: 700,
+    icon: path.join(__dirname, '../src/assets/icon.png'),
     webPreferences: {
       nodeIntegration: true, // 允许在渲染进程使用 Node.js (开发方便，生产需注意安全)
       contextIsolation: false, 
