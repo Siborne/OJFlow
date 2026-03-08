@@ -29,7 +29,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          # cache: 'npm' # Disable npm cache as we use bun.lock
 
       # 3. Setup Bun
       - name: Setup Bun
