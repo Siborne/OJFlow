@@ -3,95 +3,109 @@ name: Build & Release Electron App
 on:
   push:
     branches:
-      - main # 或者你的主分支名，如 master
+      - main # 监听主分支的推送
     tags:
-      - 'v*' # 当推送 v1.0.0 这样的标签时，会自动发布到 Releases
+      - 'v*' # 核心触发规则：当推送形如 v1.0.0 的标签时，触发自动构建和发布流程
 
 permissions:
-  contents: write  # 允许创建 Release 和上传资源
-  actions: read    # (可选) 允许读取工作流状态
+  contents: write  # 必须权限：允许创建 GitHub Release 和上传构建产物
+  actions: read    # 可选权限：允许读取工作流运行状态
 
 jobs:
   build:
     strategy:
       matrix:
+        # 矩阵构建：同时在 Windows, macOS, Ubuntu 上运行构建任务
         os: [windows-latest, macos-latest, ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      # 1. Checkout Code
+      # 1. 检出代码
+      # 获取当前仓库的代码，ref 默认为触发 workflow 的 tag 或 branch
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. Setup Node.js (Required for electron-builder and native modules)
+      # 2. 设置 Node.js 环境
+      # Electron Builder 和 npx 依赖 Node.js 环境
+      # 虽然 Bun 可以运行脚本，但 electron-builder 的核心部分仍需 Node
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          # cache: 'npm' # Disable npm cache as we use bun.lock
+          # cache: 'npm' # 因为我们使用 bun.lock，所以这里禁用了 npm 缓存，避免报错
 
-      # 3. Setup Bun
+      # 3. 设置 Bun 环境
+      # 使用官方 Action 安装 Bun，用于快速安装依赖和构建前端
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      # 4. Install Dependencies
+      # 4. 安装依赖
+      # --frozen-lockfile 确保安装的依赖版本与 bun.lock 完全一致
       - name: Install Dependencies
         run: bun install --frozen-lockfile
 
-      # 5. Build Frontend (Vite)
+      # 5. 构建前端资源 (Vite)
+      # 执行 package.json 中的 build 脚本 (通常是 vite build)，生成 dist 目录
       - name: Build Frontend
         run: bun run build
 
-      # 6. Build & Publish Electron App
+      # 6. 构建 & 发布 Electron 应用
+      # 这是最关键的步骤，使用 electron-builder 打包应用并发布到 GitHub Releases
       - name: Build Electron App
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # macOS Code Signing
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # 自动注入的 Token，用于上传 Release
+          # macOS 代码签名证书 (从 Secrets 获取)
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          # Windows Code Signing
+          # Windows 代码签名证书 (从 Secrets 获取)
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-          # Force rebuild of native modules
+          # 强制重新编译原生模块 (如 sqlite3, node-pty 等)
           npm_config_build_from_source: true
         run: |
-          # Use npx to run electron-builder from local dependencies
-          # --publish always ensures artifacts are uploaded to GitHub Releases
+          # 使用 npx 运行本地安装的 electron-builder
+          # --publish always 参数确保检测到 tag 时自动创建/更新 GitHub Release
           
           if [ "$RUNNER_OS" == "macOS" ]; then
-             # macOS: Skip code signing if secrets are missing
+             # macOS 特殊处理：检查是否有签名证书
+             # 如果没有证书，显式禁用签名，防止构建失败
              if [ -z "$CSC_LINK" ] || [ -z "$CSC_KEY_PASSWORD" ]; then
                 echo "macOS Code Signing Secrets missing. Skipping signing."
                 unset CSC_LINK
                 unset CSC_KEY_PASSWORD
-                # Use -c.mac.identity=null to disable signing explicitly
+                # -c.mac.identity=null 显式禁用签名
                 npx electron-builder --publish always -c.mac.identity=null
              else
                 npx electron-builder --publish always
              fi
           elif [ "$RUNNER_OS" == "Windows" ]; then
-             # Windows: Skip code signing if secrets are missing
+             # Windows 特殊处理：检查是否有签名证书
              if [ -z "$WIN_CSC_LINK" ] || [ -z "$WIN_CSC_KEY_PASSWORD" ]; then
                 echo "Windows Code Signing Secrets missing. Skipping signing."
+                # 即使 unset，某些 shell 或 electron-builder 仍可能读取到空值，
+                # 所以显式设置为空字符串或 dummy 值，或者在调用时不传这两个 env
                 unset WIN_CSC_LINK
                 unset WIN_CSC_KEY_PASSWORD
-                npx electron-builder --publish always
+                # 显式清除环境变量后运行
+                WIN_CSC_LINK="" WIN_CSC_KEY_PASSWORD="" npx electron-builder --publish always
              else
                 npx electron-builder --publish always
              fi
           else
-             # Linux
+             # Linux 构建
              npx electron-builder --publish always
           fi
 
-      # 7. Upload Artifacts (Optional backup, as electron-builder handles publishing)
+      # 7. 上传构建产物 (备份)
+      # 将构建好的安装包上传到 GitHub Actions 的 Artifacts 中
+      # 即使发布失败，也可以在这里下载到安装包进行测试
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
-        if: always() # Upload even if build fails partially
+        if: always() # 即使构建过程中有部分失败，也尝试上传
         with:
           name: build-artifacts-${{ matrix.os }}
           path: |
