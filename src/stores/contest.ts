@@ -49,6 +49,17 @@ export const useContestStore = defineStore('contest', {
     },
   },
   actions: {
+    persistFavorites(nextFavorites: Contest[], prevFavorites: Contest[]) {
+      try {
+        localStorage.setItem('favourite_contests_list', JSON.stringify(nextFavorites));
+      } catch (error) {
+        try {
+          localStorage.setItem('favourite_contests_list', JSON.stringify(prevFavorites));
+        } catch {
+        }
+        throw error;
+      }
+    },
     async fetchContests() {
       this.loading = true;
       try {
@@ -67,13 +78,59 @@ export const useContestStore = defineStore('contest', {
       this.showEmptyDay = value;
     },
     toggleFavorite(contest: Contest) {
+      const prevFavorites = this.favorites.slice();
       const index = this.favorites.findIndex(c => c.name === contest.name);
       if (index > -1) {
         this.favorites.splice(index, 1);
       } else {
         this.favorites.push(contest);
       }
-      localStorage.setItem('favourite_contests_list', JSON.stringify(this.favorites));
+      try {
+        this.persistFavorites(this.favorites, prevFavorites);
+      } catch (error) {
+        this.favorites = prevFavorites;
+        throw error;
+      }
+    },
+    removeFavorite(contestName: string) {
+      return this.removeFavorites([contestName]);
+    },
+    removeFavorites(contestNames: string[]) {
+      const uniqueNames = Array.from(new Set(contestNames)).filter(Boolean);
+      if (uniqueNames.length === 0) {
+        return { deleted: [] as string[], notFound: [] as string[] };
+      }
+
+      const prevFavorites = this.favorites.slice();
+      const existingNames = new Set(prevFavorites.map(c => c.name));
+
+      const deleted: string[] = [];
+      const notFound: string[] = [];
+
+      for (const name of uniqueNames) {
+        if (existingNames.has(name)) {
+          deleted.push(name);
+        } else {
+          notFound.push(name);
+        }
+      }
+
+      if (deleted.length === 0) {
+        return { deleted, notFound };
+      }
+
+      const deletedSet = new Set(deleted);
+      const nextFavorites = prevFavorites.filter(c => !deletedSet.has(c.name));
+
+      this.favorites = nextFavorites;
+      try {
+        this.persistFavorites(nextFavorites, prevFavorites);
+      } catch (error) {
+        this.favorites = prevFavorites;
+        throw error;
+      }
+
+      return { deleted, notFound };
     },
     isFavorite(contestName: string): boolean {
       return this.favorites.some(c => c.name === contestName);

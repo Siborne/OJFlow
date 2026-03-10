@@ -43,8 +43,8 @@
     "dist:mac": "bun run build && electron-builder --mac",
     "dist:linux": "bun run build && electron-builder --linux",
 
-    "test:unit": "vitest",
-    "test:e2e": "playwright test"
+    "test:unit": "bun test tests/unit",
+    "test:e2e": "playwright test tests/e2e"
   },
   "overrides": {
     "entities": "6.0.0"

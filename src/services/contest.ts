@@ -1,15 +1,23 @@
 import { Contest } from '../types';
 import { ContestUtils } from '../utils/contest_utils';
 
-// Electron IPC wrapper
-const ipcRenderer = window.require ? window.require('electron').ipcRenderer : {
-  invoke: () => Promise.resolve([])
-};
+function getIpcRenderer(): { invoke: (...args: any[]) => Promise<any> } {
+  const maybeWindow = typeof window !== 'undefined' ? window : undefined;
+  const req = maybeWindow && typeof maybeWindow.require === 'function' ? maybeWindow.require : undefined;
+  const electron = req ? req('electron') : undefined;
+  const ipcRenderer = electron?.ipcRenderer;
+  if (ipcRenderer && typeof ipcRenderer.invoke === 'function') {
+    return ipcRenderer;
+  }
+  return {
+    invoke: () => Promise.resolve([]),
+  };
+}
 
 export class ContestService {
   static async getRecentContests(day: number = 7): Promise<Contest[]> {
     try {
-      const rawContests: any[] = await ipcRenderer.invoke('get-recent-contests', day);
+      const rawContests: any[] = await getIpcRenderer().invoke('get-recent-contests', day);
       
       return rawContests.map(c => ContestUtils.createContest(
         c.name,
@@ -25,6 +33,6 @@ export class ContestService {
   }
 
   static async openUrl(url: string): Promise<void> {
-    await ipcRenderer.invoke('open-url', url);
+    await getIpcRenderer().invoke('open-url', url);
   }
 }
