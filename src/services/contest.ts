@@ -38,4 +38,8 @@ export class ContestService {
   static async openUrl(url: string): Promise<void> {
     await getIpcRenderer().invoke('open-url', url);
   }
+
+  static async installUpdate(url: string): Promise<void> {
+    await getIpcRenderer().invoke('updater-install', { url });
+  }
 }

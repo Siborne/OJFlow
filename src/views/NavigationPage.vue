@@ -2,6 +2,7 @@
   <n-layout style="height: 100vh">
     <n-layout has-sider v-if="isWide">
       <n-layout-sider
+        class="side-nav"
         bordered
         collapse-mode="width"
         :collapsed="true"
@@ -11,6 +12,7 @@
         style="padding-top: 10px; position: fixed; left: 0; top: 0; height: 100vh; z-index: 2000;"
       >
         <n-menu
+          class="side-menu"
           v-model:value="activeKey"
           :collapsed="true"
           :collapsed-width="64"
@@ -28,18 +30,11 @@
       </n-layout-content>
     </n-layout>
 
-    <n-layout v-else style="height: 100vh; display: flex; flex-direction: column;">
-      <n-layout-content class="mobile-content">
-        <router-view v-slot="{ Component }">
-          <transition name="fade" mode="out-in">
-            <component :is="Component" />
-          </transition>
-        </router-view>
-      </n-layout-content>
-      <n-layout-footer bordered class="mobile-footer">
-        <div class="bottom-nav">
-          <div 
-            v-for="item in menuOptions" 
+    <n-layout v-else class="mobile-shell">
+      <div class="mobile-nav" role="navigation" aria-label="主导航">
+        <div class="top-nav">
+          <div
+            v-for="item in menuOptions"
             :key="item.key"
             class="nav-item"
             :class="{ active: activeKey === item.key }"
@@ -50,11 +45,18 @@
             tabindex="0"
             :aria-current="activeKey === item.key ? 'page' : undefined"
           >
-            <n-icon :size="24" :component="item.icon" />
+            <n-icon :size="22" :component="item.icon" />
             <span>{{ item.label }}</span>
           </div>
         </div>
-      </n-layout-footer>
+      </div>
+      <n-layout-content class="mobile-content">
+        <router-view v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </n-layout-content>
     </n-layout>
   </n-layout>
 </template>
@@ -63,7 +65,7 @@
 import { ref, onMounted, onUnmounted, h } from 'vue';
 import type { Component } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { NLayout, NLayoutSider, NLayoutContent, NLayoutFooter, NMenu, NIcon } from 'naive-ui';
+import { NLayout, NLayoutSider, NLayoutContent, NMenu, NIcon } from 'naive-ui';
 import { EventNoteOutlined, StarBorderOutlined, ListOutlined, SettingsOutlined } from '@vicons/material';
 
 const router = useRouter();
@@ -137,30 +139,54 @@ const handleMenuUpdate = (key: string) => {
 </script>
 
 <style scoped>
-.mobile-content {
-  flex: 1;
-  overflow: hidden;
-  padding-bottom: calc(56px + 8px + env(safe-area-inset-bottom));
+.side-nav {
+  background: var(--nav-bg-color);
 }
 
-.mobile-footer {
-  position: fixed;
-  left: 8px;
-  right: 8px;
-  bottom: calc(8px + env(safe-area-inset-bottom));
-  z-index: 3000;
-  border-radius: 14px;
-  overflow: hidden;
+.side-menu :deep(.n-menu) {
+  --n-item-text-color: var(--nav-text-color);
+  --n-item-text-color-hover: var(--nav-hover-color);
+  --n-item-text-color-active: var(--nav-active-color);
+  --n-item-text-color-active-hover: var(--nav-active-color);
+  --n-item-icon-color: var(--nav-text-color);
+  --n-item-icon-color-hover: var(--nav-hover-color);
+  --n-item-icon-color-active: var(--nav-active-color);
+  --n-item-icon-color-active-hover: var(--nav-active-color);
+  --n-item-color-active: var(--nav-active-bg);
+  --n-item-color-active-hover: var(--nav-active-bg);
+  --n-item-color-hover: var(--nav-hover-bg);
 }
 
-.bottom-nav {
+.mobile-shell {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-nav {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  height: var(--nav-height);
+  background: var(--nav-bg-color);
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.top-nav {
+  width: 100%;
   display: flex;
   justify-content: space-around;
-  --nav-accent: var(--color-primary);
-  --nav-accent-weak: var(--color-primary-weak);
-  --nav-accent-weak-strong: rgba(37, 99, 235, 0.22);
-  padding: 8px 0;
-  background: var(--color-surface);
+  gap: 4px;
+}
+
+.mobile-content {
+  flex: 1;
+  height: calc(100vh - var(--nav-height));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .nav-item {
@@ -168,28 +194,29 @@ const handleMenuUpdate = (key: string) => {
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  color: var(--color-text-muted);
-  padding: 6px 10px;
+  color: var(--nav-text-color);
+  padding: 6px 8px;
   border-radius: 12px;
   transition: color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
 }
 
 .nav-item.active {
-  color: var(--nav-accent);
-  background-color: var(--nav-accent-weak);
+  color: var(--nav-active-color);
+  background-color: var(--nav-active-bg);
 }
 
 .nav-item:hover {
-  color: var(--nav-accent);
+  color: var(--nav-hover-color);
+  background-color: var(--nav-hover-bg);
 }
 
 .nav-item:active {
-  background-color: var(--nav-accent-weak-strong);
+  background-color: var(--nav-active-bg);
 }
 
 .nav-item:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--nav-accent);
+  box-shadow: 0 0 0 2px var(--nav-active-color);
 }
 
 .nav-item span {
@@ -197,12 +224,11 @@ const handleMenuUpdate = (key: string) => {
   margin-top: 4px;
 }
 
-@media (max-width: 768px) {
-  .bottom-nav {
-    --nav-accent: #52c41a;
-    --nav-accent-weak: rgba(82, 196, 26, 0.14);
-    --nav-accent-weak-strong: rgba(82, 196, 26, 0.22);
-  }
+.mobile-shell :deep(.content),
+.mobile-shell :deep(.scrollable) {
+  height: auto !important;
+  overflow: visible !important;
+  flex: 0 0 auto !important;
 }
 
 .fade-enter-active,
