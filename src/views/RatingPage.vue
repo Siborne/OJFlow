@@ -19,11 +19,14 @@
               <img :src="getPlatformImage(platform)" class="platform-icon" />
               <span class="platform-name">{{ platform }}</span>
               <div class="spacer"></div>
-              <n-button quaternary circle @click="queryRating(platform)">
-                <template #icon>
-                  <n-icon><refresh-outlined /></n-icon>
-                </template>
-              </n-button>
+              <div class="header-actions">
+                <n-button quaternary circle @click="queryRating(platform)">
+                  <template #icon>
+                    <n-icon><refresh-outlined /></n-icon>
+                  </template>
+                </n-button>
+                <HintTooltipIcon class="header-hint" :content="getRatingHint(platform)" ariaLabel="填写提示" placement="bottom-end" />
+              </div>
             </div>
             
             <div class="card-body">
@@ -63,6 +66,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { NButton, NIcon, NGrid, NGridItem, NCard, NInput, NProgress } from 'naive-ui';
 import { SearchOutlined, RefreshOutlined } from '@vicons/material';
 import { RatingService } from '../services/rating';
+import HintTooltipIcon from '../components/HintTooltipIcon.vue';
 
 const platforms = ['Codeforces', 'AtCoder', '力扣', '洛谷', '牛客'];
 const usernames = reactive<Record<string, string>>({});
@@ -97,6 +101,12 @@ onMounted(() => {
 const saveUsername = (platform: string, username: string) => {
   localStorage.setItem(`rating_username_${platform}`, username);
   messages[platform] = ''; // Clear message on input
+};
+
+const getRatingHint = (platform: string) => {
+  const field = platform === '牛客' ? '字段：用户ID（数字）' : '字段：用户名';
+  const example = platform === '牛客' ? '示例：100000' : '示例：tourist';
+  return `${field}\n${example}\n时间范围：由站点接口决定（可能仅提供近一年/近若干场）\n注意：账号需公开，频繁查询可能触发限流`;
 };
 
 const queryRating = async (platform: string) => {
@@ -171,7 +181,7 @@ const refreshAll = () => {
 .platform-icon {
   width: 24px;
   height: 24px;
-  margin-right: 10px;
+  margin-inline-end: 10px;
   border-radius: 4px;
 }
 
@@ -182,6 +192,15 @@ const refreshAll = () => {
 
 .spacer {
   flex: 1;
+}
+
+.header-actions {
+  display: inline-flex;
+  align-items: center;
+}
+
+.header-hint {
+  margin-inline-start: 8px;
 }
 
 .card-body {

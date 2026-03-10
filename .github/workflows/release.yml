@@ -47,6 +47,9 @@ jobs:
       - name: Install Dependencies
         run: bun install --frozen-lockfile
 
+      - name: Run Unit Tests
+        run: bun run test:unit
+
       # 5. 构建前端资源 (Vite)
       # 执行 package.json 中的 build 脚本 (通常是 vite build)，生成 dist 目录
       - name: Build Frontend

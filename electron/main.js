@@ -80,6 +80,89 @@ function pickPackageUrl(manifest) {
   return byPlatform ?? manifest.packageUrl;
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+class TimeoutError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'TimeoutError';
+  }
+}
+
+async function fetchWithTimeout(url, options, timeoutMs) {
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : undefined;
+  const fetchPromise = fetch(url, { ...options, signal: controller?.signal });
+
+  const timeoutPromise = new Promise((_, reject) => {
+    const t = setTimeout(() => {
+      try {
+        controller?.abort();
+      } catch {
+      }
+      reject(new TimeoutError(`请求超时: ${timeoutMs}ms`));
+    }, timeoutMs);
+    fetchPromise.finally?.(() => clearTimeout(t));
+  });
+
+  return Promise.race([fetchPromise, timeoutPromise]);
+}
+
+function classifyFetchError(e) {
+  const message = e instanceof Error ? e.message : typeof e === 'string' ? e : '未知错误';
+  if (e instanceof TimeoutError) return { type: 'timeout', message };
+  if (e && typeof e === 'object' && e.name === 'AbortError') return { type: 'timeout', message: '请求超时' };
+  if (/Failed to fetch/i.test(message)) return { type: 'network', message: 'Failed to fetch' };
+  const code = e?.cause?.code || e?.code;
+  if (typeof code === 'string' && /ENOTFOUND|EAI_AGAIN|ECONNRESET|ETIMEDOUT/i.test(code)) {
+    return { type: 'network', message: String(code) };
+  }
+  return { type: 'unknown', message };
+}
+
+async function fetchJsonWithRetry(url, { timeoutMs, retryCount, backoffBaseMs }) {
+  let lastError;
+  let lastStatus;
+  for (let attempt = 1; attempt <= retryCount; attempt++) {
+    try {
+      const res = await fetchWithTimeout(
+        url,
+        { headers: { Accept: 'application/json' }, cache: 'no-store', redirect: 'follow' },
+        timeoutMs
+      );
+      if (!res.ok) {
+        lastStatus = res.status;
+        console.warn('[updater] http error', { status: res.status, attempt, url });
+        const canRetry = res.status >= 500 && attempt < retryCount;
+        if (canRetry) {
+          await sleep(backoffBaseMs * attempt);
+          continue;
+        }
+        return { ok: false, status: res.status };
+      }
+      const payload = await res.json();
+      return { ok: true, payload };
+    } catch (e) {
+      lastError = classifyFetchError(e);
+      console.warn('[updater] fetch failed', {
+        attempt,
+        url,
+        errorType: lastError.type,
+        errorMessage: lastError.message,
+        causeCode: e?.cause?.code || e?.code,
+      });
+      const canRetry = (lastError.type === 'timeout' || lastError.type === 'network') && attempt < retryCount;
+      if (canRetry) {
+        await sleep(backoffBaseMs * attempt);
+        continue;
+      }
+      break;
+    }
+  }
+  return { ok: false, status: lastStatus, error: lastError };
+}
+
 async function downloadAndLaunch(url) {
   if (!url) return;
   if (!/^https?:\/\//i.test(url)) {
@@ -91,12 +174,41 @@ async function downloadAndLaunch(url) {
   const { pipeline } = require('stream/promises');
   const { Readable } = require('stream');
 
-  const res = await fetch(url, { redirect: 'follow' });
-  if (!res.ok || !res.body) throw new Error(`下载失败: ${res.status}`);
+  const timeoutMs = Number(process.env.VITE_UPDATE_TIMEOUT_MS) || 8_000;
+  const retryCount = Math.max(1, Math.min(3, Number(process.env.VITE_UPDATE_RETRY_COUNT) || 3));
+  const backoffBaseMs = Number(process.env.VITE_UPDATE_RETRY_BACKOFF_MS) || 1_000;
+
+  let last;
+  for (let attempt = 1; attempt <= retryCount; attempt++) {
+    try {
+      const res = await fetchWithTimeout(url, { redirect: 'follow' }, timeoutMs);
+      if (!res.ok || !res.body) {
+        console.warn('[updater] download http error', { status: res.status, attempt, url });
+        const canRetry = res.status >= 500 && attempt < retryCount;
+        if (canRetry) {
+          await sleep(backoffBaseMs * attempt);
+          continue;
+        }
+        throw new Error(`下载失败: ${res.status}`);
+      }
+      last = res;
+      break;
+    } catch (e) {
+      const classified = classifyFetchError(e);
+      console.warn('[updater] download failed', { attempt, url, errorType: classified.type, errorMessage: classified.message });
+      if ((classified.type === 'timeout' || classified.type === 'network') && attempt < retryCount) {
+        await sleep(backoffBaseMs * attempt);
+        continue;
+      }
+      throw e;
+    }
+  }
+
+  if (!last?.body) throw new Error('下载失败');
 
   const ext = path.extname(new URL(url).pathname) || '.bin';
   const dest = path.join(app.getPath('temp'), `OJFlow-update-${Date.now()}${ext}`);
-  await pipeline(Readable.fromWeb(res.body), fs.createWriteStream(dest));
+  await pipeline(Readable.fromWeb(last.body), fs.createWriteStream(dest));
   await shell.openPath(dest);
   app.quit();
 }
@@ -106,11 +218,14 @@ async function checkForUpdatesOnStartup(win) {
   if (!manifestUrl) return;
 
   const currentVersion = normalizeVersion(process.env.VITE_APP_VERSION ?? app.getVersion());
+  const timeoutMs = Number(process.env.VITE_UPDATE_TIMEOUT_MS) || 8_000;
+  const retryCount = Math.max(1, Math.min(3, Number(process.env.VITE_UPDATE_RETRY_COUNT) || 3));
+  const backoffBaseMs = Number(process.env.VITE_UPDATE_RETRY_BACKOFF_MS) || 1_000;
 
   try {
-    const res = await fetch(manifestUrl, { headers: { Accept: 'application/json' }, cache: 'no-store' });
-    if (!res.ok) return;
-    const payload = await res.json();
+    const fetchResult = await fetchJsonWithRetry(manifestUrl, { timeoutMs, retryCount, backoffBaseMs });
+    if (!fetchResult.ok) return;
+    const payload = fetchResult.payload;
     const manifest = detectManifest(payload);
     if (!manifest) return;
 
@@ -123,7 +238,7 @@ async function checkForUpdatesOnStartup(win) {
       manifest.notes ? `\n更新内容:\n${manifest.notes}` : '',
     ].join('\n');
 
-    const result = await dialog.showMessageBox(win, {
+    const dialogResult = await dialog.showMessageBox(win, {
       type: 'info',
       title: '发现新版本',
       message: '发现新版本，是否立即更新？',
@@ -134,11 +249,18 @@ async function checkForUpdatesOnStartup(win) {
       noLink: true,
     });
 
-    if (result.response !== 0) return;
+    if (dialogResult.response !== 0) return;
 
     const packageUrl = pickPackageUrl(manifest) ?? manifest.homepageUrl;
     await downloadAndLaunch(packageUrl);
   } catch (e) {
+    const classified = classifyFetchError(e);
+    console.warn('[updater] startup check failed', {
+      manifestUrl,
+      errorType: classified.type,
+      errorMessage: classified.message,
+      causeCode: e?.cause?.code || e?.code,
+    });
   }
 }
 
