@@ -18,7 +18,7 @@
               </div>
               <div class="contest-info" @click="openLink(contest)">
                 <div class="contest-name">{{ contest.name }}</div>
-                <div class="contest-time">
+                <div class="contest-time" v-if="!store.hideDate">
                   {{ contest.formattedStartTime }} ({{ contest.duration }})
                 </div>
               </div>
@@ -116,8 +116,22 @@ const openLink = (contest: Contest) => {
 }
 
 .contest-card {
-  border: 2px solid #2080f0;
-  border-radius: 10px;
+  border: none !important;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+}
+
+.contest-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.16);
+  filter: saturate(1.02);
+}
+
+.contest-card:active {
+  transform: translateY(0px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
 }
 
 .contest-item {
@@ -145,6 +159,38 @@ const openLink = (contest: Contest) => {
 
 .contest-time {
   font-size: 14px;
-  color: grey;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.contest-card :deep(.n-card__content) {
+  background: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  .favorites-page {
+    background-color: #0f1115;
+  }
+
+  .app-bar {
+    background-color: #0f1115;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .app-bar h2 {
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .contest-card {
+    background: linear-gradient(135deg, rgba(0, 201, 255, 0.78) 0%, rgba(146, 254, 157, 0.62) 100%);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  }
+
+  .contest-name {
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .contest-time {
+    color: rgba(255, 255, 255, 0.72);
+  }
 }
 </style>

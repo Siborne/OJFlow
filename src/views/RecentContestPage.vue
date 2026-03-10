@@ -46,7 +46,7 @@
                   </div>
                   <div class="contest-info" @click="openLink(contest)">
                     <div class="contest-name">{{ contest.name }}</div>
-                    <div class="contest-time">{{ contest.startHourMinute }} - {{ contest.endHourMinute }}</div>
+                    <div class="contest-time" v-if="!store.hideDate">{{ contest.startHourMinute }} - {{ contest.endHourMinute }}</div>
                   </div>
                   <div class="contest-action">
                     <n-button quaternary circle @click="store.toggleFavorite(contest)">
@@ -208,8 +208,22 @@ onMounted(() => {
 }
 
 .day-card {
-  border: 2px solid #2080f0;
-  border-radius: 10px;
+  border: none !important;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+}
+
+.day-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.16);
+  filter: saturate(1.02);
+}
+
+.day-card:active {
+  transform: translateY(0px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
 }
 
 .day-title {
@@ -250,7 +264,7 @@ onMounted(() => {
 
 .contest-time {
   font-size: 14px;
-  color: grey;
+  color: rgba(0, 0, 0, 0.65);
 }
 
 .filter-content {
@@ -258,6 +272,57 @@ onMounted(() => {
   flex-direction: column;
   gap: 10px;
 }
+
+.day-card :deep(.n-card__content),
+.day-card :deep(.n-card__header) {
+  background: transparent;
+}
+
+.day-card :deep(.n-card-header__main) {
+  color: rgba(0, 0, 0, 0.86);
+}
+
+.day-card :deep(.n-divider) {
+  margin: 0;
+  background-color: rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  .contest-page {
+    background-color: #0f1115;
+  }
+
+  .app-bar {
+    background-color: #0f1115;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .app-bar h2 {
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .day-card {
+    background: linear-gradient(135deg, rgba(0, 201, 255, 0.78) 0%, rgba(146, 254, 157, 0.62) 100%);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  }
+
+  .day-card :deep(.n-card-header__main) {
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .contest-name {
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .contest-time {
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .day-card :deep(.n-divider) {
+    background-color: rgba(255, 255, 255, 0.14);
+  }
+}
+
 
 .filter-item {
   display: flex;

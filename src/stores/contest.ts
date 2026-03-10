@@ -10,18 +10,31 @@ interface ContestState {
   showEmptyDay: boolean;
   selectedPlatforms: Record<string, boolean>;
   favorites: Contest[]; // Store full contest objects
+  hideDate: boolean;
 }
 
 const PLATFORMS = ['Codeforces', 'AtCoder', '洛谷', '蓝桥云课', '力扣', '牛客'];
+const MAX_CRAWL_DAYS_KEY = 'max_crawl_days';
+const HIDE_DATE_KEY = 'hide_date';
+
+function clampInt(value: unknown, min: number, max: number, fallback: number) {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  const i = Math.floor(n);
+  if (i < min) return min;
+  if (i > max) return max;
+  return i;
+}
 
 export const useContestStore = defineStore('contest', {
   state: (): ContestState => ({
     contests: [],
     loading: false,
-    day: 7,
+    day: clampInt(localStorage.getItem(MAX_CRAWL_DAYS_KEY), 1, 30, 7),
     showEmptyDay: true, // Default to true based on logic
     selectedPlatforms: PLATFORMS.reduce((acc, p) => ({ ...acc, [p]: true }), {} as Record<string, boolean>),
     favorites: JSON.parse(localStorage.getItem('favourite_contests_list') || '[]'),
+    hideDate: localStorage.getItem(HIDE_DATE_KEY) === '1',
   }),
   getters: {
     timeContests(state): Contest[][] {
@@ -60,6 +73,28 @@ export const useContestStore = defineStore('contest', {
         throw error;
       }
     },
+    persistMaxCrawlDays(nextDay: number, prevDay: number) {
+      try {
+        localStorage.setItem(MAX_CRAWL_DAYS_KEY, String(nextDay));
+      } catch (error) {
+        try {
+          localStorage.setItem(MAX_CRAWL_DAYS_KEY, String(prevDay));
+        } catch {
+        }
+        throw error;
+      }
+    },
+    persistHideDate(nextHide: boolean, prevHide: boolean) {
+      try {
+        localStorage.setItem(HIDE_DATE_KEY, nextHide ? '1' : '0');
+      } catch (error) {
+        try {
+          localStorage.setItem(HIDE_DATE_KEY, prevHide ? '1' : '0');
+        } catch {
+        }
+        throw error;
+      }
+    },
     async fetchContests() {
       this.loading = true;
       try {
@@ -67,8 +102,33 @@ export const useContestStore = defineStore('contest', {
         this.contests = rawContests;
       } catch (error) {
         console.error(error);
+        throw error;
       } finally {
         this.loading = false;
+      }
+    },
+    async setMaxCrawlDays(nextDay: number) {
+      const day = clampInt(nextDay, 1, 30, this.day);
+      if (day === this.day) return;
+
+      const prevDay = this.day;
+      this.day = day;
+      try {
+        this.persistMaxCrawlDays(day, prevDay);
+      } catch (error) {
+        this.day = prevDay;
+        throw error;
+      }
+
+      try {
+        await this.fetchContests();
+      } catch (error) {
+        this.day = prevDay;
+        try {
+          this.persistMaxCrawlDays(prevDay, day);
+        } catch {
+        }
+        throw error;
       }
     },
     togglePlatform(platform: string, value: boolean) {
@@ -76,6 +136,16 @@ export const useContestStore = defineStore('contest', {
     },
     toggleShowEmptyDay(value: boolean) {
       this.showEmptyDay = value;
+    },
+    toggleHideDate(value: boolean) {
+      const prevHide = this.hideDate;
+      this.hideDate = value;
+      try {
+        this.persistHideDate(value, prevHide);
+      } catch (error) {
+        this.hideDate = prevHide;
+        throw error;
+      }
     },
     toggleFavorite(contest: Contest) {
       const prevFavorites = this.favorites.slice();

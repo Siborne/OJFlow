@@ -52,6 +52,26 @@
         <!-- Update -->
         <n-list-item>
           <template #prefix>
+            <n-icon :size="24"><date-range-outlined /></n-icon>
+          </template>
+          <n-thing title="最大爬取天数" description="1-30 天，修改后立即刷新" />
+          <template #suffix>
+            <div class="max-days-suffix">
+              <n-spin v-if="isUpdatingDays" size="small" />
+              <n-input-number
+                v-model:value="maxDays"
+                size="small"
+                :min="1"
+                :max="30"
+                style="width: 110px"
+                @update:value="updateMaxDays"
+              />
+            </div>
+          </template>
+        </n-list-item>
+
+        <n-list-item>
+          <template #prefix>
             <n-icon :size="24"><update-outlined /></n-icon>
           </template>
           <n-thing title="检查更新（正在开发中...）" :description="'当前版本: ' + curVersion" />
@@ -83,17 +103,23 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { NList, NListItem, NThing, NIcon, NSpin, NSwitch, NSelect, NButton, NAvatar, NDivider, useDialog, useMessage } from 'naive-ui';
-import { UpdateOutlined, DarkModeOutlined, LanguageOutlined, DeleteOutlineOutlined, InfoOutlined } from '@vicons/material';
+import { useContestStore } from '../stores/contest';
+import { NList, NListItem, NThing, NIcon, NSpin, NSwitch, NSelect, NButton, NAvatar, NDivider, NInputNumber, useDialog, useMessage } from 'naive-ui';
+import { UpdateOutlined, DarkModeOutlined, LanguageOutlined, DeleteOutlineOutlined, InfoOutlined, DateRangeOutlined } from '@vicons/material';
 import { ContestService } from '../services/contest';
 import axios from 'axios';
 
 const curVersion = 'v1.0.0';
 const isChecking = ref(false);
+const isUpdatingDays = ref(false);
 const isDarkMode = ref(false);
 const language = ref('zh-CN');
 const dialog = useDialog();
 const message = useMessage();
+const store = useContestStore();
+const maxDays = ref(store.day);
+const pendingMaxDays = ref<number | null>(null);
+let maxDaysDebounceTimer: any;
 
 const langOptions = [
   { label: '简体中文', value: 'zh-CN' },
@@ -116,6 +142,38 @@ const clearCache = () => {
       setTimeout(() => window.location.reload(), 1000);
     }
   });
+};
+
+const applyMaxDays = async (value: number) => {
+  if (isUpdatingDays.value) {
+    pendingMaxDays.value = value;
+    return;
+  }
+  isUpdatingDays.value = true;
+  try {
+    await store.setMaxCrawlDays(value);
+    maxDays.value = store.day;
+    message.success(`已更新为 ${store.day} 天`);
+  } catch (e: any) {
+    maxDays.value = store.day;
+    message.error(e?.message ? `更新失败：${e.message}` : '更新失败');
+  } finally {
+    isUpdatingDays.value = false;
+    const pending = pendingMaxDays.value;
+    pendingMaxDays.value = null;
+    if (pending !== null && pending !== store.day) {
+      await applyMaxDays(pending);
+    }
+  }
+};
+
+const updateMaxDays = (value: number | null) => {
+  if (value === null) return;
+  maxDays.value = value;
+  clearTimeout(maxDaysDebounceTimer);
+  maxDaysDebounceTimer = setTimeout(() => {
+    applyMaxDays(value);
+  }, 300);
 };
 
 const checkForUpdate = async () => {
@@ -171,5 +229,11 @@ const checkForUpdate = async () => {
   flex: 1;
   padding: 16px;
   overflow-y: auto;
+}
+
+.max-days-suffix {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 </style>

@@ -3,6 +3,10 @@
     <div class="app-bar">
       <h2>近期比赛</h2>
       <div class="actions">
+        <div class="hide-date-toggle">
+          <span class="toggle-label">隐藏日期</span>
+          <n-switch :value="store.hideDate" @update:value="store.toggleHideDate" />
+        </div>
         <n-button quaternary circle @click="showFilter = true">
           <template #icon>
             <n-icon :size="28"><filter-alt-outlined /></n-icon>
@@ -24,50 +28,86 @@
     </div>
 
     <div class="content scrollable" v-else>
-      <div v-for="(dayList, index) in store.timeContests" :key="index">
-        <div v-if="shouldShowDay(dayList)" class="day-group">
+      <div v-if="store.hideDate">
+        <div v-if="visibleContests.length === 0" class="no-data">
+          <n-empty description="暂无比赛" />
+        </div>
+        <div v-else class="day-group">
           <n-card :bordered="true" class="day-card" :content-style="{ padding: '0' }">
-            <template #header>
-              <span class="day-title">{{ getDayName(index) }}</span>
-            </template>
-            
-            <div v-if="dayList.length === 0 || !hasVisibleContests(dayList)" class="no-contest">
-              这里没有比赛喵~
-            </div>
-
-            <div v-else>
-              <div v-for="(contest, cIndex) in dayList" :key="cIndex">
-                <div v-if="store.selectedPlatforms[contest.platform]" class="contest-item">
-                  <div class="platform-icon">
-                     <img :src="getPlatformImage(contest.platform)" :alt="contest.platform" />
-                  </div>
-                  <div class="contest-info" @click="openLink(contest)">
-                    <div class="contest-name">{{ contest.name }}</div>
-                    <div class="contest-meta">
-                      <span class="contest-time">{{ contest.startHourMinute }} - {{ contest.endHourMinute }}</span>
-                      <n-tag v-if="getCountdown(contest)" type="success" size="small" class="countdown-tag">
-                        {{ getCountdown(contest) }}
-                      </n-tag>
-                    </div>
-                  </div>
-                  <div class="contest-action">
-                    <n-button size="small" type="primary" ghost @click.stop="openLink(contest)">
-                      参赛
-                    </n-button>
-                    <n-button quaternary circle @click.stop="store.toggleFavorite(contest)">
-                      <template #icon>
-                        <n-icon :size="24" :color="store.isFavorite(contest.name) ? '#ffc107' : undefined">
-                          <star-outlined v-if="!store.isFavorite(contest.name)" />
-                          <star-filled v-else />
-                        </n-icon>
-                      </template>
-                    </n-button>
-                  </div>
+            <div v-for="(contest, cIndex) in visibleContests" :key="contest.name">
+              <div class="contest-item">
+                <div class="platform-icon">
+                  <img :src="getPlatformImage(contest.platform)" :alt="contest.platform" />
                 </div>
-                <n-divider v-if="cIndex < dayList.length - 1 && store.selectedPlatforms[dayList[cIndex+1]?.platform]" />
+                <div class="contest-info" @click="openLink(contest)">
+                  <div class="contest-name">{{ contest.name }}</div>
+                </div>
+                <div class="contest-action">
+                  <n-button size="small" type="primary" ghost @click.stop="openLink(contest)">
+                    参赛
+                  </n-button>
+                  <n-button quaternary circle @click.stop="store.toggleFavorite(contest)">
+                    <template #icon>
+                      <n-icon :size="24" :color="store.isFavorite(contest.name) ? '#ffc107' : undefined">
+                        <star-outlined v-if="!store.isFavorite(contest.name)" />
+                        <star-filled v-else />
+                      </n-icon>
+                    </template>
+                  </n-button>
+                </div>
               </div>
+              <n-divider v-if="cIndex < visibleContests.length - 1" />
             </div>
           </n-card>
+        </div>
+      </div>
+
+      <div v-else>
+        <div v-for="(dayList, index) in store.timeContests" :key="index">
+          <div v-if="shouldShowDay(dayList)" class="day-group">
+            <n-card :bordered="true" class="day-card" :content-style="{ padding: '0' }">
+              <template #header>
+                <span class="day-title">{{ getDayName(index) }}</span>
+              </template>
+              
+              <div v-if="dayList.length === 0 || !hasVisibleContests(dayList)" class="no-contest">
+                这里没有比赛喵~
+              </div>
+
+              <div v-else>
+                <div v-for="(contest, cIndex) in dayList" :key="cIndex">
+                  <div v-if="store.selectedPlatforms[contest.platform]" class="contest-item">
+                    <div class="platform-icon">
+                       <img :src="getPlatformImage(contest.platform)" :alt="contest.platform" />
+                    </div>
+                    <div class="contest-info" @click="openLink(contest)">
+                      <div class="contest-name">{{ contest.name }}</div>
+                      <div class="contest-meta">
+                        <span class="contest-time">{{ contest.startHourMinute }} - {{ contest.endHourMinute }}</span>
+                        <n-tag v-if="getCountdown(contest)" type="success" size="small" class="countdown-tag">
+                          {{ getCountdown(contest) }}
+                        </n-tag>
+                      </div>
+                    </div>
+                    <div class="contest-action">
+                      <n-button size="small" type="primary" ghost @click.stop="openLink(contest)">
+                        参赛
+                      </n-button>
+                      <n-button quaternary circle @click.stop="store.toggleFavorite(contest)">
+                        <template #icon>
+                          <n-icon :size="24" :color="store.isFavorite(contest.name) ? '#ffc107' : undefined">
+                            <star-outlined v-if="!store.isFavorite(contest.name)" />
+                            <star-filled v-else />
+                          </n-icon>
+                        </template>
+                      </n-button>
+                    </div>
+                  </div>
+                  <n-divider v-if="cIndex < dayList.length - 1 && store.selectedPlatforms[dayList[cIndex+1]?.platform]" />
+                </div>
+              </div>
+            </n-card>
+          </div>
         </div>
       </div>
     </div>
@@ -94,12 +134,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useContestStore } from '../stores/contest';
 import { ContestUtils } from '../utils/contest_utils';
 import { ContestService } from '../services/contest';
 import { Contest } from '../types';
-import { NButton, NIcon, NSpin, NCard, NDivider, NModal, NSwitch, NCheckbox, NTag, useDialog } from 'naive-ui';
+import { NButton, NIcon, NSpin, NCard, NDivider, NModal, NSwitch, NCheckbox, NTag, NEmpty, useDialog } from 'naive-ui';
 import { FilterAltOutlined, SearchOutlined, StarOutlined, StarFilled } from '@vicons/material';
 
 const images: Record<string, string> = {
@@ -136,6 +176,10 @@ const shouldShowDay = (dayList: Contest[]) => {
 const hasVisibleContests = (dayList: Contest[]) => {
   return dayList.some(c => store.selectedPlatforms[c.platform]);
 };
+
+const visibleContests = computed(() => {
+  return store.timeContests.flat().filter(c => store.selectedPlatforms[c.platform]);
+});
 
 const refresh = () => {
   store.fetchContests();
@@ -203,6 +247,27 @@ onUnmounted(() => {
   font-size: 20px;
 }
 
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hide-date-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.toggle-label {
+  font-size: 14px;
+  color: #333;
+  white-space: nowrap;
+}
+
 .content {
   flex: 1;
   overflow-y: auto;
@@ -229,8 +294,22 @@ onUnmounted(() => {
 }
 
 .day-card {
-  border: 2px solid #2080f0;
-  border-radius: 10px;
+  border: none !important;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+}
+
+.day-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.16);
+  filter: saturate(1.02);
+}
+
+.day-card:active {
+  transform: translateY(0px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
 }
 
 .day-title {
@@ -277,7 +356,7 @@ onUnmounted(() => {
 
 .contest-time {
   font-size: 14px;
-  color: grey;
+  color: rgba(0, 0, 0, 0.65);
 }
 
 .contest-action {
@@ -296,5 +375,70 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.no-data {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.day-card :deep(.n-card__content),
+.day-card :deep(.n-card__header) {
+  background: transparent;
+}
+
+.day-card :deep(.n-card-header__main) {
+  color: rgba(0, 0, 0, 0.86);
+}
+
+.day-card :deep(.n-divider) {
+  margin: 0;
+  background-color: rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  .contest-page {
+    background-color: #0f1115;
+  }
+
+  .app-bar {
+    background-color: #0f1115;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .app-bar h2 {
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .toggle-label {
+    color: rgba(255, 255, 255, 0.88);
+  }
+
+  .hide-date-toggle {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .day-card {
+    background: linear-gradient(135deg, rgba(0, 201, 255, 0.78) 0%, rgba(146, 254, 157, 0.62) 100%);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  }
+
+  .day-card :deep(.n-card-header__main) {
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .contest-name {
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .contest-time {
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .day-card :deep(.n-divider) {
+    background-color: rgba(255, 255, 255, 0.14);
+  }
 }
 </style>
