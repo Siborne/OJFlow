@@ -1,6 +1,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const { app } = require('electron');
+const appConfig = require('../app.config.json');
 
 class RecentContestService {
   constructor() {
@@ -11,7 +12,8 @@ class RecentContestService {
     this._lanqiaoUrl = "https://www.lanqiao.cn/api/v2/contests/?sort=opentime&paginate=0&status=not_finished&game_type_code=2";
     this._nowcoderUrl = "https://ac.nowcoder.com/acm/contest/vip-index";
     
-    this._queryEndSeconds = 7 * 24 * 60 * 60; // 7 days
+    const defaultDays = appConfig?.crawl?.defaultDays ?? 7;
+    this._queryEndSeconds = defaultDays * 24 * 60 * 60;
     this.midnightSeconds = Math.floor(Date.now() / 1000) - new Date().getHours() * 3600 - new Date().getMinutes() * 60 - new Date().getSeconds();
   }
 

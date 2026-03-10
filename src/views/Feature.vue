@@ -84,7 +84,7 @@ const maxRating = ref(1920);
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: white;
+  background-color: var(--color-surface);
 }
 
 .app-bar {
@@ -92,8 +92,8 @@ const maxRating = ref(1920);
   align-items: center;
   padding: 0 16px;
   height: 64px;
-  background-color: white;
-  border-bottom: 1px solid #eee;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .app-bar h2 {
@@ -114,7 +114,7 @@ const maxRating = ref(1920);
 
 .feature-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-3);
 }
 
 .feature-content {
@@ -131,17 +131,17 @@ const maxRating = ref(1920);
 .stat-value {
   font-size: 32px;
   font-weight: bold;
-  color: #18a058;
+  color: var(--color-success);
 }
 
 .stat-label {
   font-size: 14px;
-  color: grey;
+  color: var(--color-text-muted);
 }
 
 .stat-sub {
   font-size: 12px;
-  color: grey;
+  color: var(--color-text-muted);
   margin-top: 4px;
 }
 
@@ -154,28 +154,28 @@ const maxRating = ref(1920);
 .mock-line-chart {
   width: 100px;
   height: 40px;
-  background: linear-gradient(90deg, #e0e0e0 0%, #18a058 100%);
+  background: linear-gradient(90deg, var(--color-border) 0%, var(--color-success) 100%);
   mask: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 40" xmlns="http://www.w3.org/2000/svg"><polyline points="0,40 20,30 40,35 60,10 80,20 100,5" fill="none" stroke="black" stroke-width="2"/></svg>');
   -webkit-mask: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 40" xmlns="http://www.w3.org/2000/svg"><polyline points="0,40 20,30 40,35 60,10 80,20 100,5" fill="none" stroke="black" stroke-width="2"/></svg>');
-  background-color: #18a058;
+  background-color: var(--color-success);
 }
 
 .mock-wave-chart {
   width: 200px;
   height: 50px;
-  background-color: #2080f0;
+  background-color: var(--color-primary);
   opacity: 0.2;
   border-radius: 4px;
 }
 
 .placeholder {
   opacity: 0.5;
-  border: 1px dashed #ccc;
+  border: 1px dashed var(--color-border);
 }
 
 .placeholder-content {
   text-align: center;
-  color: grey;
+  color: var(--color-text-muted);
   padding: 20px;
 }
 </style>

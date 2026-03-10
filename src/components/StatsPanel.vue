@@ -53,6 +53,10 @@ const isMobile = ref(false);
 let pieChart: echarts.ECharts | null = null;
 let barChart: echarts.ECharts | null = null;
 
+const getCssVar = (name: string) => {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+};
+
 const checkMobile = () => {
   isMobile.value = window.innerWidth < 992;
 };
@@ -70,8 +74,22 @@ const initCharts = () => {
 const updateCharts = () => {
   if (!props.data || props.data.length === 0) return;
 
+  const palette = [
+    getCssVar('--chart-1'),
+    getCssVar('--chart-2'),
+    getCssVar('--chart-3'),
+    getCssVar('--chart-4'),
+    getCssVar('--chart-5'),
+    getCssVar('--chart-6'),
+    getCssVar('--chart-7'),
+  ].filter(Boolean);
+
+  const surface = getCssVar('--color-surface');
+  const chartPrimary = getCssVar('--chart-1') || getCssVar('--color-primary');
+  const chartPrimary2 = getCssVar('--chart-8') || getCssVar('--color-primary');
+
   const pieOption = {
-    color: ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2', '#eb2f96'],
+    color: palette,
     tooltip: {
       trigger: 'item',
       formatter: '{b}: {c} ({d}%)'
@@ -84,7 +102,7 @@ const updateCharts = () => {
         avoidLabelOverlap: false,
         itemStyle: {
           borderRadius: 10,
-          borderColor: '#fff',
+          borderColor: surface,
           borderWidth: 2
         },
         label: {
@@ -104,7 +122,7 @@ const updateCharts = () => {
   };
 
   const barOption = {
-    color: ['#1890ff'],
+    color: [chartPrimary],
     tooltip: {
       trigger: 'axis',
       axisPointer: {
@@ -140,8 +158,8 @@ const updateCharts = () => {
         itemStyle: {
           borderRadius: [5, 5, 0, 0],
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: '#1890ff' },
-            { offset: 1, color: '#69c0ff' }
+            { offset: 0, color: chartPrimary },
+            { offset: 1, color: chartPrimary2 }
           ])
         }
       }
@@ -201,9 +219,9 @@ watch(() => props.visible, (val) => {
   top: 70px; /* Below app bar */
   right: 16px;
   width: 320px;
-  background-color: white;
+  background-color: var(--color-surface);
   border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-3);
   padding: 16px;
   z-index: 1000;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -220,7 +238,7 @@ watch(() => props.visible, (val) => {
   margin-bottom: 16px;
   box-shadow: none;
   border-radius: 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .panel-header {
@@ -233,7 +251,7 @@ watch(() => props.visible, (val) => {
 .title {
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: var(--color-text-soft);
 }
 
 .controls {
@@ -257,18 +275,18 @@ watch(() => props.visible, (val) => {
   align-items: center;
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--color-border);
 }
 
 .total-label {
   font-size: 14px;
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 .total-value {
   font-size: 16px;
   font-weight: bold;
-  color: #1890ff;
+  color: var(--color-primary);
   margin-left: 4px;
 }
 </style>

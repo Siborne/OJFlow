@@ -1,0 +1,96 @@
+:root {
+  --color-bg: #f6f8fb;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f5f9;
+  --color-border: rgba(15, 23, 42, 0.12);
+
+  --color-text: #0b1220;
+  --color-text-muted: rgba(11, 18, 32, 0.65);
+  --color-text-soft: rgba(11, 18, 32, 0.86);
+
+  --color-primary: #2563eb;
+  --color-primary-weak: rgba(37, 99, 235, 0.14);
+  --color-success: #16a34a;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+
+  --gradient-start: #00c9ff;
+  --gradient-end: #92fe9d;
+
+  --shadow-1: 0 10px 24px rgba(0, 0, 0, 0.12);
+  --shadow-2: 0 14px 30px rgba(0, 0, 0, 0.16);
+  --shadow-3: 0 8px 18px rgba(0, 0, 0, 0.14);
+  --shadow-dark: 0 12px 28px rgba(0, 0, 0, 0.45);
+
+  --divider: rgba(0, 0, 0, 0.12);
+
+  --chart-1: #1890ff;
+  --chart-2: #52c41a;
+  --chart-3: #faad14;
+  --chart-4: #f5222d;
+  --chart-5: #722ed1;
+  --chart-6: #13c2c2;
+  --chart-7: #eb2f96;
+  --chart-8: #69c0ff;
+}
+
+:root[data-theme="violet"] {
+  --color-primary: #7c3aed;
+  --color-primary-weak: rgba(124, 58, 237, 0.14);
+  --gradient-start: #7c3aed;
+  --gradient-end: #22d3ee;
+  --chart-1: #7c3aed;
+  --chart-8: #a78bfa;
+}
+
+:root[data-mode="light"] {
+  color-scheme: light;
+}
+
+:root[data-mode="dark"] {
+  color-scheme: dark;
+  --color-bg: #0b1220;
+  --color-surface: #0f1115;
+  --color-surface-muted: rgba(255, 255, 255, 0.06);
+  --color-border: rgba(255, 255, 255, 0.08);
+
+  --color-text: rgba(255, 255, 255, 0.92);
+  --color-text-muted: rgba(255, 255, 255, 0.72);
+  --color-text-soft: rgba(255, 255, 255, 0.88);
+
+  --gradient-start: rgba(0, 201, 255, 0.78);
+  --gradient-end: rgba(146, 254, 157, 0.62);
+
+  --divider: rgba(255, 255, 255, 0.14);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode]),
+  :root[data-mode="auto"] {
+    color-scheme: dark;
+    --color-bg: #0b1220;
+    --color-surface: #0f1115;
+    --color-surface-muted: rgba(255, 255, 255, 0.06);
+    --color-border: rgba(255, 255, 255, 0.08);
+
+    --color-text: rgba(255, 255, 255, 0.92);
+    --color-text-muted: rgba(255, 255, 255, 0.72);
+    --color-text-soft: rgba(255, 255, 255, 0.88);
+
+    --gradient-start: rgba(0, 201, 255, 0.78);
+    --gradient-end: rgba(146, 254, 157, 0.62);
+
+    --divider: rgba(255, 255, 255, 0.14);
+  }
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}

@@ -90,7 +90,7 @@ const checkForUpdate = async () => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: white;
+  background-color: var(--color-surface);
 }
 
 .app-bar {
@@ -98,8 +98,8 @@ const checkForUpdate = async () => {
   align-items: center;
   padding: 0 16px;
   height: 64px;
-  background-color: white;
-  border-bottom: 1px solid #eee;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .app-bar h2 {

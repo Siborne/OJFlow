@@ -1,5 +1,8 @@
 import { Contest } from '../types';
 import { ContestUtils } from '../utils/contest_utils';
+import appConfig from '../../electron/app.config.json';
+
+const DEFAULT_DAYS = appConfig?.crawl?.defaultDays ?? 7;
 
 function getIpcRenderer(): { invoke: (...args: any[]) => Promise<any> } {
   const maybeWindow = typeof window !== 'undefined' ? window : undefined;
@@ -15,7 +18,7 @@ function getIpcRenderer(): { invoke: (...args: any[]) => Promise<any> } {
 }
 
 export class ContestService {
-  static async getRecentContests(day: number = 7): Promise<Contest[]> {
+  static async getRecentContests(day: number = DEFAULT_DAYS): Promise<Contest[]> {
     try {
       const rawContests: any[] = await getIpcRenderer().invoke('get-recent-contests', day);
       

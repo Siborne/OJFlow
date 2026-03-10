@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { Contest } from '../types';
 import { ContestService } from '../services/contest';
 import { ContestUtils } from '../utils/contest_utils';
+import appConfig from '../../electron/app.config.json';
 
 interface ContestState {
   contests: Contest[];
@@ -16,6 +17,9 @@ interface ContestState {
 const PLATFORMS = ['Codeforces', 'AtCoder', '洛谷', '蓝桥云课', '力扣', '牛客'];
 const MAX_CRAWL_DAYS_KEY = 'max_crawl_days';
 const HIDE_DATE_KEY = 'hide_date';
+const DEFAULT_DAYS = appConfig?.crawl?.defaultDays ?? 7;
+const MIN_DAYS = appConfig?.crawl?.minDays ?? 1;
+const MAX_DAYS = appConfig?.crawl?.maxDays ?? 30;
 
 function clampInt(value: unknown, min: number, max: number, fallback: number) {
   const n = typeof value === 'number' ? value : Number(value);
@@ -30,7 +34,7 @@ export const useContestStore = defineStore('contest', {
   state: (): ContestState => ({
     contests: [],
     loading: false,
-    day: clampInt(localStorage.getItem(MAX_CRAWL_DAYS_KEY), 1, 30, 7),
+    day: clampInt(localStorage.getItem(MAX_CRAWL_DAYS_KEY), MIN_DAYS, MAX_DAYS, DEFAULT_DAYS),
     showEmptyDay: true, // Default to true based on logic
     selectedPlatforms: PLATFORMS.reduce((acc, p) => ({ ...acc, [p]: true }), {} as Record<string, boolean>),
     favorites: JSON.parse(localStorage.getItem('favourite_contests_list') || '[]'),
@@ -108,7 +112,7 @@ export const useContestStore = defineStore('contest', {
       }
     },
     async setMaxCrawlDays(nextDay: number) {
-      const day = clampInt(nextDay, 1, 30, this.day);
+      const day = clampInt(nextDay, MIN_DAYS, MAX_DAYS, this.day);
       if (day === this.day) return;
 
       const prevDay = this.day;
