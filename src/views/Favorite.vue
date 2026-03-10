@@ -13,7 +13,7 @@
             <n-icon :size="24"><search-outlined /></n-icon>
           </template>
         </n-button>
-        <n-button quaternary circle @click="isBatchMode = !isBatchMode">
+        <n-button quaternary circle @click="isBatchMode = !isBatchMode" data-testid="favorite-batch-toggle">
           <template #icon>
             <n-icon :size="24"><edit-outlined /></n-icon>
           </template>
@@ -31,12 +31,13 @@
       </div>
       
       <div v-else>
-        <div v-for="(contest, index) in filteredFavorites" :key="index">
+        <div v-for="contest in pagedFavorites" :key="contest.name">
           <n-card class="contest-card" :content-style="{ padding: '10px 16px' }">
             <div class="contest-item">
               <n-checkbox 
                 v-if="isBatchMode" 
                 v-model:checked="selected[contest.name]" 
+                :data-testid="`favorite-checkbox-${contest.name}`"
                 style="margin-right: 10px"
               />
               <div class="platform-icon">
@@ -62,10 +63,21 @@
           <div style="height: 10px"></div>
         </div>
       </div>
+
+      <div class="pagination" v-if="filteredFavorites.length > pageSize">
+        <n-pagination
+          v-model:page="page"
+          v-model:page-size="pageSize"
+          :item-count="filteredFavorites.length"
+          :page-sizes="[10, 20, 50, 100]"
+          show-size-picker
+          data-testid="favorite-pagination"
+        />
+      </div>
     </div>
     
     <div class="batch-actions" v-if="isBatchMode">
-      <n-button type="error" @click="deleteSelected" :disabled="!hasSelection">
+      <n-button type="error" @click="deleteSelected" :disabled="!hasSelection" data-testid="favorite-delete-selected">
         删除选中
       </n-button>
     </div>
@@ -73,20 +85,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, watch } from 'vue';
 import { useContestStore } from '../stores/contest';
 import { ContestService } from '../services/contest';
 import { Contest } from '../types';
-import { NButton, NIcon, NCard, NEmpty, NInput, NCheckbox, useDialog } from 'naive-ui';
+import { NButton, NIcon, NCard, NEmpty, NInput, NCheckbox, NPagination, useDialog, useMessage } from 'naive-ui';
 import { StarFilled, SearchOutlined, SortOutlined, EditOutlined } from '@vicons/material';
 
 const store = useContestStore();
 const dialog = useDialog();
+const message = useMessage();
 const searchQuery = ref('');
 const showSearch = ref(false);
 const isBatchMode = ref(false);
 const sortAsc = ref(true);
 const selected = reactive<Record<string, boolean>>({});
+const page = ref(1);
+const pageSize = ref(20);
 
 const images: Record<string, string> = {
   'Codeforces': new URL('../assets/platforms/Codeforces.jpg', import.meta.url).href,
@@ -116,21 +131,68 @@ const filteredFavorites = computed(() => {
   return list;
 });
 
+const selectedNames = computed(() => {
+  return Object.keys(selected).filter(k => selected[k]);
+});
+
 const hasSelection = computed(() => {
-  return Object.values(selected).some(v => v);
+  return selectedNames.value.length > 0;
 });
 
 const toggleSort = () => {
   sortAsc.value = !sortAsc.value;
 };
 
+const pagedFavorites = computed(() => {
+  const start = (page.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  return filteredFavorites.value.slice(start, end);
+});
+
+watch([filteredFavorites, pageSize], () => {
+  const maxPage = Math.max(1, Math.ceil(filteredFavorites.value.length / pageSize.value));
+  if (page.value > maxPage) page.value = maxPage;
+});
+
 const deleteSelected = () => {
-  const toDelete = Object.keys(selected).filter(k => selected[k]);
-  toDelete.forEach(name => {
-    store.removeFavorite(name);
-    delete selected[name];
+  const toDelete = selectedNames.value;
+  if (toDelete.length === 0) {
+    message.warning('请先选择要删除的收藏');
+    return;
+  }
+
+  dialog.warning({
+    title: '确认删除？',
+    content: `确定要删除选中的 ${toDelete.length} 条收藏吗？`,
+    positiveText: '删除',
+    negativeText: '取消',
+    onPositiveClick: () => {
+      try {
+        const { deleted, notFound } = store.removeFavorites(toDelete);
+        for (const name of deleted) {
+          delete selected[name];
+        }
+        for (const name of notFound) {
+          delete selected[name];
+        }
+
+        const maxPage = Math.max(1, Math.ceil(filteredFavorites.value.length / pageSize.value));
+        if (page.value > maxPage) page.value = maxPage;
+
+        if (notFound.length > 0 && deleted.length > 0) {
+          message.warning(`已删除 ${deleted.length} 条，${notFound.length} 条已不存在`);
+        } else if (notFound.length > 0) {
+          message.warning(`未删除任何收藏，${notFound.length} 条已不存在`);
+        } else {
+          message.success(`已删除 ${deleted.length} 条收藏`);
+        }
+
+        isBatchMode.value = false;
+      } catch (error: any) {
+        message.error(error?.message ? `删除失败：${error.message}` : '删除失败');
+      }
+    }
   });
-  isBatchMode.value = false;
 };
 
 const openLink = (contest: Contest) => {
@@ -238,5 +300,11 @@ const openLink = (contest: Contest) => {
   border-top: 1px solid #eee;
   display: flex;
   justify-content: flex-end;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 16px;
 }
 </style>

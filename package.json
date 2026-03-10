@@ -1,23 +1,52 @@
 {
   "name": "ojflow",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OJ Helper Reborn in Electron",
-  "author": "Your Name",
+  "author": {
+    "name": "Siborne",
+    "email": "bo7785888@gmail.com"
+  },
+  "homepage": "https://github.com/Siborne/OJFlow",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Siborne/OJFlow.git",
+    "directory": "electron",
+    "bugs": {
+      "url": "https://github.com/Siborne/OJFlow/issues"
+    },
+    "keywords": [
+      "OJ",
+      "Online Judge",
+      "OJFlow",
+      "OJ Helper",
+      "OJ Helper Reborn",
+      "OJ Helper Reborn in Electron",
+      "OJ Helper Reborn in Electron for Windows",
+      "OJ Helper Reborn in Electron for Mac",
+      "OJ Helper Reborn in Electron for Linux",
+      "OJ Helper Reborn in Electron for Windows 10",
+      "OJ Helper Reborn in Electron for Linux Mint",
+      "OJ Helper Reborn in Electron for Windows 11"
+    ]
+  },
+  "license": "MIT",
   "main": "electron/main.js",
   "scripts": {
-    "dev": "concurrently \"npm run vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "vite": "vite", 
+    "dev": "concurrently \"bun run vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "vite": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder",
-    "dist:win": "npm run build && electron-builder --win",
-    "dist:mac": "npm run build && electron-builder --mac",
-    "dist:linux": "npm run build && electron-builder --linux",
-    "test:unit": "vitest", 
-    "test:e2e": "playwright test"
+
+    "pack": "bun run build && electron-builder --dir",
+    "dist": "bun run build && electron-builder",
+    "dist:win": "bun run build && electron-builder --win",
+    "dist:mac": "bun run build && electron-builder --mac",
+    "dist:linux": "bun run build && electron-builder --linux",
+
+    "test:unit": "bun test tests/unit",
+    "test:e2e": "playwright test tests/e2e"
   },
-  "resolutions": {
+  "overrides": {
     "entities": "6.0.0"
   },
   "dependencies": {
