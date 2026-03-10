@@ -210,15 +210,29 @@ onMounted(() => {
 .day-card {
   border: none !important;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
-  box-shadow: var(--shadow-1);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  position: relative;
+  overflow: hidden;
   transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+}
+
+.day-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  padding: 1px;
+  background: var(--card-accent);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .day-card:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-2);
-  filter: saturate(1.02);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .day-card:active {
@@ -284,7 +298,7 @@ onMounted(() => {
 
 .day-card :deep(.n-divider) {
   margin: 0;
-  background-color: var(--divider);
+  background-color: var(--card-divider);
 }
 
 

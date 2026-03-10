@@ -29,14 +29,14 @@
     </n-layout>
 
     <n-layout v-else style="height: 100vh; display: flex; flex-direction: column;">
-      <n-layout-content style="flex: 1; overflow: hidden;">
+      <n-layout-content class="mobile-content">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
             <component :is="Component" />
           </transition>
         </router-view>
       </n-layout-content>
-      <n-layout-footer bordered>
+      <n-layout-footer bordered class="mobile-footer">
         <div class="bottom-nav">
           <div 
             v-for="item in menuOptions" 
@@ -132,6 +132,20 @@ const handleMenuUpdate = (key: string) => {
 </script>
 
 <style scoped>
+.mobile-content {
+  flex: 1;
+  overflow: hidden;
+  padding-bottom: 56px;
+}
+
+.mobile-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3000;
+}
+
 .bottom-nav {
   display: flex;
   justify-content: space-around;
