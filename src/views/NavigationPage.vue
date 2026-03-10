@@ -136,7 +136,7 @@ const handleMenuUpdate = (key: string) => {
   display: flex;
   justify-content: space-around;
   padding: 8px 0;
-  background: white;
+  background: var(--color-surface);
 }
 
 .nav-item {
@@ -144,11 +144,11 @@ const handleMenuUpdate = (key: string) => {
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  color: grey;
+  color: var(--color-text-muted);
 }
 
 .nav-item.active {
-  color: #18a058; /* Naive UI primary color */
+  color: var(--color-primary);
 }
 
 .nav-item span {

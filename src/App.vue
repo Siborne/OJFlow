@@ -9,15 +9,16 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import { NConfigProvider, NMessageProvider, NDialogProvider } from 'naive-ui';
+import { useUiStore } from './stores/ui';
+
+const uiStore = useUiStore();
+
+onMounted(() => {
+  uiStore.applyToDom();
+});
 </script>
 
 <style>
-html, body, #app {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
-  background-color: #f5f5f5;
-}
 </style>

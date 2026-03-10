@@ -3,21 +3,27 @@
     <div class="app-bar">
       <h2>收藏比赛</h2>
       <div class="actions">
-        <n-button quaternary circle @click="toggleSort">
+        <action-tooltip-button quaternary circle i18n-key="tooltip.sort" @click="toggleSort">
           <template #icon>
             <n-icon :size="24"><sort-outlined /></n-icon>
           </template>
-        </n-button>
-        <n-button quaternary circle @click="showSearch = !showSearch">
+        </action-tooltip-button>
+        <action-tooltip-button quaternary circle i18n-key="tooltip.search" @click="showSearch = !showSearch">
           <template #icon>
             <n-icon :size="24"><search-outlined /></n-icon>
           </template>
-        </n-button>
-        <n-button quaternary circle @click="isBatchMode = !isBatchMode" data-testid="favorite-batch-toggle">
+        </action-tooltip-button>
+        <action-tooltip-button
+          quaternary
+          circle
+          i18n-key="tooltip.batch"
+          @click="isBatchMode = !isBatchMode"
+          data-testid="favorite-batch-toggle"
+        >
           <template #icon>
             <n-icon :size="24"><edit-outlined /></n-icon>
           </template>
-        </n-button>
+        </action-tooltip-button>
       </div>
     </div>
     
@@ -52,7 +58,7 @@
               <div class="contest-action" v-if="!isBatchMode">
                 <n-button quaternary circle @click="store.toggleFavorite(contest)">
                   <template #icon>
-                    <n-icon :size="24" color="#ffc107">
+                    <n-icon :size="24" color="var(--color-warning)">
                       <star-filled />
                     </n-icon>
                   </template>
@@ -91,6 +97,7 @@ import { ContestService } from '../services/contest';
 import { Contest } from '../types';
 import { NButton, NIcon, NCard, NEmpty, NInput, NCheckbox, NPagination, useDialog, useMessage } from 'naive-ui';
 import { StarFilled, SearchOutlined, SortOutlined, EditOutlined } from '@vicons/material';
+import ActionTooltipButton from '../components/ActionTooltipButton.vue';
 
 const store = useContestStore();
 const dialog = useDialog();
@@ -220,7 +227,7 @@ const openLink = (contest: Contest) => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: white;
+  background-color: var(--color-surface);
 }
 
 .app-bar {
@@ -229,8 +236,8 @@ const openLink = (contest: Contest) => {
   align-items: center;
   padding: 0 16px;
   height: 64px;
-  background-color: white;
-  border-bottom: 1px solid #eee;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .app-bar h2 {
@@ -245,7 +252,7 @@ const openLink = (contest: Contest) => {
 
 .search-bar {
   padding: 8px 16px;
-  background-color: #f9f9f9;
+  background-color: var(--color-surface-muted);
 }
 
 .content {
@@ -264,20 +271,20 @@ const openLink = (contest: Contest) => {
 .contest-card {
   border: none !important;
   border-radius: 14px;
-  background: linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+  box-shadow: var(--shadow-1);
   transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
 }
 
 .contest-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.16);
+  box-shadow: var(--shadow-2);
   filter: saturate(1.02);
 }
 
 .contest-card:active {
   transform: translateY(0px);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+  box-shadow: var(--shadow-3);
 }
 
 .contest-item {
@@ -305,13 +312,13 @@ const openLink = (contest: Contest) => {
 
 .contest-time {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--color-text-muted);
 }
 
 .batch-actions {
   padding: 16px;
-  background-color: white;
-  border-top: 1px solid #eee;
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
   display: flex;
   justify-content: flex-end;
 }
@@ -324,42 +331,5 @@ const openLink = (contest: Contest) => {
 
 .contest-card :deep(.n-card__content) {
   background: transparent;
-}
-
-@media (prefers-color-scheme: dark) {
-  .favorites-page {
-    background-color: #0f1115;
-  }
-
-  .app-bar {
-    background-color: #0f1115;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .app-bar h2 {
-    color: rgba(255, 255, 255, 0.92);
-  }
-
-  .search-bar {
-    background-color: rgba(255, 255, 255, 0.06);
-  }
-
-  .batch-actions {
-    background-color: #0f1115;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .contest-card {
-    background: linear-gradient(135deg, rgba(0, 201, 255, 0.78) 0%, rgba(146, 254, 157, 0.62) 100%);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
-  }
-
-  .contest-name {
-    color: rgba(255, 255, 255, 0.92);
-  }
-
-  .contest-time {
-    color: rgba(255, 255, 255, 0.72);
-  }
 }
 </style>

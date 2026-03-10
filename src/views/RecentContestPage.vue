@@ -51,7 +51,7 @@
                   <div class="contest-action">
                     <n-button quaternary circle @click="store.toggleFavorite(contest)">
                       <template #icon>
-                        <n-icon :size="24" :color="store.isFavorite(contest.name) ? '#ffc107' : undefined">
+                        <n-icon :size="24" :color="store.isFavorite(contest.name) ? 'var(--color-warning)' : undefined">
                           <star-outlined v-if="!store.isFavorite(contest.name)" />
                           <star-filled v-else />
                         </n-icon>
@@ -164,7 +164,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: white;
+  background-color: var(--color-surface);
 }
 
 .app-bar {
@@ -173,8 +173,8 @@ onMounted(() => {
   align-items: center;
   padding: 0 16px;
   height: 64px;
-  background-color: white;
-  border-bottom: 1px solid #eee;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .app-bar h2 {
@@ -198,7 +198,7 @@ onMounted(() => {
 
 .quote {
   font-size: 18px;
-  color: #2080f0;
+  color: var(--color-primary);
   margin-bottom: 20px;
   font-weight: bold;
 }
@@ -210,20 +210,20 @@ onMounted(() => {
 .day-card {
   border: none !important;
   border-radius: 14px;
-  background: linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+  box-shadow: var(--shadow-1);
   transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
 }
 
 .day-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.16);
+  box-shadow: var(--shadow-2);
   filter: saturate(1.02);
 }
 
 .day-card:active {
   transform: translateY(0px);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+  box-shadow: var(--shadow-3);
 }
 
 .day-title {
@@ -264,7 +264,7 @@ onMounted(() => {
 
 .contest-time {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--color-text-muted);
 }
 
 .filter-content {
@@ -279,48 +279,12 @@ onMounted(() => {
 }
 
 .day-card :deep(.n-card-header__main) {
-  color: rgba(0, 0, 0, 0.86);
+  color: var(--color-text-soft);
 }
 
 .day-card :deep(.n-divider) {
   margin: 0;
-  background-color: rgba(0, 0, 0, 0.12);
-}
-
-@media (prefers-color-scheme: dark) {
-  .contest-page {
-    background-color: #0f1115;
-  }
-
-  .app-bar {
-    background-color: #0f1115;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .app-bar h2 {
-    color: rgba(255, 255, 255, 0.92);
-  }
-
-  .day-card {
-    background: linear-gradient(135deg, rgba(0, 201, 255, 0.78) 0%, rgba(146, 254, 157, 0.62) 100%);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
-  }
-
-  .day-card :deep(.n-card-header__main) {
-    color: rgba(255, 255, 255, 0.92);
-  }
-
-  .contest-name {
-    color: rgba(255, 255, 255, 0.92);
-  }
-
-  .contest-time {
-    color: rgba(255, 255, 255, 0.72);
-  }
-
-  .day-card :deep(.n-divider) {
-    background-color: rgba(255, 255, 255, 0.14);
-  }
+  background-color: var(--divider);
 }
 
 

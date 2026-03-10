@@ -214,7 +214,7 @@ const refreshAll = () => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: white;
+  background-color: var(--color-surface);
   position: relative;
 }
 
@@ -224,8 +224,8 @@ const refreshAll = () => {
   align-items: center;
   padding: 0 16px;
   height: 64px;
-  background-color: white;
-  border-bottom: 1px solid #eee;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .app-bar h2 {
@@ -260,7 +260,7 @@ const refreshAll = () => {
 }
 
 .platform-card {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-border);
   width: 100%;
   min-width: 280px; /* Requirement 4 */
   max-width: 350px; /* Requirement 4 */
@@ -271,8 +271,8 @@ const refreshAll = () => {
   display: flex;
   align-items: center;
   padding: 10px 16px;
-  background-color: #f0f2f5;
-  border-bottom: 1px solid #e0e0e0;
+  background-color: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .platform-icon {
@@ -303,12 +303,12 @@ const refreshAll = () => {
 .message {
   margin-top: 8px;
   font-size: 14px;
-  color: #18a058;
+  color: var(--color-success);
   text-align: center;
 }
 
 .message.error {
-  color: #d03050;
+  color: var(--color-error);
 }
 
 /* Transition for stats panel */
