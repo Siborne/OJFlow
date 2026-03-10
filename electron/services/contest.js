@@ -12,13 +12,15 @@ class RecentContestService {
     this._lanqiaoUrl = "https://www.lanqiao.cn/api/v2/contests/?sort=opentime&paginate=0&status=not_finished&game_type_code=2";
     this._nowcoderUrl = "https://ac.nowcoder.com/acm/contest/vip-index";
     
-    const defaultDays = appConfig?.crawl?.defaultDays ?? 7;
-    this._queryEndSeconds = defaultDays * 24 * 60 * 60;
+    this._defaultDays = appConfig?.crawl?.defaultDays ?? 7;
+    this._queryEndSeconds = this._defaultDays * 24 * 60 * 60;
     this.midnightSeconds = Math.floor(Date.now() / 1000) - new Date().getHours() * 3600 - new Date().getMinutes() * 60 - new Date().getSeconds();
   }
 
   setDay(day) {
-    this._queryEndSeconds = day * 24 * 60 * 60;
+    const n = Number(day);
+    const d = Number.isFinite(n) ? n : this._defaultDays;
+    this._queryEndSeconds = d * 24 * 60 * 60;
   }
 
   _isIntime(startTime = 0, duration = 0) {

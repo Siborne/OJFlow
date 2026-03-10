@@ -44,6 +44,11 @@
             class="nav-item"
             :class="{ active: activeKey === item.key }"
             @click="handleMenuUpdate(item.key)"
+            @keydown.enter.prevent="handleMenuUpdate(item.key)"
+            @keydown.space.prevent="handleMenuUpdate(item.key)"
+            role="button"
+            tabindex="0"
+            :aria-current="activeKey === item.key ? 'page' : undefined"
           >
             <n-icon :size="24" :component="item.icon" />
             <span>{{ item.label }}</span>
@@ -135,20 +140,25 @@ const handleMenuUpdate = (key: string) => {
 .mobile-content {
   flex: 1;
   overflow: hidden;
-  padding-bottom: 56px;
+  padding-bottom: calc(56px + 8px + env(safe-area-inset-bottom));
 }
 
 .mobile-footer {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 8px;
+  right: 8px;
+  bottom: calc(8px + env(safe-area-inset-bottom));
   z-index: 3000;
+  border-radius: 14px;
+  overflow: hidden;
 }
 
 .bottom-nav {
   display: flex;
   justify-content: space-around;
+  --nav-accent: var(--color-primary);
+  --nav-accent-weak: var(--color-primary-weak);
+  --nav-accent-weak-strong: rgba(37, 99, 235, 0.22);
   padding: 8px 0;
   background: var(--color-surface);
 }
@@ -159,15 +169,40 @@ const handleMenuUpdate = (key: string) => {
   align-items: center;
   cursor: pointer;
   color: var(--color-text-muted);
+  padding: 6px 10px;
+  border-radius: 12px;
+  transition: color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
 }
 
 .nav-item.active {
-  color: var(--color-primary);
+  color: var(--nav-accent);
+  background-color: var(--nav-accent-weak);
+}
+
+.nav-item:hover {
+  color: var(--nav-accent);
+}
+
+.nav-item:active {
+  background-color: var(--nav-accent-weak-strong);
+}
+
+.nav-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--nav-accent);
 }
 
 .nav-item span {
   font-size: 12px;
   margin-top: 4px;
+}
+
+@media (max-width: 768px) {
+  .bottom-nav {
+    --nav-accent: #52c41a;
+    --nav-accent-weak: rgba(82, 196, 26, 0.14);
+    --nav-accent-weak-strong: rgba(82, 196, 26, 0.22);
+  }
 }
 
 .fade-enter-active,

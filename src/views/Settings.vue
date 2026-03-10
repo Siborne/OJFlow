@@ -7,29 +7,34 @@
     <div class="content">
       <n-list clickable hoverable>
         <!-- Account -->
-        <n-list-item aria-label="最大爬取天数">
+        <!-- <n-list-item aria-label="用户" tabindex="0">
           <template #prefix>
             <n-avatar round size="medium" src="https://avatars.githubusercontent.com/u/1?v=4" />
           </template>
-          <!-- <n-thing title="用户" description="已登录: Guest" /> -->
+          <n-thing title="用户" description="已登录: Guest" />
            <n-thing title="用户" description="正在开发中" />
           <template #suffix>
             <n-button size="small" type="error" ghost>退出登录</n-button>
           </template>
-        </n-list-item>
+        </n-list-item> -->
 
-        <n-divider />
+        <!-- <n-divider /> -->
 
         <!-- Theme -->
-        <!-- <n-list-item>
+        <n-list-item aria-label="暗色模式" tabindex="0">
           <template #prefix>
-            <n-icon :size="24"><dark-mode-outlined /></n-icon>
+            <span class="settings-icon-wrap" aria-hidden="true">
+              <svg class="settings-icon" viewBox="0 0 24 24">
+                <title>暗色模式</title>
+                <use href="#icon-dark" />
+              </svg>
+            </span>
           </template>
-          <n-thing title="深色模式" />
+          <n-thing title="暗色模式（试验性功能）" />
           <template #suffix>
-            <n-switch v-model:value="isDarkMode" />
+            <n-switch :value="isExperimentalDark" @update:value="toggleExperimentalDark" />
           </template>
-        </n-list-item> -->
+        </n-list-item>
 
         <!-- Language -->
         <!-- <n-list-item>
@@ -50,15 +55,16 @@
           <n-thing title="清除缓存" description="释放本地存储空间" />
         </n-list-item> -->
         <!-- Update -->
-        <n-list-item aria-label="检查更新">
+        <n-list-item :aria-label="retentionLabel" tabindex="0">
           <template #prefix>
             <span class="settings-icon-wrap" aria-hidden="true">
-              <svg class="settings-icon" viewBox="0 0 20 20">
-                <use href="#icon-crawl-days" />
+              <svg class="settings-icon" viewBox="0 0 24 24">
+                <title>{{ retentionLabel }}</title>
+                <use href="#icon-retention" />
               </svg>
             </span>
           </template>
-          <n-thing title="最大爬取天数" description="1-30 天，修改后立即刷新" />
+          <n-thing :title="retentionLabel" :description="retentionDesc" />
           <template #suffix>
             <div class="max-days-suffix">
               <n-spin v-if="isUpdatingDays" size="small" />
@@ -74,10 +80,11 @@
           </template>
         </n-list-item>
 
-        <n-list-item>
+        <n-list-item aria-label="检查更新" tabindex="0">
           <template #prefix>
             <span class="settings-icon-wrap" aria-hidden="true">
-              <svg class="settings-icon" viewBox="0 0 20 20">
+              <svg class="settings-icon" viewBox="0 0 24 24">
+                <title>检查更新</title>
                 <use href="#icon-update" />
               </svg>
             </span>
@@ -89,10 +96,18 @@
         </n-list-item>
         
         <!-- About -->
-        <n-list-item aria-label="关于 OJ Flow" @click="openUrl('https://github.com/Siborne/OJFlow')">
+        <n-list-item
+          aria-label="关于 OJ Flow"
+          tabindex="0"
+          role="button"
+          @click="openUrl('https://github.com/Siborne/OJFlow')"
+          @keydown.enter.prevent="openUrl('https://github.com/Siborne/OJFlow')"
+          @keydown.space.prevent="openUrl('https://github.com/Siborne/OJFlow')"
+        >
           <template #prefix>
             <span class="settings-icon-wrap" aria-hidden="true">
-              <svg class="settings-icon" viewBox="0 0 20 20">
+              <svg class="settings-icon" viewBox="0 0 24 24">
+                <title>关于</title>
                 <use href="#icon-info" />
               </svg>
             </span>
@@ -102,11 +117,19 @@
         <n-divider />
     
         <!-- About -->
-        <n-list-item aria-label="友链 OJ Helper" @click="openUrl('https://github.com/2754LM/oj_helper')">
+        <n-list-item
+          aria-label="友链 OJ Helper"
+          tabindex="0"
+          role="button"
+          @click="openUrl('https://github.com/2754LM/oj_helper')"
+          @keydown.enter.prevent="openUrl('https://github.com/2754LM/oj_helper')"
+          @keydown.space.prevent="openUrl('https://github.com/2754LM/oj_helper')"
+        >
           <template #prefix>
             <span class="settings-icon-wrap" aria-hidden="true">
-              <svg class="settings-icon" viewBox="0 0 20 20">
-                <use href="#icon-info" />
+              <svg class="settings-icon" viewBox="0 0 24 24">
+                <title>友链</title>
+                <use href="#icon-friend" />
               </svg>
             </span>
           </template>
@@ -118,23 +141,33 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useContestStore } from '../stores/contest';
-import { NList, NListItem, NThing, NSpin, NSwitch, NSelect, NButton, NAvatar, NDivider, NInputNumber, useDialog, useMessage } from 'naive-ui';
+import { NList, NListItem, NThing, NSpin, NSwitch, NButton, NAvatar, NDivider, NInputNumber, useDialog, useMessage } from 'naive-ui';
 import { ContestService } from '../services/contest';
 import axios from 'axios';
+import { useUiStore } from '../stores/ui';
+import { t } from '../i18n';
 
 const curVersion = 'v1.0.0';
 const isChecking = ref(false);
 const isUpdatingDays = ref(false);
-const isDarkMode = ref(false);
 const language = ref('zh-CN');
 const dialog = useDialog();
 const message = useMessage();
 const store = useContestStore();
+const uiStore = useUiStore();
 const maxDays = ref(store.day);
 const pendingMaxDays = ref<number | null>(null);
 let maxDaysDebounceTimer: any;
+
+const retentionLabel = computed(() => t('settings.retentionPeriod'));
+const retentionDesc = computed(() => t('settings.retentionPeriodDesc'));
+const isExperimentalDark = computed(() => uiStore.colorMode === 'dark');
+
+const toggleExperimentalDark = (value: boolean) => {
+  uiStore.setColorMode(value ? 'dark' : 'auto');
+};
 
 const langOptions = [
   { label: '简体中文', value: 'zh-CN' },
@@ -168,7 +201,7 @@ const applyMaxDays = async (value: number) => {
   try {
     await store.setMaxCrawlDays(value);
     maxDays.value = store.day;
-    message.success(`已更新为 ${store.day} 天`);
+    message.success(`${retentionLabel.value}已更新为 ${store.day} 天`);
   } catch (e: any) {
     maxDays.value = store.day;
     message.error(e?.message ? `更新失败：${e.message}` : '更新失败');
@@ -256,14 +289,16 @@ const checkForUpdate = async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   color: var(--settings-icon-default);
+  border-radius: 8px;
+  transition: box-shadow 200ms ease-out, color 200ms ease-out;
 }
 
 .settings-icon {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
 }
 
 .settings-page :deep(.n-list-item:hover) .settings-icon-wrap {
@@ -272,5 +307,10 @@ const checkForUpdate = async () => {
 
 .settings-page :deep(.n-list-item:active) .settings-icon-wrap {
   color: var(--settings-icon-active);
+}
+
+.settings-page :deep(.n-list-item:focus-visible) .settings-icon-wrap,
+.settings-page :deep(.n-list-item:focus-within) .settings-icon-wrap {
+  box-shadow: 0 0 0 2px #52c41a;
 }
 </style>
