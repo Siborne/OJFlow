@@ -21,7 +21,7 @@
         <!-- <n-divider /> -->
 
         <!-- Theme -->
-        <n-list-item aria-label="暗色模式" tabindex="0">
+        <!-- <n-list-item aria-label="暗色模式" tabindex="0">
           <template #prefix>
             <span class="settings-icon-wrap" aria-hidden="true">
               <svg class="settings-icon" viewBox="0 0 24 24">
@@ -34,7 +34,7 @@
           <template #suffix>
             <n-switch :value="isExperimentalDark" @update:value="toggleExperimentalDark" />
           </template>
-        </n-list-item>
+        </n-list-item> -->
 
         <!-- Language -->
         <!-- <n-list-item>
@@ -80,7 +80,14 @@
           </template>
         </n-list-item>
 
-        <n-list-item aria-label="检查更新" tabindex="0">
+        <n-list-item
+          aria-label="检查更新"
+          tabindex="0"
+          role="button"
+          @click="checkForUpdate"
+          @keydown.enter.prevent="checkForUpdate"
+          @keydown.space.prevent="checkForUpdate"
+        >
           <template #prefix>
             <span class="settings-icon-wrap" aria-hidden="true">
               <svg class="settings-icon" viewBox="0 0 24 24">
@@ -89,7 +96,7 @@
               </svg>
             </span>
           </template>
-          <n-thing title="检查更新（正在开发中...）" :description="'当前版本: ' + curVersion" />
+          <n-thing title="检查更新" :description="'当前版本: ' + curVersion" />
           <template #suffix>
             <n-spin v-if="isChecking" size="small" />
           </template>
@@ -112,10 +119,8 @@
               </svg>
             </span>
           </template>
-          <n-thing title="关于 OJ Flow" description="开源地址" />
+          <n-thing title="关于 OJ Flow" description="开源地址:https://github.com/Siborne/OJFlow?" />
         </n-list-item>
-        <n-divider />
-    
         <!-- About -->
         <n-list-item
           aria-label="友链 OJ Helper"
@@ -133,8 +138,11 @@
               </svg>
             </span>
           </template>
-          <n-thing title="友链 OJ Helper" description="开源地址" />
+          <n-thing title="友链 OJ Helper" description="开源地址:https://github.com/2754LM/oj_helper/" />
         </n-list-item>
+        <!-- <n-divider /> -->
+    
+        
       </n-list>
     </div>
   </div>
@@ -145,11 +153,12 @@ import { ref, computed } from 'vue';
 import { useContestStore } from '../stores/contest';
 import { NList, NListItem, NThing, NSpin, NSwitch, NButton, NAvatar, NDivider, NInputNumber, useDialog, useMessage } from 'naive-ui';
 import { ContestService } from '../services/contest';
-import axios from 'axios';
 import { useUiStore } from '../stores/ui';
 import { t } from '../i18n';
+import { checkUpdate, getUpdateDialogSpec } from '../updater/checkUpdate';
 
-const curVersion = 'v1.0.0';
+const rawVersion = (import.meta as any).env?.VITE_APP_VERSION as string | undefined;
+const curVersion = rawVersion ? (rawVersion.startsWith('v') ? rawVersion : `v${rawVersion}`) : 'v0.0.0';
 const isChecking = ref(false);
 const isUpdatingDays = ref(false);
 const language = ref('zh-CN');
@@ -227,22 +236,36 @@ const updateMaxDays = (value: number | null) => {
 const checkForUpdate = async () => {
   if (isChecking.value) return;
   isChecking.value = true;
-  
+
   try {
-    const response = await axios.get('https://api.github.com/repos/2754LM/oj_helper/releases/latest');
-    if (response.status === 200) {
-      const latestVersion = response.data.tag_name;
-      if (latestVersion !== curVersion) {
-        dialog.info({
-          title: '新版本可用',
-          content: `新版本: ${latestVersion}`,
-          positiveText: '前往更新',
-          onPositiveClick: () => openUrl(response.data.html_url)
-        });
-      } else {
-        message.info('已是最新版本');
-      }
+    const info = await checkUpdate();
+    const spec = getUpdateDialogSpec(info);
+
+    if (spec.kind === 'update') {
+      dialog.info({
+        title: spec.title,
+        content: spec.content,
+        positiveText: spec.positiveText,
+        negativeText: spec.negativeText,
+        onPositiveClick: async () => {
+          const url = info.packageUrl ?? info.homepageUrl;
+          if (!url) return;
+          await ContestService.installUpdate(url);
+        },
+      });
+      return;
     }
+
+    if (spec.kind === 'error') {
+      dialog.error({
+        title: spec.title,
+        content: spec.content,
+        positiveText: spec.positiveText,
+      });
+      return;
+    }
+
+    message.info(spec.content);
   } catch (e) {
     message.error('检查失败');
   } finally {
@@ -293,7 +316,7 @@ const checkForUpdate = async () => {
   height: 24px;
   color: var(--settings-icon-default);
   border-radius: 8px;
-  transition: box-shadow 200ms ease-out, color 200ms ease-out;
+  transition: color 200ms ease-out;
 }
 
 .settings-icon {
@@ -302,15 +325,10 @@ const checkForUpdate = async () => {
 }
 
 .settings-page :deep(.n-list-item:hover) .settings-icon-wrap {
-  color: var(--settings-icon-hover);
+  color: var(--nav-bg-color);
 }
 
 .settings-page :deep(.n-list-item:active) .settings-icon-wrap {
   color: var(--settings-icon-active);
-}
-
-.settings-page :deep(.n-list-item:focus-visible) .settings-icon-wrap,
-.settings-page :deep(.n-list-item:focus-within) .settings-icon-wrap {
-  box-shadow: 0 0 0 2px #52c41a;
 }
 </style>
