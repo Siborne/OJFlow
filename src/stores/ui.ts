@@ -30,9 +30,11 @@ export const useUiStore = defineStore('ui', {
   },
   actions: {
     applyToDom() {
-      const el = document.documentElement;
-      el.dataset.theme = this.themeScheme;
-      el.dataset.mode = this.colorMode;
+      const el = typeof document !== 'undefined' ? document.documentElement : undefined;
+      if (!el) return;
+      el.dataset.scheme = this.themeScheme;
+      el.dataset.theme = this.colorMode;
+      delete el.dataset.mode;
     },
     setThemeScheme(scheme: ThemeScheme) {
       this.themeScheme = scheme;
@@ -46,4 +48,3 @@ export const useUiStore = defineStore('ui', {
     },
   },
 });
-

@@ -10,16 +10,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
 import { NConfigProvider, NMessageProvider, NDialogProvider } from 'naive-ui';
 import { useUiStore } from './stores/ui';
 import settingsSprite from './assets/icons/settings-sprite.svg?raw';
 
 const uiStore = useUiStore();
-
-onMounted(() => {
-  uiStore.applyToDom();
-});
+uiStore.applyToDom();
 </script>
 
 <style>

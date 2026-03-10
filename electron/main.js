@@ -15,6 +15,7 @@ const path = require('path');
 const recentContestService = require('./services/contest');
 const ratingService = require('./services/rating');
 const solvedNumService = require('./services/solvedNum');
+const appConfig = require('./app.config.json');
 
 // 判断是否为开发模式
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
@@ -61,7 +62,12 @@ app.whenReady().then(() => {
   // IPC Handlers
   ipcMain.handle('get-recent-contests', async (event, day) => {
     try {
-      const contests = await recentContestService.getAllContests(day);
+      const fallback = appConfig?.crawl?.defaultDays ?? 7;
+      const min = appConfig?.crawl?.minDays ?? 1;
+      const max = appConfig?.crawl?.maxDays ?? 30;
+      const n = Number(day);
+      const d = Number.isFinite(n) ? Math.max(min, Math.min(max, Math.floor(n))) : fallback;
+      const contests = await recentContestService.getAllContests(d);
       return contests;
     } catch (error) {
       console.error('Error fetching contests:', error);

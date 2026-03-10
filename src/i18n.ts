@@ -13,6 +13,8 @@ const messages = {
     'tooltip.search': '搜索收藏',
     'tooltip.batch': '批量管理',
     'tooltip.hideDate': '隐藏日期',
+    'settings.retentionPeriod': '回溯周期',
+    'settings.retentionPeriodDesc': '1-30 天，修改后立即刷新',
   },
   'en-US': {
     'tooltip.filter': 'Filter',
@@ -21,6 +23,8 @@ const messages = {
     'tooltip.search': 'Search',
     'tooltip.batch': 'Batch mode',
     'tooltip.hideDate': 'Hide dates',
+    'settings.retentionPeriod': 'Retention Period',
+    'settings.retentionPeriodDesc': '1-30 days, applies immediately',
   },
 } satisfies Record<Locale, Record<string, string>>;
 

@@ -22,6 +22,8 @@ const MIN_DAYS = appConfig?.crawl?.minDays ?? 1;
 const MAX_DAYS = appConfig?.crawl?.maxDays ?? 30;
 
 function clampInt(value: unknown, min: number, max: number, fallback: number) {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'string' && value.trim() === '') return fallback;
   const n = typeof value === 'number' ? value : Number(value);
   if (!Number.isFinite(n)) return fallback;
   const i = Math.floor(n);
