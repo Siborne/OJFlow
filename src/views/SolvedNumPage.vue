@@ -43,11 +43,14 @@
               <img :src="getPlatformImage(platform)" class="platform-icon" />
               <span class="platform-name">{{ platform }}</span>
               <div class="spacer"></div>
-              <n-button quaternary circle @click="querySolved(platform)">
-                <template #icon>
-                  <n-icon><refresh-outlined /></n-icon>
-                </template>
-              </n-button>
+              <div class="header-actions">
+                <n-button quaternary circle @click="querySolved(platform)">
+                  <template #icon>
+                    <n-icon><refresh-outlined /></n-icon>
+                  </template>
+                </n-button>
+                <HintTooltipIcon class="header-hint" :content="getSolvedHint(platform)" ariaLabel="填写提示" placement="bottom-end" />
+              </div>
             </div>
             
             <div class="card-body">
@@ -88,6 +91,7 @@ import { NButton, NIcon, NCard, NInput, NProgress } from 'naive-ui';
 import { SearchOutlined, RefreshOutlined, BarChartOutlined } from '@vicons/material';
 import { SolvedNumService } from '../services/solved';
 import StatsPanel from '../components/StatsPanel.vue';
+import HintTooltipIcon from '../components/HintTooltipIcon.vue';
 
 const platforms = [
   'Codeforces', 'AtCoder', 'VJudge', 'HDU', 'POJ', '蓝桥', '洛谷', '牛客', '力扣'
@@ -122,6 +126,12 @@ const getPlatformImage = (platform: string) => {
 const getPlaceholder = (platform: string) => {
   if (platform === '牛客') return '请输入ID';
   return '请输入用户名';
+};
+
+const getSolvedHint = (platform: string) => {
+  const field = platform === '牛客' ? '字段：用户ID（数字）' : '字段：用户名';
+  const example = platform === '牛客' ? '示例：100000' : '示例：tourist';
+  return `${field}\n${example}\n时间范围：不支持按时间筛选（累计值）\n注意：频繁查询可能触发限流`;
 };
 
 const statsData = computed(() => {
@@ -259,6 +269,15 @@ const refreshAll = () => {
   justify-content: center; /* Center card if it hits max-width */
 }
 
+.header-actions {
+  display: inline-flex;
+  align-items: center;
+}
+
+.header-hint {
+  margin-inline-start: 8px;
+}
+
 .platform-card {
   border: 1px solid var(--color-border);
   width: 100%;
@@ -278,7 +297,7 @@ const refreshAll = () => {
 .platform-icon {
   width: 24px;
   height: 24px;
-  margin-right: 10px;
+  margin-inline-end: 10px;
   border-radius: 4px;
 }
 

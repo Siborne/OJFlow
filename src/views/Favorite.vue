@@ -3,6 +3,16 @@
     <div class="app-bar">
       <h2>收藏比赛</h2>
       <div class="actions">
+        <n-checkbox
+          v-if="isBatchMode"
+          :checked="allSelected"
+          :indeterminate="isIndeterminate"
+          aria-label="全选"
+          @update:checked="setAllSelected"
+          data-testid="favorite-select-all"
+        >
+          全选
+        </n-checkbox>
         <action-tooltip-button quaternary circle i18n-key="tooltip.sort" @click="toggleSort">
           <template #icon>
             <n-icon :size="24"><sort-outlined /></n-icon>
@@ -31,7 +41,7 @@
       <n-input v-model:value="searchQuery" placeholder="搜索比赛..." clearable />
     </div>
 
-    <div class="content scrollable">
+    <div class="content scrollable" ref="contentRef">
       <div v-if="filteredFavorites.length === 0" class="no-data">
         <n-empty description="暂无收藏" />
       </div>
@@ -80,18 +90,27 @@
           data-testid="favorite-pagination"
         />
       </div>
-    </div>
-    
-    <div class="batch-actions" v-if="isBatchMode">
-      <n-button type="error" @click="deleteSelected" :disabled="!hasSelection" data-testid="favorite-delete-selected">
-        删除选中
-      </n-button>
+
+      <div class="batch-bar" v-if="isBatchMode">
+        <div class="batch-bar-left" data-testid="favorite-selected-count">
+          已选 {{ selectedNames.length }} 项
+        </div>
+        <n-button
+          type="error"
+          @click="deleteSelected"
+          :disabled="!hasSelection"
+          data-testid="favorite-delete-selected"
+          aria-label="删除选中"
+        >
+          删除选中
+        </n-button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, watch } from 'vue';
+import { ref, computed, reactive, watch, onMounted, onUnmounted } from 'vue';
 import { useContestStore } from '../stores/contest';
 import { ContestService } from '../services/contest';
 import { Contest } from '../types';
@@ -109,6 +128,7 @@ const sortAsc = ref(true);
 const selected = reactive<Record<string, boolean>>({});
 const page = ref(1);
 const pageSize = ref(20);
+const contentRef = ref<HTMLElement | null>(null);
 
 const images: Record<string, string> = {
   'Codeforces': new URL('../assets/platforms/Codeforces.jpg', import.meta.url).href,
@@ -146,6 +166,25 @@ const hasSelection = computed(() => {
   return selectedNames.value.length > 0;
 });
 
+const allSelected = computed(() => {
+  const list = filteredFavorites.value;
+  if (list.length === 0) return false;
+  return list.every(c => selected[c.name]);
+});
+
+const isIndeterminate = computed(() => {
+  const list = filteredFavorites.value;
+  if (list.length === 0) return false;
+  const count = list.reduce((acc, c) => acc + (selected[c.name] ? 1 : 0), 0);
+  return count > 0 && count < list.length;
+});
+
+const setAllSelected = (checked: boolean) => {
+  for (const c of filteredFavorites.value) {
+    selected[c.name] = checked;
+  }
+};
+
 const toggleSort = () => {
   sortAsc.value = !sortAsc.value;
 };
@@ -159,6 +198,13 @@ const pagedFavorites = computed(() => {
 watch([filteredFavorites, pageSize], () => {
   const maxPage = Math.max(1, Math.ceil(filteredFavorites.value.length / pageSize.value));
   if (page.value > maxPage) page.value = maxPage;
+});
+
+watch(filteredFavorites, () => {
+  const visible = new Set(filteredFavorites.value.map(c => c.name));
+  for (const name of Object.keys(selected)) {
+    if (!visible.has(name)) delete selected[name];
+  }
 });
 
 const deleteSelected = () => {
@@ -185,6 +231,8 @@ const deleteSelected = () => {
 
         const maxPage = Math.max(1, Math.ceil(filteredFavorites.value.length / pageSize.value));
         if (page.value > maxPage) page.value = maxPage;
+        page.value = 1;
+        contentRef.value?.scrollTo({ top: 0 });
 
         if (notFound.length > 0 && deleted.length > 0) {
           message.warning(`已删除 ${deleted.length} 条，${notFound.length} 条已不存在`);
@@ -193,8 +241,6 @@ const deleteSelected = () => {
         } else {
           message.success(`已删除 ${deleted.length} 条收藏`);
         }
-
-        isBatchMode.value = false;
       } catch (error: any) {
         message.error(error?.message ? `删除失败：${error.message}` : '删除失败');
       }
@@ -220,6 +266,29 @@ const openLink = (contest: Contest) => {
     }
   });
 };
+
+const onKeyDown = (e: KeyboardEvent) => {
+  if (!isBatchMode.value) return;
+
+  if (e.key.toLowerCase() === 'a' && e.ctrlKey) {
+    e.preventDefault();
+    setAllSelected(true);
+    return;
+  }
+
+  if (e.key === 'Delete') {
+    e.preventDefault();
+    deleteSelected();
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeyDown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeyDown);
+});
 </script>
 
 <style scoped>
@@ -248,6 +317,7 @@ const openLink = (contest: Contest) => {
 .actions {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .search-bar {
@@ -329,18 +399,28 @@ const openLink = (contest: Contest) => {
   color: var(--color-text-muted);
 }
 
-.batch-actions {
-  padding: 16px;
-  background-color: var(--color-surface);
-  border-top: 1px solid var(--color-border);
-  display: flex;
-  justify-content: flex-end;
-}
-
 .pagination {
   display: flex;
   justify-content: center;
   padding: 8px 0 16px;
+}
+
+.batch-bar {
+  position: sticky;
+  bottom: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  z-index: 2;
+}
+
+.batch-bar-left {
+  color: var(--color-text-muted);
+  font-size: 14px;
 }
 
 .contest-card :deep(.n-card__content) {

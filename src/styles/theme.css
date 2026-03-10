@@ -32,6 +32,10 @@
   --nav-hover-bg: var(--color-primary-weak);
   --nav-active-bg: var(--color-primary-weak);
 
+  --contest-loading-gradient-start: #00a0ff;
+  --contest-loading-gradient-end: #00d2a0;
+  --contest-loading-text-shadow: rgba(255, 255, 255, 0.92);
+
   --settings-icon-default: var(--color-text-muted);
   --settings-icon-hover: var(--nav-bg-color);
   --settings-icon-active: var(--color-primary);
@@ -89,6 +93,10 @@
   --card-shadow: var(--shadow-dark);
   --card-shadow-hover: var(--shadow-dark);
   --card-divider: var(--divider);
+
+  --contest-loading-gradient-start: #33b7ff;
+  --contest-loading-gradient-end: #33e3b8;
+  --contest-loading-text-shadow: rgba(0, 0, 0, 0.72);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -115,6 +123,10 @@
     --card-shadow: var(--shadow-dark);
     --card-shadow-hover: var(--shadow-dark);
     --card-divider: var(--divider);
+
+    --contest-loading-gradient-start: #33b7ff;
+    --contest-loading-gradient-end: #33e3b8;
+    --contest-loading-text-shadow: rgba(0, 0, 0, 0.72);
   }
 }
 

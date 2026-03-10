@@ -31,8 +31,15 @@
     </n-layout>
 
     <n-layout v-else class="mobile-shell">
-      <div class="mobile-nav" role="navigation" aria-label="主导航">
-        <div class="top-nav">
+      <n-layout-content class="mobile-content">
+        <router-view v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </n-layout-content>
+      <n-layout-footer bordered class="mobile-footer">
+        <div class="bottom-nav" role="navigation" aria-label="主导航">
           <div
             v-for="item in menuOptions"
             :key="item.key"
@@ -49,14 +56,7 @@
             <span>{{ item.label }}</span>
           </div>
         </div>
-      </div>
-      <n-layout-content class="mobile-content">
-        <router-view v-slot="{ Component }">
-          <transition name="fade" mode="out-in">
-            <component :is="Component" />
-          </transition>
-        </router-view>
-      </n-layout-content>
+      </n-layout-footer>
     </n-layout>
   </n-layout>
 </template>
@@ -65,7 +65,7 @@
 import { ref, onMounted, onUnmounted, h } from 'vue';
 import type { Component } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { NLayout, NLayoutSider, NLayoutContent, NMenu, NIcon } from 'naive-ui';
+import { NLayout, NLayoutSider, NLayoutContent, NLayoutFooter, NMenu, NIcon } from 'naive-ui';
 import { EventNoteOutlined, StarBorderOutlined, ListOutlined, SettingsOutlined } from '@vicons/material';
 
 const router = useRouter();
@@ -105,8 +105,7 @@ const menuOptions = [
 ];
 
 const checkLayout = () => {
-  const ratio = window.innerWidth / window.innerHeight;
-  isWide.value = ratio > 1.1;
+  isWide.value = window.innerWidth > 768;
 };
 
 onMounted(() => {
@@ -163,30 +162,31 @@ const handleMenuUpdate = (key: string) => {
   flex-direction: column;
 }
 
-.mobile-nav {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  height: var(--nav-height);
-  background: var(--nav-bg-color);
-  display: flex;
-  align-items: center;
-  padding: 0 8px;
-}
-
-.top-nav {
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-  gap: 4px;
-}
-
 .mobile-content {
   flex: 1;
-  height: calc(100vh - var(--nav-height));
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
+}
+
+.mobile-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--nav-height) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 3000;
+  background: var(--nav-bg-color);
+}
+
+.bottom-nav {
+  height: var(--nav-height);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 4px;
 }
 
 .nav-item {

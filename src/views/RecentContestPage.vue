@@ -22,6 +22,7 @@
     <div class="content" v-if="store.loading">
       <div class="loading-container">
         <p class="quote">{{ quote }}</p>
+        <p class="loading-text">加载比赛…</p>
         <n-spin size="large" />
       </div>
     </div>
@@ -201,6 +202,18 @@ onMounted(() => {
   color: var(--color-primary);
   margin-bottom: 20px;
   font-weight: bold;
+}
+
+.loading-text {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 16px;
+  background: linear-gradient(90deg, var(--contest-loading-gradient-start), var(--contest-loading-gradient-end));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 1px 0 var(--contest-loading-text-shadow);
 }
 
 .day-group {

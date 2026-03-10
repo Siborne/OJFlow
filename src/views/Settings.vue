@@ -55,7 +55,7 @@
           <n-thing title="清除缓存" description="释放本地存储空间" />
         </n-list-item> -->
         <!-- Update -->
-        <n-list-item :aria-label="retentionLabel" tabindex="0">
+        <n-list-item class="settings-row" :aria-label="retentionLabel" tabindex="0">
           <template #prefix>
             <span class="settings-icon-wrap" aria-hidden="true">
               <svg class="settings-icon" viewBox="0 0 24 24">
@@ -81,6 +81,7 @@
         </n-list-item>
 
         <n-list-item
+          class="settings-row settings-row--action"
           aria-label="检查更新"
           tabindex="0"
           role="button"
@@ -98,12 +99,20 @@
           </template>
           <n-thing title="检查更新" :description="'当前版本: ' + curVersion" />
           <template #suffix>
-            <n-spin v-if="isChecking" size="small" />
+            <div class="settings-row-suffix">
+              <n-spin v-if="isChecking" size="small" />
+              <span class="settings-row-affordance" aria-hidden="true">
+                <svg class="settings-row-affordance-icon" viewBox="0 0 24 24">
+                  <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+            </div>
           </template>
         </n-list-item>
         
         <!-- About -->
         <n-list-item
+          class="settings-row settings-row--action"
           aria-label="关于 OJ Flow"
           tabindex="0"
           role="button"
@@ -119,10 +128,18 @@
               </svg>
             </span>
           </template>
-          <n-thing title="关于 OJ Flow" description="开源地址:https://github.com/Siborne/OJFlow?" />
+          <n-thing title="关于 OJ Flow" description="开源地址:https://github.com/Siborne/OJFlow" />
+          <template #suffix>
+            <span class="settings-row-affordance" aria-hidden="true">
+              <svg class="settings-row-affordance-icon" viewBox="0 0 24 24">
+                <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </template>
         </n-list-item>
         <!-- About -->
         <n-list-item
+          class="settings-row settings-row--action"
           aria-label="友链 OJ Helper"
           tabindex="0"
           role="button"
@@ -138,7 +155,14 @@
               </svg>
             </span>
           </template>
-          <n-thing title="友链 OJ Helper" description="开源地址:https://github.com/2754LM/oj_helper/" />
+          <n-thing title="友链 OJ Helper" description="开源地址:https://github.com/2754LM/oj_helper" />
+          <template #suffix>
+            <span class="settings-row-affordance" aria-hidden="true">
+              <svg class="settings-row-affordance-icon" viewBox="0 0 24 24">
+                <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </template>
         </n-list-item>
         <!-- <n-divider /> -->
     
@@ -257,15 +281,19 @@ const checkForUpdate = async () => {
     }
 
     if (spec.kind === 'error') {
-      dialog.error({
+      dialog.warning({
         title: spec.title,
         content: spec.content,
         positiveText: spec.positiveText,
+        negativeText: spec.negativeText,
+        onPositiveClick: async () => {
+          await checkForUpdate();
+        },
       });
       return;
     }
 
-    message.info(spec.content);
+    message.success('无更新');
   } catch (e) {
     message.error('检查失败');
   } finally {
@@ -322,6 +350,39 @@ const checkForUpdate = async () => {
 .settings-icon {
   width: 24px;
   height: 24px;
+}
+
+.settings-row-suffix {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-row-affordance {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+
+.settings-row-affordance-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.settings-page:dir(rtl) .settings-row-affordance-icon {
+  transform: rotate(180deg);
+}
+
+.settings-page :deep(.settings-row--action:hover) .settings-row-affordance,
+.settings-page :deep(.settings-row--action:focus) .settings-row-affordance,
+.settings-page :deep(.settings-row--action:focus-within) .settings-row-affordance,
+.settings-page :deep(.settings-row--action:focus-visible) .settings-row-affordance {
+  opacity: 1;
 }
 
 .settings-page :deep(.n-list-item:hover) .settings-icon-wrap {
