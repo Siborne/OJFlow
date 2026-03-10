@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="icon-crawl-days" viewBox="0 0 20 20">
+    <rect x="3.5" y="4.5" width="13" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1" />
+    <path d="M6.5 2.8v3.2M13.5 2.8v3.2" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" />
+    <path d="M3.5 8h13" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" />
+    <path d="M7.2 10.6h2.2M7.2 13h5.6" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" />
+  </symbol>
+
+  <symbol id="icon-update" viewBox="0 0 20 20">
+    <path
+      d="M15.3 6.4A6.5 6.5 0 1 0 16 10"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M16.2 4.2v3.6h-3.6"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </symbol>
+
+  <symbol id="icon-info" viewBox="0 0 20 20">
+    <circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1" />
+    <path d="M10 8.8v5.2" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" />
+    <path d="M10 6.4h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+  </symbol>
+</svg>
+

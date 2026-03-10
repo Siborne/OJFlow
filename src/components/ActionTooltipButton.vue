@@ -14,6 +14,9 @@
         @pointerleave="onPointerLeave"
         @click="onClick"
       >
+        <template #icon>
+          <slot name="icon" />
+        </template>
         <slot />
       </n-button>
     </template>
@@ -129,4 +132,3 @@ const onClick = (ev: MouseEvent) => {
   emit('click', ev);
 };
 </script>
-

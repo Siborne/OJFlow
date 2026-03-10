@@ -7,7 +7,7 @@
     <div class="content">
       <n-list clickable hoverable>
         <!-- Account -->
-        <n-list-item>
+        <n-list-item aria-label="最大爬取天数">
           <template #prefix>
             <n-avatar round size="medium" src="https://avatars.githubusercontent.com/u/1?v=4" />
           </template>
@@ -50,9 +50,13 @@
           <n-thing title="清除缓存" description="释放本地存储空间" />
         </n-list-item> -->
         <!-- Update -->
-        <n-list-item>
+        <n-list-item aria-label="检查更新">
           <template #prefix>
-            <n-icon :size="24"><date-range-outlined /></n-icon>
+            <span class="settings-icon-wrap" aria-hidden="true">
+              <svg class="settings-icon" viewBox="0 0 20 20">
+                <use href="#icon-crawl-days" />
+              </svg>
+            </span>
           </template>
           <n-thing title="最大爬取天数" description="1-30 天，修改后立即刷新" />
           <template #suffix>
@@ -72,7 +76,11 @@
 
         <n-list-item>
           <template #prefix>
-            <n-icon :size="24"><update-outlined /></n-icon>
+            <span class="settings-icon-wrap" aria-hidden="true">
+              <svg class="settings-icon" viewBox="0 0 20 20">
+                <use href="#icon-update" />
+              </svg>
+            </span>
           </template>
           <n-thing title="检查更新（正在开发中...）" :description="'当前版本: ' + curVersion" />
           <template #suffix>
@@ -81,18 +89,26 @@
         </n-list-item>
         
         <!-- About -->
-        <n-list-item @click="openUrl('https://github.com/Siborne/OJFlow')">
+        <n-list-item aria-label="关于 OJ Flow" @click="openUrl('https://github.com/Siborne/OJFlow')">
           <template #prefix>
-            <n-icon :size="24"><info-outlined /></n-icon>
+            <span class="settings-icon-wrap" aria-hidden="true">
+              <svg class="settings-icon" viewBox="0 0 20 20">
+                <use href="#icon-info" />
+              </svg>
+            </span>
           </template>
           <n-thing title="关于 OJ Flow" description="开源地址" />
         </n-list-item>
         <n-divider />
     
         <!-- About -->
-        <n-list-item @click="openUrl('https://github.com/2754LM/oj_helper')">
+        <n-list-item aria-label="友链 OJ Helper" @click="openUrl('https://github.com/2754LM/oj_helper')">
           <template #prefix>
-            <n-icon :size="24"><info-outlined /></n-icon>
+            <span class="settings-icon-wrap" aria-hidden="true">
+              <svg class="settings-icon" viewBox="0 0 20 20">
+                <use href="#icon-info" />
+              </svg>
+            </span>
           </template>
           <n-thing title="友链 OJ Helper" description="开源地址" />
         </n-list-item>
@@ -104,8 +120,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useContestStore } from '../stores/contest';
-import { NList, NListItem, NThing, NIcon, NSpin, NSwitch, NSelect, NButton, NAvatar, NDivider, NInputNumber, useDialog, useMessage } from 'naive-ui';
-import { UpdateOutlined, DarkModeOutlined, LanguageOutlined, DeleteOutlineOutlined, InfoOutlined, DateRangeOutlined } from '@vicons/material';
+import { NList, NListItem, NThing, NSpin, NSwitch, NSelect, NButton, NAvatar, NDivider, NInputNumber, useDialog, useMessage } from 'naive-ui';
 import { ContestService } from '../services/contest';
 import axios from 'axios';
 
@@ -235,5 +250,27 @@ const checkForUpdate = async () => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.settings-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--settings-icon-default);
+}
+
+.settings-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.settings-page :deep(.n-list-item:hover) .settings-icon-wrap {
+  color: var(--settings-icon-hover);
+}
+
+.settings-page :deep(.n-list-item:active) .settings-icon-wrap {
+  color: var(--settings-icon-active);
 }
 </style>
