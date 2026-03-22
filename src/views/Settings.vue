@@ -5,7 +5,26 @@
     </div>
 
     <div class="content">
-      <n-list clickable hoverable>
+      <div class="settings-summary-grid">
+        <n-card class="settings-summary settings-summary--hero" :bordered="true">
+          <template #header>系统状态</template>
+          <div class="summary-value">{{ curVersion }}</div>
+          <div class="summary-desc">当前保留天数 {{ maxDays }} · 更新状态 {{ isChecking ? '检查中' : '就绪' }}</div>
+        </n-card>
+
+        <n-card class="settings-summary settings-summary--small" :bordered="true">
+          <template #header>保留天数</template>
+          <div class="summary-minor">{{ maxDays }}</div>
+        </n-card>
+
+        <n-card class="settings-summary settings-summary--small" :bordered="true">
+          <template #header>主题模式</template>
+          <div class="summary-minor">{{ uiStore.colorMode }}</div>
+        </n-card>
+      </div>
+
+      <n-card class="settings-list-card" :bordered="true">
+        <n-list clickable hoverable>
         <!-- Account -->
         <!-- <n-list-item aria-label="用户" tabindex="0">
           <template #prefix>
@@ -167,7 +186,8 @@
         <!-- <n-divider /> -->
     
         
-      </n-list>
+        </n-list>
+      </n-card>
     </div>
   </div>
 </template>
@@ -175,7 +195,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useContestStore } from '../stores/contest';
-import { NList, NListItem, NThing, NSpin, NSwitch, NButton, NAvatar, NDivider, NInputNumber, useDialog, useMessage } from 'naive-ui';
+import { NList, NListItem, NThing, NSpin, NSwitch, NButton, NAvatar, NDivider, NInputNumber, NCard, useDialog, useMessage } from 'naive-ui';
 import { ContestService } from '../services/contest';
 import { useUiStore } from '../stores/ui';
 import { t } from '../i18n';
@@ -307,27 +327,120 @@ const checkForUpdate = async () => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: var(--color-surface);
+  background: transparent;
 }
 
 .app-bar {
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 var(--space-4);
   height: 64px;
-  background-color: var(--color-surface);
+  background: var(--color-surface-muted);
   border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
 }
 
 .app-bar h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
+  font-weight: 650;
 }
 
 .content {
   flex: 1;
-  padding: 16px;
+  padding: var(--space-4);
   overflow-y: auto;
+}
+
+.settings-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.settings-summary {
+  border: 1px solid var(--card-border) !important;
+  border-radius: var(--radius-lg);
+  background: var(--card-bg);
+  position: relative;
+  overflow: hidden;
+}
+
+.settings-summary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(130deg, rgba(14, 165, 233, 0.14), rgba(52, 211, 153, 0.04) 52%, transparent 82%);
+}
+
+.settings-summary--hero {
+  grid-column: span 8;
+  min-height: 118px;
+}
+
+.settings-summary--small {
+  grid-column: span 2;
+  min-height: 118px;
+}
+
+.summary-value {
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.summary-desc {
+  margin-top: 10px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.summary-minor {
+  font-size: 22px;
+  font-weight: 680;
+  color: var(--color-text-soft);
+}
+
+.settings-list-card {
+  border: 1px solid var(--card-border) !important;
+  border-radius: var(--radius-lg);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+.settings-page :deep(.n-list) {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.settings-page :deep(.n-list-item) {
+  padding-top: 14px;
+  padding-bottom: 14px;
+  transition: background-color var(--motion-base) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
+}
+
+.settings-page :deep(.n-list-item:hover) {
+  background-color: rgba(14, 165, 233, 0.06);
+}
+
+.settings-page :deep(.settings-row--action:active) {
+  transform: translateY(1px);
+}
+
+.settings-page :deep(.n-thing-header__title) {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.settings-page :deep(.n-thing-main__description) {
+  color: var(--color-text-muted);
 }
 
 .max-days-suffix {
@@ -343,8 +456,8 @@ const checkForUpdate = async () => {
   width: 24px;
   height: 24px;
   color: var(--settings-icon-default);
-  border-radius: 8px;
-  transition: color 200ms ease-out;
+  border-radius: 10px;
+  transition: color var(--motion-base) var(--motion-ease), background-color var(--motion-base) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease);
 }
 
 .settings-icon {
@@ -366,7 +479,7 @@ const checkForUpdate = async () => {
   height: 24px;
   color: var(--color-text-muted);
   opacity: 0;
-  transition: opacity 200ms ease-out;
+  transition: opacity var(--motion-base) var(--motion-ease), transform var(--motion-base) var(--motion-ease);
 }
 
 .settings-row-affordance-icon {
@@ -383,13 +496,50 @@ const checkForUpdate = async () => {
 .settings-page :deep(.settings-row--action:focus-within) .settings-row-affordance,
 .settings-page :deep(.settings-row--action:focus-visible) .settings-row-affordance {
   opacity: 1;
+  transform: translateX(1px);
 }
 
 .settings-page :deep(.n-list-item:hover) .settings-icon-wrap {
-  color: var(--nav-bg-color);
+  color: var(--color-primary);
+  background: rgba(14, 165, 233, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.18);
 }
 
 .settings-page :deep(.n-list-item:active) .settings-icon-wrap {
   color: var(--settings-icon-active);
+}
+
+@media (max-width: 768px) {
+  .settings-summary-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .settings-summary--hero,
+  .settings-summary--small {
+    grid-column: span 1;
+    min-height: 0;
+  }
+
+  .app-bar {
+    padding: 0 12px;
+  }
+
+  .app-bar h2 {
+    font-size: 17px;
+  }
+
+  .content {
+    padding: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-page :deep(.n-list-item),
+  .settings-row-affordance,
+  .settings-icon-wrap {
+    transition: opacity 120ms ease-out, color 120ms ease-out, background-color 120ms ease-out !important;
+    transform: none !important;
+  }
 }
 </style>
