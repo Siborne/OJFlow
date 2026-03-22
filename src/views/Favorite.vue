@@ -47,36 +47,71 @@
       </div>
       
       <div v-else>
-        <div v-for="contest in pagedFavorites" :key="contest.name">
-          <n-card class="contest-card" :content-style="{ padding: '10px 16px' }">
-            <div class="contest-item">
-              <n-checkbox 
-                v-if="isBatchMode" 
-                v-model:checked="selected[contest.name]" 
-                :data-testid="`favorite-checkbox-${contest.name}`"
-                style="margin-right: 10px"
-              />
-              <div class="platform-icon">
-                  <img :src="getPlatformImage(contest.platform)" :alt="contest.platform" />
-              </div>
-              <div class="contest-info" @click="openLink(contest)">
-                <div class="contest-name">{{ contest.name }}</div>
-                <div class="contest-time" v-if="!store.hideDate">
-                  {{ contest.formattedStartTime }} ({{ contest.duration }})
+        <div class="favorites-summary-grid">
+          <n-card class="favorite-summary favorite-summary--hero" :bordered="true">
+            <template #header>收藏总览</template>
+            <div class="summary-value">{{ filteredFavorites.length }}</div>
+            <div class="summary-label">当前检索结果</div>
+            <div class="summary-meta">总收藏 {{ store.favorites.length }} 场</div>
+          </n-card>
+
+          <n-card class="favorite-summary favorite-summary--small" :bordered="true">
+            <template #header>即将开始</template>
+            <div class="summary-minor">{{ upcomingCount }}</div>
+          </n-card>
+
+          <n-card class="favorite-summary favorite-summary--small" :bordered="true">
+            <template #header>进行中</template>
+            <div class="summary-minor">{{ runningCount }}</div>
+          </n-card>
+        </div>
+
+        <div class="favorites-bento-grid">
+          <div
+            v-for="(contest, index) in pagedFavorites"
+            :key="contest.name"
+            class="favorite-grid-cell"
+            :class="{ 'favorite-grid-cell--hero': index === 0 }"
+          >
+            <n-card class="contest-card" :content-style="{ padding: '10px 16px' }">
+              <div :class="['contest-item', `contest-item--${getContestState(contest)}`]">
+                <n-checkbox 
+                  v-if="isBatchMode" 
+                  v-model:checked="selected[contest.name]" 
+                  :data-testid="`favorite-checkbox-${contest.name}`"
+                  style="margin-right: 10px"
+                />
+                <div class="platform-icon">
+                    <img :src="getPlatformImage(contest.platform)" :alt="contest.platform" />
+                </div>
+                <div
+                  class="contest-info"
+                  role="button"
+                  tabindex="0"
+                  @click="openLink(contest)"
+                  @keydown.enter.prevent="openLink(contest)"
+                  @keydown.space.prevent="openLink(contest)"
+                >
+                  <div class="contest-name">{{ contest.name }}</div>
+                  <div class="contest-time" v-if="!store.hideDate">
+                    {{ contest.formattedStartTime }} ({{ contest.duration }})
+                  </div>
+                  <div class="contest-meta-line">
+                    <n-tag size="small" :type="getContestStateType(contest)">{{ getContestStateLabel(contest) }}</n-tag>
+                  </div>
+                </div>
+                <div class="contest-action" v-if="!isBatchMode">
+                  <n-button quaternary circle @click="store.toggleFavorite(contest)">
+                    <template #icon>
+                      <n-icon :size="24" color="var(--color-warning)">
+                        <star-filled />
+                      </n-icon>
+                    </template>
+                  </n-button>
                 </div>
               </div>
-              <div class="contest-action" v-if="!isBatchMode">
-                <n-button quaternary circle @click="store.toggleFavorite(contest)">
-                  <template #icon>
-                    <n-icon :size="24" color="var(--color-warning)">
-                      <star-filled />
-                    </n-icon>
-                  </template>
-                </n-button>
-              </div>
-            </div>
-          </n-card>
-          <div style="height: 10px"></div>
+            </n-card>
+          </div>
         </div>
       </div>
 
@@ -157,6 +192,32 @@ const filteredFavorites = computed(() => {
   
   return list;
 });
+
+const getContestState = (contest: Contest) => {
+  const now = Date.now();
+  const start = contest.startTimeSeconds * 1000;
+  const end = start + contest.durationSeconds * 1000;
+  if (now < start) return 'upcoming';
+  if (now >= start && now <= end) return 'running';
+  return 'ended';
+};
+
+const getContestStateLabel = (contest: Contest) => {
+  const state = getContestState(contest);
+  if (state === 'upcoming') return '即将开始';
+  if (state === 'running') return '进行中';
+  return '已结束';
+};
+
+const getContestStateType = (contest: Contest) => {
+  const state = getContestState(contest);
+  if (state === 'upcoming') return 'info';
+  if (state === 'running') return 'success';
+  return 'default';
+};
+
+const upcomingCount = computed(() => filteredFavorites.value.filter((contest) => getContestState(contest) === 'upcoming').length);
+const runningCount = computed(() => filteredFavorites.value.filter((contest) => getContestState(contest) === 'running').length);
 
 const selectedNames = computed(() => {
   return Object.keys(selected).filter(k => selected[k]);
@@ -296,39 +357,119 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: var(--color-surface);
+  background: transparent;
 }
 
 .app-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 var(--space-4);
   height: 64px;
-  background-color: var(--color-surface);
+  background: var(--color-surface-muted);
   border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
 }
 
 .app-bar h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
+  font-weight: 650;
 }
 
 .actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   align-items: center;
 }
 
 .search-bar {
-  padding: 8px 16px;
-  background-color: var(--color-surface-muted);
+  padding: 10px var(--space-4);
+  background: rgba(255, 255, 255, 0.58);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.search-bar :deep(.n-input) {
+  --n-border-radius: 12px;
 }
 
 .content {
   flex: 1;
   overflow-y: auto;
-  padding: 10px;
+  padding: var(--space-3);
+}
+
+.favorites-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.favorite-summary {
+  border: 1px solid var(--card-border) !important;
+  border-radius: var(--radius-lg);
+  background: var(--card-bg);
+  overflow: hidden;
+  position: relative;
+}
+
+.favorite-summary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.14), rgba(52, 211, 153, 0.04) 48%, transparent 80%);
+}
+
+.favorite-summary--hero {
+  grid-column: span 8;
+  min-height: 118px;
+}
+
+.favorite-summary--small {
+  grid-column: span 2;
+  min-height: 118px;
+}
+
+.summary-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.1;
+}
+
+.summary-label {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.summary-meta {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--color-text-soft);
+}
+
+.summary-minor {
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 680;
+  color: var(--color-text-soft);
+}
+
+.favorites-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.favorite-grid-cell {
+  grid-column: span 4;
+}
+
+.favorite-grid-cell--hero {
+  grid-column: span 8;
 }
 
 .no-data {
@@ -339,22 +480,24 @@ onUnmounted(() => {
 }
 
 .contest-card {
-  border: none !important;
-  border-radius: 14px;
+  border: 1px solid var(--card-border) !important;
+  border-radius: var(--radius-lg);
   background: var(--card-bg);
   box-shadow: var(--card-shadow);
   position: relative;
   overflow: hidden;
-  transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform var(--motion-base) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease), border-color var(--motion-base) var(--motion-ease);
 }
 
 .contest-card::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   padding: 1px;
-  background: var(--card-accent);
+  background: linear-gradient(180deg, rgba(14, 165, 233, 0.14), rgba(52, 211, 153, 0.08));
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -362,47 +505,85 @@ onUnmounted(() => {
 }
 
 .contest-card:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: var(--card-shadow-hover);
+  border-color: rgba(14, 165, 233, 0.2) !important;
 }
 
 .contest-card:active {
-  transform: translateY(0px);
+  transform: translateY(0);
   box-shadow: var(--shadow-3);
 }
 
 .contest-item {
   display: flex;
   align-items: center;
+  animation: list-reveal 220ms var(--motion-ease) both;
+  position: relative;
+}
+
+.contest-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.45);
+  opacity: 0.55;
+}
+
+.contest-item--upcoming::before {
+  background: rgba(14, 165, 233, 0.7);
+}
+
+.contest-item--running::before {
+  background: rgba(52, 211, 153, 0.78);
+}
+
+.contest-item--ended::before {
+  background: rgba(148, 163, 184, 0.62);
 }
 
 .platform-icon img {
-  width: 30px;
-  height: 30px;
-  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
 }
 
 .contest-info {
   flex: 1;
-  margin-left: 20px;
+  margin-left: 14px;
   cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.contest-info:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.contest-meta-line {
+  margin-top: 6px;
 }
 
 .contest-name {
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 15px;
+  font-weight: 610;
   margin-bottom: 4px;
 }
 
 .contest-time {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-text-muted);
 }
 
 .pagination {
   display: flex;
   justify-content: center;
-  padding: 8px 0 16px;
+  padding: 10px 0 16px;
 }
 
 .batch-bar {
@@ -413,17 +594,95 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  background-color: var(--color-surface);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(var(--frost-blur));
+  -webkit-backdrop-filter: blur(var(--frost-blur));
   border-top: 1px solid var(--color-border);
+  box-shadow: 0 -8px 18px rgba(15, 23, 42, 0.06);
   z-index: 2;
 }
 
 .batch-bar-left {
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 13px;
+  letter-spacing: 0.01em;
 }
 
 .contest-card :deep(.n-card__content) {
   background: transparent;
+}
+
+.contest-card :deep(.n-checkbox-box) {
+  border-radius: 8px;
+}
+
+.contest-item:nth-child(1) { animation-delay: 20ms; }
+.contest-item:nth-child(2) { animation-delay: 40ms; }
+.contest-item:nth-child(3) { animation-delay: 60ms; }
+.contest-item:nth-child(4) { animation-delay: 80ms; }
+.contest-item:nth-child(5) { animation-delay: 100ms; }
+.contest-item:nth-child(6) { animation-delay: 120ms; }
+
+@keyframes list-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .favorites-summary-grid,
+  .favorites-bento-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .favorite-summary--hero,
+  .favorite-summary--small,
+  .favorite-grid-cell,
+  .favorite-grid-cell--hero {
+    grid-column: span 1;
+  }
+
+  .app-bar {
+    padding: 0 12px;
+  }
+
+  .app-bar h2 {
+    font-size: 17px;
+  }
+
+  .search-bar {
+    padding: 8px 12px;
+  }
+
+  .content {
+    padding: 10px;
+  }
+
+  .batch-bar {
+    height: 54px;
+    padding: 0 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contest-item {
+    animation: fade-only 140ms ease-out both;
+  }
+
+  .contest-card:hover,
+  .contest-card:active {
+    transform: none;
+  }
+}
+
+@keyframes fade-only {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 </style>

@@ -140,9 +140,14 @@ const handleMenuUpdate = (key: string) => {
 <style scoped>
 .side-nav {
   background: var(--nav-bg-color);
+  backdrop-filter: blur(var(--frost-blur));
+  -webkit-backdrop-filter: blur(var(--frost-blur));
+  border-right: 1px solid var(--color-border);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
 }
 
 .side-menu :deep(.n-menu) {
+  --n-item-border-radius: 12px;
   --n-item-text-color: var(--nav-text-color);
   --n-item-text-color-hover: var(--nav-hover-color);
   --n-item-text-color-active: var(--nav-active-color);
@@ -154,6 +159,13 @@ const handleMenuUpdate = (key: string) => {
   --n-item-color-active: var(--nav-active-bg);
   --n-item-color-active-hover: var(--nav-active-bg);
   --n-item-color-hover: var(--nav-hover-bg);
+  --n-item-font-size: 13px;
+}
+
+.side-menu :deep(.n-menu-item-content),
+.side-menu :deep(.n-menu-item-content-header),
+.side-menu :deep(.n-menu-item-content__icon) {
+  transition: color var(--motion-base) var(--motion-ease), background-color var(--motion-base) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
 }
 
 .mobile-shell {
@@ -179,6 +191,10 @@ const handleMenuUpdate = (key: string) => {
   padding-bottom: env(safe-area-inset-bottom);
   z-index: 3000;
   background: var(--nav-bg-color);
+  backdrop-filter: blur(calc(var(--frost-blur) + 2px));
+  -webkit-backdrop-filter: blur(calc(var(--frost-blur) + 2px));
+  border-top: 1px solid var(--color-border);
+  box-shadow: 0 -8px 20px rgba(15, 23, 42, 0.08);
 }
 
 .bottom-nav {
@@ -195,33 +211,39 @@ const handleMenuUpdate = (key: string) => {
   align-items: center;
   cursor: pointer;
   color: var(--nav-text-color);
-  padding: 6px 8px;
+  min-width: 62px;
+  padding: 6px 10px;
   border-radius: 12px;
-  transition: color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+  transition: color var(--motion-base) var(--motion-ease), background-color var(--motion-base) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
 }
 
 .nav-item.active {
   color: var(--nav-active-color);
   background-color: var(--nav-active-bg);
+  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.16);
 }
 
 .nav-item:hover {
   color: var(--nav-hover-color);
   background-color: var(--nav-hover-bg);
+  transform: translateY(-1px);
 }
 
 .nav-item:active {
   background-color: var(--nav-active-bg);
+  transform: translateY(0) scale(0.99);
 }
 
 .nav-item:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--nav-active-color);
+  box-shadow: var(--focus-ring);
 }
 
 .nav-item span {
-  font-size: 12px;
-  margin-top: 4px;
+  font-size: 11px;
+  margin-top: 3px;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
 }
 
 .mobile-shell :deep(.content),
@@ -231,13 +253,10 @@ const handleMenuUpdate = (key: string) => {
   flex: 0 0 auto !important;
 }
 
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+@media (prefers-reduced-motion: reduce) {
+  .nav-item:hover,
+  .nav-item:active {
+    transform: none;
+  }
 }
 </style>
