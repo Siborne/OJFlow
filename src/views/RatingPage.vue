@@ -19,8 +19,14 @@
     </div>
 
     <div class="content">
-      <n-grid :x-gap="12" :y-gap="12" cols="1 s:1 m:2 l:2 xl:3" responsive="screen">
-        <n-grid-item v-for="platform in platforms" :key="platform">
+      <div
+        class="responsive-grid"
+        :style="{
+          '--cols': gridCols,
+          '--gap': '24px'
+        }"
+      >
+        <div v-for="platform in platforms" :key="platform" class="grid-item">
           <n-card class="platform-card" :content-style="{ padding: '0' }">
             <div class="card-header">
               <img :src="getPlatformImage(platform)" class="platform-icon" />
@@ -81,15 +87,15 @@
               </div>
             </div>
           </n-card>
-        </n-grid-item>
-      </n-grid>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
-import { NButton, NIcon, NGrid, NGridItem, NCard, NInput, NProgress } from 'naive-ui';
+import { reactive, ref, onMounted, onUnmounted } from 'vue';
+import { NButton, NIcon, NCard, NInput, NProgress } from 'naive-ui';
 import { SearchOutlined, RefreshOutlined, ArrowBackOutlined } from '@vicons/material';
 import { RatingService } from '../services/rating';
 import { getRatingColor, getRatingTierName } from '../utils/rating-colors';
@@ -101,6 +107,7 @@ const loading = reactive<Record<string, boolean>>({});
 const messages = reactive<Record<string, string>>({});
 const isError = reactive<Record<string, boolean>>({});
 const ratings = reactive<Record<string, { curRating: number; maxRating: number }>>({});
+const gridCols = ref(3);
 
 // Import images
 const images: Record<string, string> = {
@@ -124,7 +131,39 @@ onMounted(() => {
     messages[p] = '';
     isError[p] = false;
   });
+
+  calculateCols();
+  window.addEventListener('resize', handleResize);
 });
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
+
+const calculateCols = () => {
+  const width = window.innerWidth;
+  if (width >= 1300) {
+    gridCols.value = 4;
+  } else if (width >= 960) {
+    gridCols.value = 3;
+  } else if (width >= 480) {
+    gridCols.value = 2;
+  } else {
+    gridCols.value = 1;
+  }
+};
+
+const debounce = (fn: Function, delay: number) => {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  return (...args: any[]) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      fn(...args);
+    }, delay);
+  };
+};
+
+const handleResize = debounce(calculateCols, 100);
 
 const saveUsername = (platform: string, username: string) => {
   localStorage.setItem(`rating_username_${platform}`, username);
@@ -223,8 +262,26 @@ const refreshAll = () => {
   overflow-y: auto;
 }
 
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  gap: var(--gap);
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.grid-item {
+  transition: all 0.3s ease;
+  display: flex;
+  justify-content: center;
+}
+
 .platform-card {
   border: 1px solid var(--color-border);
+  width: 100%;
+  min-width: 280px;
+  max-width: 350px;
+  transition: width 0.3s ease, transform 0.3s ease;
 }
 
 .card-header {
