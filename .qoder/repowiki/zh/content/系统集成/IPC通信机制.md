@@ -1,21 +1,30 @@
 # IPC通信机制
 
 <cite>
-**本文引用的文件**   
+**本文档引用的文件**
 - [electron/main.ts](file://electron/main.ts)
 - [electron/preload.ts](file://electron/preload.ts)
 - [shared/ipc-channels.ts](file://shared/ipc-channels.ts)
+- [shared/types.ts](file://shared/types.ts)
 - [electron/services/contest.ts](file://electron/services/contest.ts)
 - [electron/services/rating.ts](file://electron/services/rating.ts)
 - [electron/services/solvedNum.ts](file://electron/services/solvedNum.ts)
 - [electron/store.ts](file://electron/store.ts)
-- [shared/types.ts](file://shared/types.ts)
 - [src/main.ts](file://src/main.ts)
 - [src/services/contest.ts](file://src/services/contest.ts)
+- [src/services/rating.ts](file://src/services/rating.ts)
 - [src/stores/contest.ts](file://src/stores/contest.ts)
 - [src/utils/contest_utils.ts](file://src/utils/contest_utils.ts)
 - [src/views/Contest.vue](file://src/views/Contest.vue)
 </cite>
+
+## 更新摘要
+**所做更改**
+- 新增完整的TypeScript类型映射系统，引入IpcHandlerMap接口定义IPC通信契约
+- 增强参数验证和错误处理机制，实现更严格的类型安全
+- 新增图标路径解析系统，支持开发和生产环境的不同资源路径
+- 更新预加载脚本以支持新的类型映射系统
+- 完善主进程处理器的参数验证和错误分类
 
 ## 目录
 1. [简介](#简介)
@@ -36,12 +45,13 @@
 - IpcChannel 接口与 IpcHandlerMap 的设计思路
 - 参数传递规则、返回值处理与错误传播
 - 预加载脚本的安全作用与上下文隔离机制
+- 图标路径解析系统：支持开发和生产环境的资源管理
 - 最佳实践：错误处理策略、超时管理、性能优化
 - 在 Vue 组件中调用 IPC 接口的实际示例路径
 
 ## 项目结构
 本项目采用典型的 Electron + Vue 架构，IPC 通信贯穿于主进程、预加载脚本与渲染进程之间：
-- 主进程负责业务逻辑与系统能力（如网络请求、外部链接打开、应用更新）
+- 主进程负责业务逻辑与系统能力（如网络请求、外部链接打开、应用更新、图标资源管理）
 - 预加载脚本通过 contextBridge 暴露受控 API 到渲染进程
 - 渲染进程（Vue 应用）通过 window.api/window.store 调用 IPC
 
@@ -60,6 +70,7 @@ subgraph "主进程"
 Main["electron/main.ts<br/>ipcMain.handle 注册处理器"]
 Services["业务服务<br/>electron/services/*.ts"]
 Store["electron-store<br/>electron/store.ts"]
+IconPath["图标路径解析<br/>开发/生产环境资源管理"]
 end
 RUI --> RS --> RPreload
 RS --> Preload
@@ -67,16 +78,17 @@ RPreload <- --> Main
 Preload <- --> Main
 Main --> Services
 Main --> Store
+Main --> IconPath
 ```
 
-图表来源
+**图表来源**
 - [electron/main.ts:357-486](file://electron/main.ts#L357-L486)
 - [electron/preload.ts:1-38](file://electron/preload.ts#L1-L38)
 - [src/services/contest.ts:1-35](file://src/services/contest.ts#L1-L35)
 - [src/stores/contest.ts:1-307](file://src/stores/contest.ts#L1-L307)
 - [electron/store.ts:1-31](file://electron/store.ts#L1-L31)
 
-章节来源
+**章节来源**
 - [electron/main.ts:357-486](file://electron/main.ts#L357-L486)
 - [electron/preload.ts:1-38](file://electron/preload.ts#L1-L38)
 - [src/main.ts:1-26](file://src/main.ts#L1-L26)
@@ -87,8 +99,9 @@ Main --> Store
 - 主进程处理器：注册 ipcMain.handle，执行业务逻辑并返回结果
 - 业务服务：封装第三方 API 请求与数据清洗
 - 渲染侧服务与状态：封装 IPC 调用，统一错误处理与数据转换
+- 图标路径解析系统：自动适配开发和生产环境的资源路径
 
-章节来源
+**章节来源**
 - [shared/ipc-channels.ts:1-53](file://shared/ipc-channels.ts#L1-L53)
 - [electron/preload.ts:1-38](file://electron/preload.ts#L1-L38)
 - [electron/main.ts:396-486](file://electron/main.ts#L396-L486)
@@ -99,7 +112,7 @@ Main --> Store
 - [src/stores/contest.ts:1-307](file://src/stores/contest.ts#L1-L307)
 
 ## 架构总览
-下面以“获取近期比赛”为例，展示从 Vue 组件到主进程处理器的完整调用链路。
+下面以"获取近期比赛"为例，展示从 Vue 组件到主进程处理器的完整调用链路。
 
 ```mermaid
 sequenceDiagram
@@ -113,6 +126,7 @@ View->>Store : "调用 store.fetchContests()"
 Store->>Service : "调用 ContestService.getRecentContests(day)"
 Service->>Preload : "window.api.getRecentContests(day)"
 Preload->>Main : "ipcRenderer.invoke(GET_CONTESTS, day)"
+Main->>Main : "参数验证与边界检查"
 Main->>Svc : "recentContestService.getAllContests(day)"
 Svc-->>Main : "RawContest[]"
 Main-->>Preload : "返回 RawContest[]"
@@ -121,12 +135,12 @@ Service-->>Store : "转换为 Contest[]"
 Store-->>View : "更新状态并渲染"
 ```
 
-图表来源
+**图表来源**
 - [src/views/Contest.vue:623-625](file://src/views/Contest.vue#L623-L625)
 - [src/stores/contest.ts:190-201](file://src/stores/contest.ts#L190-L201)
 - [src/services/contest.ts:8-25](file://src/services/contest.ts#L8-L25)
 - [electron/preload.ts:6-10](file://electron/preload.ts#L6-L10)
-- [electron/main.ts:396-412](file://electron/main.ts#L396-L412)
+- [electron/main.ts:406-421](file://electron/main.ts#L406-L421)
 - [electron/services/contest.ts:255-266](file://electron/services/contest.ts#L255-L266)
 
 ## 详细组件分析
@@ -161,10 +175,10 @@ class IPC_CHANNELS {
 IpcHandlerMap --> IPC_CHANNELS : "键名来自通道常量"
 ```
 
-图表来源
+**图表来源**
 - [shared/ipc-channels.ts:18-52](file://shared/ipc-channels.ts#L18-L52)
 
-章节来源
+**章节来源**
 - [shared/ipc-channels.ts:1-53](file://shared/ipc-channels.ts#L1-L53)
 - [shared/types.ts:1-67](file://shared/types.ts#L1-L67)
 
@@ -182,10 +196,10 @@ Render --> IPC["ipcRenderer.invoke(...)"]
 IPC --> Main["主进程 ipcMain.handle 处理器"]
 ```
 
-图表来源
+**图表来源**
 - [electron/preload.ts:4-38](file://electron/preload.ts#L4-L38)
 
-章节来源
+**章节来源**
 - [electron/preload.ts:1-38](file://electron/preload.ts#L1-L38)
 
 ### 主进程处理器与业务服务
@@ -208,12 +222,12 @@ Main-->>Preload : "返回结果"
 Preload-->>Renderer : "resolve Promise"
 ```
 
-图表来源
-- [electron/main.ts:414-431](file://electron/main.ts#L414-L431)
+**图表来源**
+- [electron/main.ts:423-440](file://electron/main.ts#L423-L440)
 - [electron/services/rating.ts:156-171](file://electron/services/rating.ts#L156-L171)
 
-章节来源
-- [electron/main.ts:396-486](file://electron/main.ts#L396-L486)
+**章节来源**
+- [electron/main.ts:406-486](file://electron/main.ts#L406-L486)
 - [electron/services/contest.ts:1-270](file://electron/services/contest.ts#L1-L270)
 - [electron/services/rating.ts:1-175](file://electron/services/rating.ts#L1-L175)
 - [electron/services/solvedNum.ts:1-198](file://electron/services/solvedNum.ts#L1-L198)
@@ -231,12 +245,12 @@ Convert --> Store["Pinia 状态管理更新"]
 Store --> View["Vue 组件渲染"]
 ```
 
-图表来源
+**图表来源**
 - [src/services/contest.ts:8-25](file://src/services/contest.ts#L8-L25)
 - [src/utils/contest_utils.ts:5-43](file://src/utils/contest_utils.ts#L5-L43)
 - [src/stores/contest.ts:190-201](file://src/stores/contest.ts#L190-L201)
 
-章节来源
+**章节来源**
 - [src/services/contest.ts:1-35](file://src/services/contest.ts#L1-L35)
 - [src/stores/contest.ts:1-307](file://src/stores/contest.ts#L1-L307)
 - [src/utils/contest_utils.ts:1-68](file://src/utils/contest_utils.ts#L1-L68)
@@ -258,11 +272,11 @@ Parse --> Return["返回有效结果"]
 Classify --> Return
 ```
 
-图表来源
+**图表来源**
 - [electron/main.ts:122-144](file://electron/main.ts#L122-L144)
 - [electron/main.ts:176-225](file://electron/main.ts#L176-L225)
 
-章节来源
+**章节来源**
 - [electron/main.ts:115-225](file://electron/main.ts#L115-L225)
 
 ### 存储与配置
@@ -284,15 +298,36 @@ Main-->>Preload : "value"
 Preload-->>RS : "resolve"
 ```
 
-图表来源
-- [electron/main.ts:468-479](file://electron/main.ts#L468-L479)
+**图表来源**
+- [electron/main.ts:477-488](file://electron/main.ts#L477-L488)
 - [electron/store.ts:1-31](file://electron/store.ts#L1-L31)
 - [electron/preload.ts:22-31](file://electron/preload.ts#L22-L31)
 
-章节来源
-- [electron/main.ts:468-479](file://electron/main.ts#L468-L479)
+**章节来源**
+- [electron/main.ts:477-488](file://electron/main.ts#L477-L488)
 - [electron/store.ts:1-31](file://electron/store.ts#L1-L31)
 - [electron/preload.ts:22-31](file://electron/preload.ts#L22-L31)
+
+### 图标路径解析系统
+- 开发环境：从项目根目录的 src/assets/icon.png 加载
+- 生产环境：从 resourcesPath 的 src/assets/icon.png 加载
+- 自动适配不同部署环境的资源路径
+
+```mermaid
+flowchart TD
+Start(["应用启动"]) --> DevCheck{"检查开发模式?"}
+DevCheck --> |是| DevPath["使用 ../../src/assets/icon.png"]
+DevCheck --> |否| ProdPath["使用 process.resourcesPath/src/assets/icon.png"]
+DevPath --> Window["设置窗口图标"]
+ProdPath --> Window
+Window --> Ready["应用就绪"]
+```
+
+**图表来源**
+- [electron/main.ts:357-364](file://electron/main.ts#L357-L364)
+
+**章节来源**
+- [electron/main.ts:357-364](file://electron/main.ts#L357-L364)
 
 ## 依赖关系分析
 - 共享模块（IPC 通道与类型）被主进程与渲染进程共同依赖
@@ -308,9 +343,10 @@ Preload --> RS["src/services/contest.ts"]
 RS --> RStore["src/stores/contest.ts"]
 Main --> Services["electron/services/*.ts"]
 Main --> EStore["electron/store.ts"]
+Main --> IconSystem["图标路径解析"]
 ```
 
-图表来源
+**图表来源**
 - [shared/ipc-channels.ts:1-53](file://shared/ipc-channels.ts#L1-L53)
 - [electron/main.ts:19-26](file://electron/main.ts#L19-L26)
 - [electron/preload.ts:1-3](file://electron/preload.ts#L1-L3)
@@ -319,7 +355,7 @@ Main --> EStore["electron/store.ts"]
 - [electron/services/contest.ts:1-270](file://electron/services/contest.ts#L1-L270)
 - [electron/store.ts:1-31](file://electron/store.ts#L1-L31)
 
-章节来源
+**章节来源**
 - [shared/ipc-channels.ts:1-53](file://shared/ipc-channels.ts#L1-L53)
 - [electron/main.ts:19-26](file://electron/main.ts#L19-L26)
 - [electron/preload.ts:1-3](file://electron/preload.ts#L1-L3)
@@ -331,8 +367,9 @@ Main --> EStore["electron/store.ts"]
 - 缓存与去重：electron-store 提供本地缓存，避免重复请求
 - UI 层节流：状态管理中对用户操作进行防抖/节流，减少频繁刷新
 - 资源释放：在组件卸载时清理定时器与事件监听，防止内存泄漏
+- 图标资源优化：通过统一的路径解析系统，避免重复的资源查找开销
 
-章节来源
+**章节来源**
 - [electron/services/contest.ts:257-266](file://electron/services/contest.ts#L257-L266)
 - [src/stores/contest.ts:63-140](file://src/stores/contest.ts#L63-L140)
 - [src/views/Contest.vue:641-652](file://src/views/Contest.vue#L641-L652)
@@ -343,15 +380,17 @@ Main --> EStore["electron/store.ts"]
 - 预加载未注入：确认 preload.ts 是否正确暴露 API 并通过 webPreferences.preload 指定
 - 超时与网络错误：查看主进程中的 fetchWithTimeout 与 classifyFetchError，定位超时或网络问题
 - 权限与协议限制：主进程对外部链接仅允许 http/https，避免协议漏洞
+- 图标加载失败：检查 getIconPath 函数的路径解析逻辑，确认资源文件存在
 
-章节来源
+**章节来源**
 - [shared/ipc-channels.ts:18-52](file://shared/ipc-channels.ts#L18-L52)
 - [electron/preload.ts:1-38](file://electron/preload.ts#L1-L38)
-- [electron/main.ts:452-458](file://electron/main.ts#L452-L458)
+- [electron/main.ts:461-467](file://electron/main.ts#L461-L467)
 - [electron/main.ts:122-167](file://electron/main.ts#L122-L167)
+- [electron/main.ts:357-364](file://electron/main.ts#L357-L364)
 
 ## 结论
-本项目通过“共享通道 + 预加载白名单 + 主进程处理器 + 业务服务”的分层设计，实现了安全、类型安全且高性能的 IPC 通信。建议在扩展新功能时遵循现有模式：先在共享模块定义通道与类型，再在预加载脚本暴露 API，最后在主进程注册处理器并调用业务服务，确保错误处理与性能优化贯穿始终。
+本项目通过"共享通道 + 预加载白名单 + 主进程处理器 + 业务服务"的分层设计，实现了安全、类型安全且高性能的 IPC 通信。新增的 TypeScript 类型映射系统进一步增强了类型安全性，而图标路径解析系统则改善了资源管理的灵活性。建议在扩展新功能时遵循现有模式：先在共享模块定义通道与类型，再在预加载脚本暴露 API，最后在主进程注册处理器并调用业务服务，确保错误处理与性能优化贯穿始终。
 
 ## 附录
 
@@ -365,8 +404,28 @@ Main --> EStore["electron/store.ts"]
   - [状态管理中拉取与更新:190-201](file://src/stores/contest.ts#L190-L201)
   - [数据格式转换:5-43](file://src/utils/contest_utils.ts#L5-L43)
 
-章节来源
+**章节来源**
 - [src/services/contest.ts:1-35](file://src/services/contest.ts#L1-L35)
 - [src/views/Contest.vue:623-625](file://src/views/Contest.vue#L623-L625)
 - [src/stores/contest.ts:190-201](file://src/stores/contest.ts#L190-L201)
 - [src/utils/contest_utils.ts:1-68](file://src/utils/contest_utils.ts#L1-L68)
+
+### 新增功能：TypeScript 类型映射系统使用指南
+- 在 shared/ipc-channels.ts 中定义 IPC_CHANNELS 常量
+- 使用 IpcHandlerMap 接口定义每个通道的参数和返回值类型
+- 预加载脚本通过导入 IPC_CHANNELS 进行类型安全的 API 暴露
+- 主进程处理器自动获得参数验证和类型推断支持
+
+**章节来源**
+- [shared/ipc-channels.ts:1-53](file://shared/ipc-channels.ts#L1-L53)
+- [electron/preload.ts:1-38](file://electron/preload.ts#L1-L38)
+- [electron/main.ts:406-486](file://electron/main.ts#L406-L486)
+
+### 新增功能：图标路径解析系统使用指南
+- 开发环境：自动解析为 ../../src/assets/icon.png
+- 生产环境：自动解析为 process.resourcesPath/src/assets/icon.png
+- 支持多平台部署，无需手动修改资源路径
+- 确保应用图标在不同环境下正确显示
+
+**章节来源**
+- [electron/main.ts:357-364](file://electron/main.ts#L357-L364)

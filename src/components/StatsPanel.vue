@@ -31,7 +31,8 @@
 import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue';
 import { NButton, NIcon } from 'naive-ui';
 import { BarChartOutlined, PieChartOutlined, CloseOutlined } from '@vicons/material';
-import * as echarts from 'echarts';
+import { echarts } from '../utils/echarts-setup';
+import type { EChartsType } from '../utils/echarts-setup';
 
 const props = defineProps<{
   visible: boolean;
@@ -50,8 +51,8 @@ const pieChartRef = ref<HTMLElement | null>(null);
 const barChartRef = ref<HTMLElement | null>(null);
 const isMobile = ref(false);
 
-let pieChart: echarts.ECharts | null = null;
-let barChart: echarts.ECharts | null = null;
+let pieChart: EChartsType | null = null;
+let barChart: EChartsType | null = null;
 
 const getCssVar = (name: string) => {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();

@@ -64,3 +64,35 @@ export type SolvedPlatform =
   | 'POJ'
   | '\u725b\u5ba2'
   | 'QOJ';
+
+/** Per-platform fetch status reported by aggregator */
+export interface PlatformFetchStatus {
+  platform: string;
+  success: boolean;
+  error?: string;
+  errorType?: 'timeout' | 'network' | 'parse' | 'api' | 'unknown';
+  elapsed: number;
+}
+
+/** Aggregated contest fetch response with platform status metadata */
+export interface ContestFetchResponse {
+  contests: RawContest[];
+  platformStatus: PlatformFetchStatus[];
+  totalElapsed: number;
+  fromCache: boolean;
+  cachedAt: number | null;
+}
+
+/** Aggregated rating fetch response */
+export interface RatingFetchResponse {
+  rating: Rating;
+  fromCache: boolean;
+  cachedAt: number | null;
+}
+
+/** Aggregated solved count fetch response */
+export interface SolvedFetchResponse {
+  solved: SolvedNum;
+  fromCache: boolean;
+  cachedAt: number | null;
+}

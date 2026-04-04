@@ -50,7 +50,26 @@
                 />
                 
                 <div v-if="messages[platform]" class="message" :class="{ error: isError[platform] }">
-                  {{ messages[platform] }}
+                  <template v-if="!isError[platform] && ratings[platform]">
+                    <div class="rating-display">
+                      <div class="rating-current">
+                        <span class="rating-label">当前</span>
+                        <span class="rating-value" :style="{ color: getRatingColor(ratings[platform].curRating) }">
+                          {{ ratings[platform].curRating }}
+                        </span>
+                        <span class="rating-tier">{{ getRatingTierName(ratings[platform].curRating) }}</span>
+                      </div>
+                      <div class="rating-max">
+                        <span class="rating-label">最高</span>
+                        <span class="rating-value" :style="{ color: getRatingColor(ratings[platform].maxRating) }">
+                          {{ ratings[platform].maxRating }}
+                        </span>
+                      </div>
+                    </div>
+                  </template>
+                  <template v-else>
+                    {{ messages[platform] }}
+                  </template>
                 </div>
               </div>
             </div>
@@ -66,6 +85,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { NButton, NIcon, NGrid, NGridItem, NCard, NInput, NProgress } from 'naive-ui';
 import { SearchOutlined, RefreshOutlined } from '@vicons/material';
 import { RatingService } from '../services/rating';
+import { getRatingColor, getRatingTierName } from '../utils/rating-colors';
 import HintTooltipIcon from '../components/HintTooltipIcon.vue';
 
 const platforms = ['Codeforces', 'AtCoder', '力扣', '洛谷', '牛客'];
@@ -73,6 +93,7 @@ const usernames = reactive<Record<string, string>>({});
 const loading = reactive<Record<string, boolean>>({});
 const messages = reactive<Record<string, string>>({});
 const isError = reactive<Record<string, boolean>>({});
+const ratings = reactive<Record<string, { curRating: number; maxRating: number }>>({});
 
 // Import images
 const images: Record<string, string> = {
@@ -119,7 +140,8 @@ const queryRating = async (platform: string) => {
 
   try {
     const result = await RatingService.getRating(platform, name);
-    messages[platform] = `当前Rating: ${result.curRating}, 最高Rating: ${result.maxRating}`;
+    ratings[platform] = { curRating: result.curRating, maxRating: result.maxRating };
+    messages[platform] = 'ok';
   } catch (e) {
     messages[platform] = '查询失败，请检查网络或用户名是否正确';
     isError[platform] = true;
@@ -221,5 +243,38 @@ const refreshAll = () => {
 
 .message.error {
   color: var(--color-error);
+}
+
+.rating-display {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  padding: 4px 0;
+}
+
+.rating-current,
+.rating-max {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.rating-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.rating-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rating-tier {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.8;
 }
 </style>

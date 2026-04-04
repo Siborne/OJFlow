@@ -17,10 +17,10 @@
 
 ## 更新摘要
 **变更内容**
-- 更新IPC通道的完整TypeScript类型映射，提供强类型参数和返回值定义
-- 新增IpcHandlerMap接口，确保主进程和渲染进程之间的类型安全通信
-- 完善IPC通道的参数验证和错误处理机制
-- 增强预加载脚本的类型安全性和API暴露机制
+- 增强类型安全的IPC通信系统，完善IpcHandlerMap接口定义
+- 更新参数验证和错误处理逻辑，添加更严格的类型检查
+- 新增图标路径解析功能，支持开发和生产环境的不同图标路径
+- 完善IPC通道的类型映射，确保所有通信都是强类型安全的
 
 ## 目录
 1. [简介](#简介)
@@ -38,7 +38,7 @@
 
 IPC（进程间通信）是Electron应用中主进程与渲染进程之间通信的关键机制。本项目实现了完整的IPC通信API，包括竞赛信息获取、用户评分查询、题目解决数量统计、URL打开、更新安装以及本地存储管理等功能。
 
-该IPC系统采用安全的上下文隔离模式，通过预加载脚本暴露受限制的API接口，确保渲染进程只能通过明确定义的通道与主进程通信。最新的版本引入了完整的TypeScript类型映射，确保所有IPC通信都是类型安全的。
+该IPC系统采用安全的上下文隔离模式，通过预加载脚本暴露受限制的API接口，确保渲染进程只能通过明确定义的通道与主进程通信。最新的版本引入了完整的TypeScript类型映射，确保所有IPC通信都是类型安全的，并且新增了图标路径解析功能以支持不同环境下的应用图标管理。
 
 ## 项目结构
 
@@ -51,7 +51,7 @@ IPC["shared/ipc-channels.ts<br/>IPC通道定义<br/>类型安全映射"]
 TYPES["shared/types.ts<br/>数据类型定义"]
 end
 subgraph "Electron主进程"
-MAIN["electron/main.ts<br/>主进程实现<br/>处理器注册"]
+MAIN["electron/main.ts<br/>主进程实现<br/>处理器注册<br/>图标路径解析"]
 PRELOAD["electron/preload.ts<br/>预加载脚本<br/>API暴露"]
 STORE["electron/store.ts<br/>本地存储"]
 SERVICES["electron/services/*<br/>业务服务层"]
@@ -187,7 +187,7 @@ Note over Renderer,Services : 异步双向通信
 
 **图表来源**
 - [preload.ts:6-20](file://electron/preload.ts#L6-L20)
-- [main.ts:397-412](file://electron/main.ts#L397-L412)
+- [main.ts:406-421](file://electron/main.ts#L406-L421)
 
 ## 详细组件分析
 
@@ -248,7 +248,7 @@ ReturnEmpty --> End
 ```
 
 **图表来源**
-- [main.ts:397-412](file://electron/main.ts#L397-L412)
+- [main.ts:406-421](file://electron/main.ts#L406-L421)
 
 #### 用户评分处理器
 处理器包含严格的参数验证：
@@ -257,7 +257,40 @@ ReturnEmpty --> End
 - 类型检查和错误处理
 
 **章节来源**
-- [main.ts:414-431](file://electron/main.ts#L414-L431)
+- [main.ts:423-440](file://electron/main.ts#L423-L440)
+
+### 图标路径解析功能
+
+**新增** 主进程现在包含智能的图标路径解析功能，支持开发和生产环境的不同配置：
+
+```mermaid
+flowchart TD
+Start([应用启动]) --> CheckDev["检查是否为开发模式"]
+CheckDev --> |是| DevPath["使用开发环境图标路径<br/>../../src/assets/icon.png"]
+CheckDev --> |否| ProdPath["使用生产环境图标路径<br/>process.resourcesPath/src/assets/icon.png"]
+DevPath --> CreateWindow["创建BrowserWindow"]
+ProdPath --> CreateWindow
+CreateWindow --> SetIcon["设置窗口图标"]
+SetIcon --> End([完成])
+```
+
+**图表来源**
+- [main.ts:357-370](file://electron/main.ts#L357-L370)
+
+#### 图标路径解析实现
+```typescript
+function getIconPath(): string {
+  // In development, use project root src/assets (go up from electron-dist/electron to project root)
+  if (isDev) {
+    return path.join(__dirname, '../../src/assets/icon.png');
+  }
+  // In production, icon is in extraResources (copied to resources folder)
+  return path.join(process.resourcesPath, 'src/assets/icon.png');
+}
+```
+
+**章节来源**
+- [main.ts:357-370](file://electron/main.ts#L357-L370)
 
 ### 存储管理IPC通道
 
@@ -281,11 +314,11 @@ StoreManager --> ElectronStore : 使用
 
 **图表来源**
 - [preload.ts:22-31](file://electron/preload.ts#L22-L31)
-- [main.ts:469-479](file://electron/main.ts#L469-L479)
+- [main.ts:477-488](file://electron/main.ts#L477-L488)
 
 **章节来源**
 - [preload.ts:22-31](file://electron/preload.ts#L22-L31)
-- [main.ts:469-479](file://electron/main.ts#L469-L479)
+- [main.ts:477-488](file://electron/main.ts#L477-L488)
 
 ## 类型安全的IPC通信
 
@@ -424,7 +457,7 @@ subgraph "预加载层"
 PRELOAD["electron/preload.ts<br/>API暴露<br/>类型安全"]
 end
 subgraph "主进程层"
-MAIN["electron/main.ts<br/>处理器实现<br/>错误处理"]
+MAIN["electron/main.ts<br/>处理器实现<br/>错误处理<br/>图标路径解析"]
 SERVICES["electron/services/*<br/>业务服务"]
 STORE["electron/store.ts<br/>本地存储"]
 end
@@ -502,8 +535,8 @@ RENDERER_TYPES --> PRELOAD
 
 **章节来源**
 - [main.ts:146-167](file://electron/main.ts#L146-L167)
-- [main.ts:417-422](file://electron/main.ts#L417-L422)
-- [main.ts:453-456](file://electron/main.ts#L453-L456)
+- [main.ts:426-431](file://electron/main.ts#L426-L431)
+- [main.ts:448-450](file://electron/main.ts#L448-L450)
 
 ### 调试技巧
 
@@ -522,12 +555,14 @@ RENDERER_TYPES --> PRELOAD
 - **易于使用**：简洁的API接口设计
 - **性能优化**：异步处理和错误重试机制
 - **可扩展性**：模块化的架构设计
+- **智能图标管理**：支持开发和生产环境的图标路径解析
 
 **最新改进**：
 - 完整的TypeScript类型映射系统
 - 强类型的IPC处理器定义
 - 更好的IDE支持和开发体验
 - 运行时类型安全保障
+- 智能图标路径解析功能
 
 未来可以考虑的改进方向：
 - 添加更详细的错误码和错误消息
@@ -535,3 +570,4 @@ RENDERER_TYPES --> PRELOAD
 - 支持批量操作和事务处理
 - 增加更多的安全审计功能
 - 扩展类型映射到更多数据类型
+- 实现动态图标切换功能

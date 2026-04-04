@@ -22,9 +22,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 // Polyfill for File in Node < 20 (Electron < 29)
 if (typeof File === 'undefined') {
@@ -42,9 +39,11 @@ if (typeof File === 'undefined') {
 const electron_1 = require("electron");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
-const contest_1 = __importDefault(require("./services/contest"));
-const rating_1 = __importDefault(require("./services/rating"));
-const solvedNum_1 = __importDefault(require("./services/solvedNum"));
+const contest_aggregator_1 = require("./services/contest-aggregator");
+const rating_aggregator_1 = require("./services/rating-aggregator");
+const solved_aggregator_1 = require("./services/solved-aggregator");
+const tray_1 = require("./services/tray");
+const cache_service_1 = require("./services/cache-service");
 const store_1 = require("./store");
 const ipc_channels_1 = require("../shared/ipc-channels");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -361,19 +360,27 @@ electron_1.app.whenReady().then(() => {
     // IPC Handlers
     electron_1.ipcMain.handle(ipc_channels_1.IPC_CHANNELS.GET_CONTESTS, async (_event, day) => {
         try {
-            const fallback = appConfig?.crawl?.defaultDays ?? 7;
-            const min = appConfig?.crawl?.minDays ?? 1;
-            const max = appConfig?.crawl?.maxDays ?? 30;
-            const n = Number(day);
-            const d = Number.isFinite(n)
-                ? Math.max(min, Math.min(max, Math.floor(n)))
-                : fallback;
-            const contests = await contest_1.default.getAllContests(d);
-            return contests;
+            // Cache-first: return cached data immediately, then fetch fresh in background
+            const cached = (0, cache_service_1.getCachedContests)();
+            if (cached) {
+                (0, contest_aggregator_1.fetchAllContestsDedup)(day, win)
+                    .then((fresh) => (0, cache_service_1.setCachedContests)(fresh))
+                    .catch((e) => console.warn('[ipc] background contest refresh failed:', e));
+                return cached;
+            }
+            const response = await (0, contest_aggregator_1.fetchAllContestsDedup)(day, win);
+            (0, cache_service_1.setCachedContests)(response);
+            return response;
         }
         catch (error) {
             console.error('Error fetching contests:', error);
-            return [];
+            return {
+                contests: [],
+                platformStatus: [],
+                totalElapsed: 0,
+                fromCache: false,
+                cachedAt: null,
+            };
         }
     });
     electron_1.ipcMain.handle(ipc_channels_1.IPC_CHANNELS.GET_RATING, async (_event, { platform, name }) => {
@@ -384,8 +391,17 @@ electron_1.app.whenReady().then(() => {
             throw new Error('Parameter too long');
         }
         try {
-            const rating = await rating_1.default.getRating(platform, name);
-            return rating;
+            // Cache-first
+            const cached = (0, cache_service_1.getCachedRating)(platform, name);
+            if (cached) {
+                (0, rating_aggregator_1.fetchRatingDedup)(platform, name)
+                    .then((fresh) => (0, cache_service_1.setCachedRating)(platform, name, fresh))
+                    .catch(() => { });
+                return cached;
+            }
+            const response = await (0, rating_aggregator_1.fetchRatingDedup)(platform, name);
+            (0, cache_service_1.setCachedRating)(platform, name, response);
+            return response;
         }
         catch (error) {
             console.error(`Error fetching rating for ${platform}:`, error);
@@ -400,8 +416,17 @@ electron_1.app.whenReady().then(() => {
             throw new Error('Parameter too long');
         }
         try {
-            const result = await solvedNum_1.default.getSolvedNum(platform, name);
-            return result;
+            // Cache-first
+            const cached = (0, cache_service_1.getCachedSolved)(platform, name);
+            if (cached) {
+                (0, solved_aggregator_1.fetchSolvedCountDedup)(platform, name)
+                    .then((fresh) => (0, cache_service_1.setCachedSolved)(platform, name, fresh))
+                    .catch(() => { });
+                return cached;
+            }
+            const response = await (0, solved_aggregator_1.fetchSolvedCountDedup)(platform, name);
+            (0, cache_service_1.setCachedSolved)(platform, name, response);
+            return response;
         }
         catch (error) {
             console.error(`Error fetching solved num for ${platform}:`, error);
@@ -429,6 +454,16 @@ electron_1.app.whenReady().then(() => {
     electron_1.ipcMain.handle(ipc_channels_1.IPC_CHANNELS.STORE_GET_ALL, () => {
         return store_1.store.store;
     });
+    // Notification handlers
+    electron_1.ipcMain.handle(ipc_channels_1.IPC_CHANNELS.NOTIFICATION_SET, (_event, payload) => {
+        store_1.store.set('notification', payload);
+    });
+    electron_1.ipcMain.handle(ipc_channels_1.IPC_CHANNELS.NOTIFICATION_GET, () => {
+        return store_1.store.get('notification');
+    });
+    // System tray
+    (0, tray_1.createTray)(win);
+    (0, tray_1.scheduleContestReminders)();
     setTimeout(() => {
         if (!win.isDestroyed()) {
             checkForUpdatesOnStartup(win);
@@ -436,6 +471,7 @@ electron_1.app.whenReady().then(() => {
     }, 5000);
 });
 electron_1.app.on('window-all-closed', () => {
+    (0, tray_1.destroyTray)();
     if (process.platform !== 'darwin') {
         electron_1.app.quit();
     }

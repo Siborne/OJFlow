@@ -19,9 +19,18 @@ if (typeof File === 'undefined') {
 import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
-import recentContestService from './services/contest';
-import ratingService from './services/rating';
-import solvedNumService from './services/solvedNum';
+import { fetchAllContestsDedup } from './services/contest-aggregator';
+import { fetchRatingDedup } from './services/rating-aggregator';
+import { fetchSolvedCountDedup } from './services/solved-aggregator';
+import { createTray, scheduleContestReminders, destroyTray } from './services/tray';
+import {
+  getCachedContests,
+  setCachedContests,
+  getCachedRating,
+  setCachedRating,
+  getCachedSolved,
+  setCachedSolved,
+} from './services/cache-service';
 import { store } from './store';
 import { IPC_CHANNELS } from '../shared/ipc-channels';
 
@@ -405,18 +414,27 @@ app.whenReady().then(() => {
   // IPC Handlers
   ipcMain.handle(IPC_CHANNELS.GET_CONTESTS, async (_event, day: number) => {
     try {
-      const fallback = appConfig?.crawl?.defaultDays ?? 7;
-      const min = appConfig?.crawl?.minDays ?? 1;
-      const max = appConfig?.crawl?.maxDays ?? 30;
-      const n = Number(day);
-      const d = Number.isFinite(n)
-        ? Math.max(min, Math.min(max, Math.floor(n)))
-        : fallback;
-      const contests = await recentContestService.getAllContests(d);
-      return contests;
+      // Cache-first: return cached data immediately, then fetch fresh in background
+      const cached = getCachedContests();
+      if (cached) {
+        fetchAllContestsDedup(day, win)
+          .then((fresh) => setCachedContests(fresh))
+          .catch((e) => console.warn('[ipc] background contest refresh failed:', e));
+        return cached;
+      }
+
+      const response = await fetchAllContestsDedup(day, win);
+      setCachedContests(response);
+      return response;
     } catch (error) {
       console.error('Error fetching contests:', error);
-      return [];
+      return {
+        contests: [],
+        platformStatus: [],
+        totalElapsed: 0,
+        fromCache: false,
+        cachedAt: null,
+      };
     }
   });
 
@@ -430,8 +448,18 @@ app.whenReady().then(() => {
         throw new Error('Parameter too long');
       }
       try {
-        const rating = await ratingService.getRating(platform, name);
-        return rating;
+        // Cache-first
+        const cached = getCachedRating(platform, name);
+        if (cached) {
+          fetchRatingDedup(platform, name)
+            .then((fresh) => setCachedRating(platform, name, fresh))
+            .catch(() => {});
+          return cached;
+        }
+
+        const response = await fetchRatingDedup(platform, name);
+        setCachedRating(platform, name, response);
+        return response;
       } catch (error) {
         console.error(`Error fetching rating for ${platform}:`, error);
         throw error;
@@ -449,8 +477,18 @@ app.whenReady().then(() => {
         throw new Error('Parameter too long');
       }
       try {
-        const result = await solvedNumService.getSolvedNum(platform, name);
-        return result;
+        // Cache-first
+        const cached = getCachedSolved(platform, name);
+        if (cached) {
+          fetchSolvedCountDedup(platform, name)
+            .then((fresh) => setCachedSolved(platform, name, fresh))
+            .catch(() => {});
+          return cached;
+        }
+
+        const response = await fetchSolvedCountDedup(platform, name);
+        setCachedSolved(platform, name, response);
+        return response;
       } catch (error) {
         console.error(`Error fetching solved num for ${platform}:`, error);
         throw error;
@@ -487,6 +525,22 @@ app.whenReady().then(() => {
     return store.store;
   });
 
+  // Notification handlers
+  ipcMain.handle(
+    IPC_CHANNELS.NOTIFICATION_SET,
+    (_event, payload: { enabled: boolean; reminderMinutes: number }) => {
+      store.set('notification', payload);
+    },
+  );
+
+  ipcMain.handle(IPC_CHANNELS.NOTIFICATION_GET, () => {
+    return store.get('notification');
+  });
+
+  // System tray
+  createTray(win);
+  scheduleContestReminders();
+
   setTimeout(() => {
     if (!win.isDestroyed()) {
       checkForUpdatesOnStartup(win);
@@ -495,6 +549,7 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  destroyTray();
   if (process.platform !== 'darwin') {
     app.quit();
   }

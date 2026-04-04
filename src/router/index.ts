@@ -1,36 +1,20 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import NavigationPage from '../views/NavigationPage.vue';
-import Contest from '../views/Contest.vue';
-import Favorite from '../views/Favorite.vue';
-import Feature from '../views/Feature.vue';
-import Settings from '../views/Settings.vue';
-import RatingPage from '../views/RatingPage.vue';
-import SolvedNumPage from '../views/SolvedNumPage.vue';
 
 const routes = [
-  { 
-    path: '/', 
+  {
+    path: '/',
     component: NavigationPage,
     children: [
       { path: '', redirect: '/contest' },
-      { path: 'contest', component: Contest },
-      { path: 'star', component: Favorite },
-      { path: 'service', component: Feature },
-      { path: 'setting', component: Settings },
-      // Keep old routes for compatibility if needed, but mapped to new structure
-      { path: 'rating', component: RatingPage },
-      { path: 'solved_num', component: SolvedNumPage },
-    ]
+      { path: 'contest', component: () => import('../views/Contest.vue') },
+      { path: 'star', component: () => import('../views/Favorite.vue') },
+      { path: 'service', component: () => import('../views/Feature.vue') },
+      { path: 'setting', component: () => import('../views/Settings.vue') },
+      { path: 'rating', component: () => import('../views/RatingPage.vue') },
+      { path: 'solved_num', component: () => import('../views/SolvedNumPage.vue') },
+    ],
   },
-  // Redirect old root paths to new child paths if necessary, 
-  // but since NavigationPage is the parent, we can just map them as children.
-  // However, the menu uses '/contest', '/star' etc. 
-  // If we nest them under '/', the path becomes '/contest' if we set parent path='/'.
-  // Let's verify Vue Router behavior. 
-  // If parent path is '/', child path 'contest' becomes '/contest'. Correct.
-  
-  // Standalone pages (if any)
-  { path: '/question-volume', redirect: '/solved_num' },
 ];
 
 const router = createRouter({

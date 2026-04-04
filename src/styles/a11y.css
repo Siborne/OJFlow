@@ -1,0 +1,55 @@
+/* ===== Accessibility Utilities ===== */
+
+/* Screen reader only: visually hidden but accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Enhanced focus-visible ring */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Remove outline for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* High contrast mode support */
+@media (forced-colors: active) {
+  .contest-card::before,
+  .day-card::before,
+  .summary-card::before {
+    border: 2px solid CanvasText;
+  }
+
+  .tab-item--active {
+    border: 2px solid Highlight;
+  }
+
+  .platform-icon-badge {
+    border: 1px solid CanvasText;
+  }
+
+  .skeleton-line,
+  .skeleton-circle {
+    border: 1px solid GrayText;
+  }
+}
+
+/* Ensure minimum contrast in reduced-transparency mode */
+@media (prefers-contrast: more) {
+  :root {
+    --color-border: rgba(0, 0, 0, 0.3);
+    --card-border: rgba(0, 0, 0, 0.25);
+  }
+}

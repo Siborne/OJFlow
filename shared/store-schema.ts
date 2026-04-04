@@ -49,6 +49,12 @@ export interface UserConfig {
     >;
   };
 
+  /** Notification settings */
+  notification: {
+    enabled: boolean;
+    reminderMinutes: number;
+  };
+
   /** Internal: migration flag */
   _migrated?: boolean;
 }

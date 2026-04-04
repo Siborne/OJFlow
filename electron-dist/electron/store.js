@@ -26,6 +26,10 @@ const defaults = {
     favorites: [],
     usernames: {},
     cache: {},
+    notification: {
+        enabled: false,
+        reminderMinutes: 15,
+    },
 };
 exports.store = new electron_store_1.default({
     name: 'ojflow-config',

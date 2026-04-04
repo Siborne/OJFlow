@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
-import { Contest } from '../types';
+import type { Contest } from '../types';
+import type { PlatformFetchStatus } from '../../shared/types';
 import { ContestService } from '../services/contest';
 import appConfig from '../../electron/app.config.json';
 
@@ -12,6 +13,14 @@ interface ContestState {
   favorites: Contest[];
   hideDate: boolean;
   initialized: boolean;
+  /** Per-platform fetch status from aggregator */
+  platformStatus: PlatformFetchStatus[];
+  /** Whether current data is from cache */
+  fromCache: boolean;
+  /** Timestamp of cached data */
+  cachedAt: number | null;
+  /** Total fetch elapsed time in ms */
+  totalElapsed: number;
 }
 
 const PLATFORMS = ['Codeforces', 'AtCoder', '\u6d1b\u8c37', '\u84dd\u6865\u4e91\u8bfe', '\u529b\u6263', '\u725b\u5ba2'];
@@ -73,6 +82,10 @@ export const useContestStore = defineStore('contest', {
     favorites: readLocalStorageFavorites(),
     hideDate: readLocalStorageHideDate(),
     initialized: false,
+    platformStatus: [],
+    fromCache: false,
+    cachedAt: null,
+    totalElapsed: 0,
   }),
   getters: {
     timeContests(state): Contest[][] {
@@ -190,8 +203,12 @@ export const useContestStore = defineStore('contest', {
     async fetchContests() {
       this.loading = true;
       try {
-        const rawContests = await ContestService.getRecentContests(this.day);
-        this.contests = rawContests;
+        const result = await ContestService.getRecentContests(this.day);
+        this.contests = result.contests;
+        this.platformStatus = result.platformStatus;
+        this.fromCache = result.fromCache;
+        this.cachedAt = result.cachedAt;
+        this.totalElapsed = result.totalElapsed;
       } catch (error) {
         console.error(error);
         throw error;
