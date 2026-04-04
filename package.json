@@ -73,6 +73,7 @@
     "@playwright/test": "^1.40.0",
     "@types/node": "^20.9.0",
     "@vitejs/plugin-vue": "^4.5.0",
+    "@vue/test-utils": "^2.4.0",
     "concurrently": "^8.2.2",
     "electron": "^30.0.0",
     "electron-builder": "^24.9.1",
