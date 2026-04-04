@@ -33,20 +33,18 @@
   "main": "electron-dist/electron/main.js",
   "scripts": {
     "build:electron": "tsc -p tsconfig.electron.json && node -e \"require('fs').cpSync('electron/app.config.json','electron-dist/electron/app.config.json')\"",
+    "rebuild": "electron-rebuild",
     "dev": "bun run build:electron && concurrently \"bun run vite\" \"wait-on http://localhost:5173 && electron .\"",
     "vite": "vite",
     "build": "vite build",
     "preview": "vite preview",
-
     "pack": "bun run build:electron && bun run build && electron-builder --dir",
     "dist": "bun run build:electron && bun run build && electron-builder",
     "dist:win": "bun run build:electron && bun run build && electron-builder --win",
     "dist:mac": "bun run build:electron && bun run build && electron-builder --mac",
     "dist:linux": "bun run build:electron && bun run build && electron-builder --linux",
-
     "test:unit": "bun test tests/unit",
     "test:e2e": "playwright test tests/e2e",
-
     "lint": "eslint src/ electron/ shared/ tests/",
     "lint:fix": "eslint --fix src/ electron/ shared/ tests/",
     "format": "prettier --write \"src/**/*.{ts,vue,css,scss}\" \"electron/**/*.ts\" \"shared/**/*.ts\"",
@@ -78,6 +76,7 @@
     "concurrently": "^8.2.2",
     "electron": "^30.0.0",
     "electron-builder": "^24.9.1",
+    "electron-rebuild": "^3.2.9",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-vue": "^9.0.0",
@@ -97,6 +96,8 @@
     "directories": {
       "output": "release"
     },
+    "npmRebuild": false,
+    "buildDependenciesFromSource": false,
     "files": [
       "dist/**/*",
       "electron-dist/**/*",

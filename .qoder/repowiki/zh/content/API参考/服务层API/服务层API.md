@@ -17,6 +17,13 @@
 - [src/views/Contest.vue](file://src/views/Contest.vue)
 </cite>
 
+## 更新摘要
+**变更内容**
+- 更新了所有服务接口的TypeScript类型定义和参数验证
+- 新增了IPC通道的类型安全映射
+- 完善了数据模型接口的类型约束
+- 增强了错误处理和参数校验机制
+
 ## 目录
 1. [简介](#简介)
 2. [项目结构](#项目结构)
@@ -75,17 +82,17 @@ M1 --> S2
 M1 --> S3
 ```
 
-图表来源
+**图表来源**
 - [src/services/contest.ts:1-35](file://src/services/contest.ts#L1-L35)
 - [src/services/rating.ts:1-8](file://src/services/rating.ts#L1-L8)
 - [src/services/solved.ts:1-8](file://src/services/solved.ts#L1-L8)
 - [electron/preload.ts:1-38](file://electron/preload.ts#L1-L38)
 - [electron/main.ts:396-486](file://electron/main.ts#L396-L486)
-- [electron/services/contest.ts:1-270](file://electron/services/contest.ts#L1-L270)
-- [electron/services/rating.ts:1-175](file://electron/services/rating.ts#L1-L175)
-- [electron/services/solvedNum.ts:1-198](file://electron/services/solvedNum.ts#L1-L198)
+- [electron/services/contest.ts:1-292](file://electron/services/contest.ts#L1-L292)
+- [electron/services/rating.ts:1-181](file://electron/services/rating.ts#L1-L181)
+- [electron/services/solvedNum.ts:1-205](file://electron/services/solvedNum.ts#L1-L205)
 
-章节来源
+**章节来源**
 - [src/services/contest.ts:1-35](file://src/services/contest.ts#L1-L35)
 - [src/services/rating.ts:1-8](file://src/services/rating.ts#L1-L8)
 - [src/services/solved.ts:1-8](file://src/services/solved.ts#L1-L8)
@@ -97,13 +104,13 @@ M1 --> S3
 - Rating服务：根据平台标识与用户名查询用户评分与历史最高分。
 - 解题统计服务：根据平台标识与用户名查询已解决问题数。
 
-章节来源
-- [electron/services/contest.ts:12-270](file://electron/services/contest.ts#L12-L270)
-- [electron/services/rating.ts:5-175](file://electron/services/rating.ts#L5-L175)
-- [electron/services/solvedNum.ts:5-198](file://electron/services/solvedNum.ts#L5-L198)
+**章节来源**
+- [electron/services/contest.ts:12-292](file://electron/services/contest.ts#L12-L292)
+- [electron/services/rating.ts:5-181](file://electron/services/rating.ts#L5-L181)
+- [electron/services/solvedNum.ts:5-205](file://electron/services/solvedNum.ts#L5-L205)
 
 ## 架构总览
-服务层采用“渲染进程薄封装 + IPC桥接 + 主进程服务”的分层设计，确保：
+服务层采用"渲染进程薄封装 + IPC桥接 + 主进程服务"的分层设计，确保：
 - 渲染进程仅通过白名单API访问主进程能力
 - 主进程集中处理网络请求、数据解析与安全校验
 - 类型定义在共享模块中统一，保证前后端契约一致
@@ -126,11 +133,11 @@ RS->>RS : 使用 ContestUtils 格式化为 Contest[]
 RS-->>UI : Contest[]
 ```
 
-图表来源
+**图表来源**
 - [src/services/contest.ts:8-25](file://src/services/contest.ts#L8-L25)
 - [electron/preload.ts:6-7](file://electron/preload.ts#L6-L7)
 - [electron/main.ts:397-412](file://electron/main.ts#L397-L412)
-- [electron/services/contest.ts:255-266](file://electron/services/contest.ts#L255-L266)
+- [electron/services/contest.ts:277-288](file://electron/services/contest.ts#L277-L288)
 - [src/utils/contest_utils.ts:4-43](file://src/utils/contest_utils.ts#L4-L43)
 
 ## 详细组件分析
@@ -191,8 +198,8 @@ RS-->>UI : Contest[]
 - installUpdate(url: string): Promise<void>
   - 触发更新安装流程（主进程下载并启动）
 
-章节来源
-- [electron/services/contest.ts:24-266](file://electron/services/contest.ts#L24-L266)
+**章节来源**
+- [electron/services/contest.ts:24-288](file://electron/services/contest.ts#L24-L288)
 - [src/services/contest.ts:8-25](file://src/services/contest.ts#L8-L25)
 - [src/utils/contest_utils.ts:4-43](file://src/utils/contest_utils.ts#L4-L43)
 - [electron/main.ts:397-412](file://electron/main.ts#L397-L412)
@@ -222,8 +229,8 @@ class RecentContestService {
 }
 ```
 
-图表来源
-- [electron/services/contest.ts:12-270](file://electron/services/contest.ts#L12-L270)
+**图表来源**
+- [electron/services/contest.ts:12-292](file://electron/services/contest.ts#L12-L292)
 
 ### Rating服务 API
 - 服务类：RatingService（主进程）
@@ -261,8 +268,8 @@ class RecentContestService {
   - 返回：Rating
   - 异常：透传主进程错误
 
-章节来源
-- [electron/services/rating.ts:12-171](file://electron/services/rating.ts#L12-L171)
+**章节来源**
+- [electron/services/rating.ts:12-177](file://electron/services/rating.ts#L12-L177)
 - [src/services/rating.ts:3-6](file://src/services/rating.ts#L3-L6)
 - [electron/main.ts:414-431](file://electron/main.ts#L414-L431)
 
@@ -280,8 +287,8 @@ class RatingService {
 }
 ```
 
-图表来源
-- [electron/services/rating.ts:5-175](file://electron/services/rating.ts#L5-L175)
+**图表来源**
+- [electron/services/rating.ts:5-181](file://electron/services/rating.ts#L5-L181)
 
 ### 解题统计服务 API
 - 服务类：SolvedNumService（主进程）
@@ -335,8 +342,8 @@ class RatingService {
   - 返回：SolvedNum
   - 异常：透传主进程错误
 
-章节来源
-- [electron/services/solvedNum.ts:14-194](file://electron/services/solvedNum.ts#L14-L194)
+**章节来源**
+- [electron/services/solvedNum.ts:14-201](file://electron/services/solvedNum.ts#L14-L201)
 - [src/services/solved.ts:3-6](file://src/services/solved.ts#L3-L6)
 - [electron/main.ts:433-450](file://electron/main.ts#L433-L450)
 
@@ -358,8 +365,8 @@ class SolvedNumService {
 }
 ```
 
-图表来源
-- [electron/services/solvedNum.ts:5-198](file://electron/services/solvedNum.ts#L5-L198)
+**图表来源**
+- [electron/services/solvedNum.ts:5-205](file://electron/services/solvedNum.ts#L5-L205)
 
 ### 数据模型与类型
 - RawContest：原始竞赛数据（名称、开始时间、持续时间、平台、链接）
@@ -367,7 +374,7 @@ class SolvedNumService {
 - Rating：用户评分数据（当前分、最高分、可选排名与时点）
 - SolvedNum：用户解题统计（已解决问题数）
 
-章节来源
+**章节来源**
 - [shared/types.ts:1-67](file://shared/types.ts#L1-L67)
 
 ## 依赖关系分析
@@ -388,18 +395,18 @@ MM --> SS["electron/services/solvedNum.ts"]
 SC --> CFG["electron/app.config.json"]
 ```
 
-图表来源
+**图表来源**
 - [src/services/contest.ts:1-35](file://src/services/contest.ts#L1-L35)
 - [src/services/rating.ts:1-8](file://src/services/rating.ts#L1-L8)
 - [src/services/solved.ts:1-8](file://src/services/solved.ts#L1-L8)
 - [electron/preload.ts:1-38](file://electron/preload.ts#L1-L38)
 - [electron/main.ts:396-486](file://electron/main.ts#L396-L486)
-- [electron/services/contest.ts:1-270](file://electron/services/contest.ts#L1-L270)
-- [electron/services/rating.ts:1-175](file://electron/services/rating.ts#L1-L175)
-- [electron/services/solvedNum.ts:1-198](file://electron/services/solvedNum.ts#L1-L198)
+- [electron/services/contest.ts:1-292](file://electron/services/contest.ts#L1-L292)
+- [electron/services/rating.ts:1-181](file://electron/services/rating.ts#L1-L181)
+- [electron/services/solvedNum.ts:1-205](file://electron/services/solvedNum.ts#L1-L205)
 - [electron/app.config.json:1-62](file://electron/app.config.json#L1-L62)
 
-章节来源
+**章节来源**
 - [electron/main.ts:396-486](file://electron/main.ts#L396-L486)
 - [electron/preload.ts:1-38](file://electron/preload.ts#L1-L38)
 - [electron/app.config.json:1-62](file://electron/app.config.json#L1-L62)
@@ -423,7 +430,7 @@ SC --> CFG["electron/app.config.json"]
 - 未知平台
   - Rating与SolvedNum多态路由遇到未知平台时抛出错误；调用方需做好兜底
 
-章节来源
+**章节来源**
 - [electron/main.ts:417-422](file://electron/main.ts#L417-L422)
 - [electron/main.ts:436-441](file://electron/main.ts#L436-L441)
 - [electron/main.ts:176-225](file://electron/main.ts#L176-L225)
@@ -444,7 +451,7 @@ SC --> CFG["electron/app.config.json"]
 - OPEN_URL：参数[url:string]，返回void
 - UPDATER_INSTALL：参数{url:string}，返回boolean
 
-章节来源
+**章节来源**
 - [shared/ipc-channels.ts:3-52](file://shared/ipc-channels.ts#L3-L52)
 
 ### 服务调用示例与最佳实践
@@ -458,7 +465,7 @@ SC --> CFG["electron/app.config.json"]
   - 推荐：在渲染层调用SolvedNumService.getSolvedNum(platform, name)
   - 最佳实践：对第三方API响应进行严格校验；对解析失败场景提供默认值
 
-章节来源
+**章节来源**
 - [src/services/contest.ts:8-25](file://src/services/contest.ts#L8-L25)
 - [src/services/rating.ts:3-6](file://src/services/rating.ts#L3-L6)
 - [src/services/solved.ts:3-6](file://src/services/solved.ts#L3-L6)
@@ -482,10 +489,23 @@ Ctl->>Ctl : ContestUtils.createContest(...)
 Ctl-->>View : Contest[]
 ```
 
-图表来源
+**图表来源**
 - [src/views/Contest.vue:1-200](file://src/views/Contest.vue#L1-L200)
 - [src/services/contest.ts:8-25](file://src/services/contest.ts#L8-L25)
 - [electron/preload.ts:6-7](file://electron/preload.ts#L6-L7)
 - [electron/main.ts:397-412](file://electron/main.ts#L397-L412)
-- [electron/services/contest.ts:255-266](file://electron/services/contest.ts#L255-L266)
+- [electron/services/contest.ts:277-288](file://electron/services/contest.ts#L277-L288)
 - [src/utils/contest_utils.ts:4-43](file://src/utils/contest_utils.ts#L4-L43)
+
+### TypeScript类型系统增强
+服务层现在具备完整的TypeScript类型定义，包括：
+
+- **数据模型类型**：RawContest、Contest、Rating、SolvedNum接口定义
+- **平台枚举类型**：ContestPlatform、RatingPlatform、SolvedPlatform联合类型
+- **IPC类型映射**：IpcHandlerMap接口确保IPC参数和返回值的类型安全
+- **参数验证**：主进程对平台标识和用户名进行严格的类型和长度检查
+
+**章节来源**
+- [shared/types.ts:1-67](file://shared/types.ts#L1-L67)
+- [shared/ipc-channels.ts:18-52](file://shared/ipc-channels.ts#L18-L52)
+- [electron/main.ts:414-450](file://electron/main.ts#L414-L450)
