@@ -9,6 +9,18 @@ const api = {
     getSolvedNum: (platform, name) => electron_1.ipcRenderer.invoke(ipc_channels_1.IPC_CHANNELS.GET_SOLVED_NUM, { platform, name }),
     openUrl: (url) => electron_1.ipcRenderer.invoke(ipc_channels_1.IPC_CHANNELS.OPEN_URL, url),
     installUpdate: (url) => electron_1.ipcRenderer.invoke(ipc_channels_1.IPC_CHANNELS.UPDATER_INSTALL, { url }),
+    /** Subscribe to streaming partial contest results */
+    onContestsPartial: (callback) => {
+        const handler = (_event, data) => callback(data);
+        electron_1.ipcRenderer.on(ipc_channels_1.IPC_CHANNELS.CONTESTS_PARTIAL, handler);
+        return () => {
+            electron_1.ipcRenderer.removeListener(ipc_channels_1.IPC_CHANNELS.CONTESTS_PARTIAL, handler);
+        };
+    },
+    /** Set notification preferences */
+    setNotification: (payload) => electron_1.ipcRenderer.invoke(ipc_channels_1.IPC_CHANNELS.NOTIFICATION_SET, payload),
+    /** Get notification preferences */
+    getNotification: () => electron_1.ipcRenderer.invoke(ipc_channels_1.IPC_CHANNELS.NOTIFICATION_GET),
 };
 const storeApi = {
     get: (key) => electron_1.ipcRenderer.invoke(ipc_channels_1.IPC_CHANNELS.STORE_GET, key),

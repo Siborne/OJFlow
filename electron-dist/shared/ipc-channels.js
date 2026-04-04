@@ -11,4 +11,9 @@ exports.IPC_CHANNELS = {
     STORE_GET: 'store-get',
     STORE_SET: 'store-set',
     STORE_GET_ALL: 'store-get-all',
+    // Streaming / push channels
+    CONTESTS_PARTIAL: 'contests-partial',
+    // Notification
+    NOTIFICATION_SET: 'notification-set',
+    NOTIFICATION_GET: 'notification-get',
 };

@@ -67,6 +67,7 @@ import type { Component } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { NLayout, NLayoutSider, NLayoutContent, NLayoutFooter, NMenu, NIcon } from 'naive-ui';
 import { EventNoteOutlined, StarBorderOutlined, ListOutlined, SettingsOutlined } from '@vicons/material';
+import { useKeyboardShortcuts } from '../composables/useKeyboardShortcuts';
 
 const router = useRouter();
 const route = useRoute();
@@ -135,6 +136,9 @@ const handleMenuUpdate = (key: string) => {
     router.push(option.path);
   }
 };
+
+// Keyboard shortcuts: Ctrl+1..4 for tabs handled inside composable
+useKeyboardShortcuts();
 </script>
 
 <style scoped>

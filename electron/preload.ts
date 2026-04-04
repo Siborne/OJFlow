@@ -3,7 +3,7 @@ import { IPC_CHANNELS } from '../shared/ipc-channels';
 
 // Only expose whitelisted APIs, never expose ipcRenderer directly
 const api = {
-  getRecentContests: (day: number): Promise<unknown[]> =>
+  getRecentContests: (day: number): Promise<unknown> =>
     ipcRenderer.invoke(IPC_CHANNELS.GET_CONTESTS, day),
 
   getRating: (platform: string, name: string): Promise<unknown> =>
@@ -17,6 +17,29 @@ const api = {
 
   installUpdate: (url: string): Promise<boolean> =>
     ipcRenderer.invoke(IPC_CHANNELS.UPDATER_INSTALL, { url }),
+
+  /** Subscribe to streaming partial contest results */
+  onContestsPartial: (
+    callback: (data: { platform: string; contests: unknown[] }) => void,
+  ): (() => void) => {
+    const handler = (_event: unknown, data: { platform: string; contests: unknown[] }) =>
+      callback(data);
+    ipcRenderer.on(IPC_CHANNELS.CONTESTS_PARTIAL, handler);
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.CONTESTS_PARTIAL, handler);
+    };
+  },
+
+  /** Set notification preferences */
+  setNotification: (payload: {
+    enabled: boolean;
+    reminderMinutes: number;
+  }): Promise<void> =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTIFICATION_SET, payload),
+
+  /** Get notification preferences */
+  getNotification: (): Promise<{ enabled: boolean; reminderMinutes: number }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.NOTIFICATION_GET),
 };
 
 const storeApi = {

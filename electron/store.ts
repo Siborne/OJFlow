@@ -22,6 +22,10 @@ const defaults: UserConfig = {
   favorites: [],
   usernames: {},
   cache: {},
+  notification: {
+    enabled: false,
+    reminderMinutes: 15,
+  },
 };
 
 export const store = new Store<UserConfig>({
