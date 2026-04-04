@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia';
 import { Contest } from '../types';
 import { ContestService } from '../services/contest';
-import { ContestUtils } from '../utils/contest_utils';
 import appConfig from '../../electron/app.config.json';
 
 interface ContestState {
@@ -10,11 +9,12 @@ interface ContestState {
   day: number;
   showEmptyDay: boolean;
   selectedPlatforms: Record<string, boolean>;
-  favorites: Contest[]; // Store full contest objects
+  favorites: Contest[];
   hideDate: boolean;
+  initialized: boolean;
 }
 
-const PLATFORMS = ['Codeforces', 'AtCoder', '洛谷', '蓝桥云课', '力扣', '牛客'];
+const PLATFORMS = ['Codeforces', 'AtCoder', '\u6d1b\u8c37', '\u84dd\u6865\u4e91\u8bfe', '\u529b\u6263', '\u725b\u5ba2'];
 const MAX_CRAWL_DAYS_KEY = 'max_crawl_days';
 const HIDE_DATE_KEY = 'hide_date';
 const DEFAULT_DAYS = appConfig?.crawl?.defaultDays ?? 7;
@@ -32,22 +32,54 @@ function clampInt(value: unknown, min: number, max: number, fallback: number) {
   return i;
 }
 
+function readLocalStorageDays(): number {
+  try {
+    return clampInt(localStorage.getItem(MAX_CRAWL_DAYS_KEY), MIN_DAYS, MAX_DAYS, DEFAULT_DAYS);
+  } catch {
+    return DEFAULT_DAYS;
+  }
+}
+
+function readLocalStorageFavorites(): Contest[] {
+  try {
+    return JSON.parse(localStorage.getItem('favourite_contests_list') || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function readLocalStorageHideDate(): boolean {
+  try {
+    return localStorage.getItem(HIDE_DATE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function getElectronStore(): StoreApi | undefined {
+  return typeof window !== 'undefined' ? window.store : undefined;
+}
+
 export const useContestStore = defineStore('contest', {
   state: (): ContestState => ({
     contests: [],
     loading: false,
-    day: clampInt(localStorage.getItem(MAX_CRAWL_DAYS_KEY), MIN_DAYS, MAX_DAYS, DEFAULT_DAYS),
-    showEmptyDay: true, // Default to true based on logic
-    selectedPlatforms: PLATFORMS.reduce((acc, p) => ({ ...acc, [p]: true }), {} as Record<string, boolean>),
-    favorites: JSON.parse(localStorage.getItem('favourite_contests_list') || '[]'),
-    hideDate: localStorage.getItem(HIDE_DATE_KEY) === '1',
+    day: readLocalStorageDays(),
+    showEmptyDay: true,
+    selectedPlatforms: PLATFORMS.reduce(
+      (acc, p) => ({ ...acc, [p]: true }),
+      {} as Record<string, boolean>,
+    ),
+    favorites: readLocalStorageFavorites(),
+    hideDate: readLocalStorageHideDate(),
+    initialized: false,
   }),
   getters: {
     timeContests(state): Contest[][] {
-      // Group by day (0 to day-1)
       const grouped: Contest[][] = Array.from({ length: state.day }, () => []);
       const now = new Date();
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000;
+      const todayStart =
+        new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000;
 
       state.contests.forEach(contest => {
         const contestStart = contest.startTimeSeconds;
@@ -58,8 +90,7 @@ export const useContestStore = defineStore('contest', {
           grouped[dayIndex].push(contest);
         }
       });
-      
-      // Sort each day by time
+
       grouped.forEach(dayList => {
         dayList.sort((a, b) => a.startTimeSeconds - b.startTimeSeconds);
       });
@@ -68,6 +99,45 @@ export const useContestStore = defineStore('contest', {
     },
   },
   actions: {
+    async init() {
+      if (this.initialized) return;
+
+      const eStore = getElectronStore();
+      try {
+        if (eStore) {
+          const [contestConfig, favorites] = await Promise.all([
+            eStore.get('contest') as Promise<
+              | { maxCrawlDays?: number; hideDate?: boolean; selectedPlatforms?: Record<string, boolean> }
+              | undefined
+            >,
+            eStore.get('favorites') as Promise<Contest[] | undefined>,
+          ]);
+
+          if (contestConfig) {
+            if (typeof contestConfig.maxCrawlDays === 'number') {
+              this.day = clampInt(contestConfig.maxCrawlDays, MIN_DAYS, MAX_DAYS, this.day);
+            }
+            if (typeof contestConfig.hideDate === 'boolean') {
+              this.hideDate = contestConfig.hideDate;
+            }
+            if (contestConfig.selectedPlatforms) {
+              this.selectedPlatforms = {
+                ...this.selectedPlatforms,
+                ...contestConfig.selectedPlatforms,
+              };
+            }
+          }
+
+          if (Array.isArray(favorites) && favorites.length > 0) {
+            this.favorites = favorites;
+          }
+        }
+      } catch {
+        // Keep localStorage-loaded defaults on error
+      }
+
+      this.initialized = true;
+    },
     persistFavorites(nextFavorites: Contest[], prevFavorites: Contest[]) {
       try {
         localStorage.setItem('favourite_contests_list', JSON.stringify(nextFavorites));
@@ -75,8 +145,14 @@ export const useContestStore = defineStore('contest', {
         try {
           localStorage.setItem('favourite_contests_list', JSON.stringify(prevFavorites));
         } catch {
+          // Ignore
         }
         throw error;
+      }
+      // Also persist to electron-store (async, fire-and-forget)
+      const eStore = getElectronStore();
+      if (eStore) {
+        eStore.set('favorites', nextFavorites).catch(() => {});
       }
     },
     persistMaxCrawlDays(nextDay: number, prevDay: number) {
@@ -86,8 +162,13 @@ export const useContestStore = defineStore('contest', {
         try {
           localStorage.setItem(MAX_CRAWL_DAYS_KEY, String(prevDay));
         } catch {
+          // Ignore
         }
         throw error;
+      }
+      const eStoreD = getElectronStore();
+      if (eStoreD) {
+        eStoreD.set('contest.maxCrawlDays', nextDay).catch(() => {});
       }
     },
     persistHideDate(nextHide: boolean, prevHide: boolean) {
@@ -97,8 +178,13 @@ export const useContestStore = defineStore('contest', {
         try {
           localStorage.setItem(HIDE_DATE_KEY, prevHide ? '1' : '0');
         } catch {
+          // Ignore
         }
         throw error;
+      }
+      const eStoreH = getElectronStore();
+      if (eStoreH) {
+        eStoreH.set('contest.hideDate', nextHide).catch(() => {});
       }
     },
     async fetchContests() {
@@ -133,12 +219,17 @@ export const useContestStore = defineStore('contest', {
         try {
           this.persistMaxCrawlDays(prevDay, day);
         } catch {
+          // Ignore
         }
         throw error;
       }
     },
     togglePlatform(platform: string, value: boolean) {
       this.selectedPlatforms[platform] = value;
+      const eStoreP = getElectronStore();
+      if (eStoreP) {
+        eStoreP.set('contest.selectedPlatforms', this.selectedPlatforms).catch(() => {});
+      }
     },
     toggleShowEmptyDay(value: boolean) {
       this.showEmptyDay = value;
@@ -210,6 +301,6 @@ export const useContestStore = defineStore('contest', {
     },
     isFavorite(contestName: string): boolean {
       return this.favorites.some(c => c.name === contestName);
-    }
+    },
   },
 });

@@ -15,7 +15,7 @@ async function getAppWindow(electronApp: any) {
 
 test('App should launch', async () => {
   const electronApp = await electron.launch({
-    args: ['electron/main.js'],
+    args: ['electron-dist/electron/main.js'],
   });
 
   const window = await getAppWindow(electronApp);
@@ -31,7 +31,7 @@ test('App should launch', async () => {
 test('设置页 hover/focus 时右侧 icon 应显示', async () => {
   test.setTimeout(60_000);
   const electronApp = await electron.launch({
-    args: ['electron/main.js'],
+    args: ['electron-dist/electron/main.js'],
   });
 
   const window = await getAppWindow(electronApp);
@@ -60,7 +60,7 @@ test('设置页 hover/focus 时右侧 icon 应显示', async () => {
 test('收藏编辑模式应支持全选、底部栏与快捷键（200 条）', async () => {
   test.setTimeout(60_000);
   const electronApp = await electron.launch({
-    args: ['electron/main.js'],
+    args: ['electron-dist/electron/main.js'],
   });
 
   const window = await getAppWindow(electronApp);
@@ -82,7 +82,7 @@ test('收藏编辑模式应支持全选、底部栏与快捷键（200 条）', a
       durationSeconds: 3600,
       formattedStartTime: '2026-01-01 00:00',
       formattedEndTime: '2026-01-01 01:00',
-      fomattedDuration: '1 小时 0 分钟',
+      formattedDuration: '1 小时 0 分钟',
     });
 
     const list = Array.from({ length: 200 }, (_, i) => createContest(`Fav${i}`, i));
@@ -127,7 +127,7 @@ test('收藏编辑模式应支持全选、底部栏与快捷键（200 条）', a
 test('收藏页面应支持跨页多选并批量删除', async () => {
   test.setTimeout(60_000);
   const electronApp = await electron.launch({
-    args: ['electron/main.js'],
+    args: ['electron-dist/electron/main.js'],
   });
 
   const window = await getAppWindow(electronApp);
@@ -149,7 +149,7 @@ test('收藏页面应支持跨页多选并批量删除', async () => {
       durationSeconds: 3600,
       formattedStartTime: '2026-01-01 00:00',
       formattedEndTime: '2026-01-01 01:00',
-      fomattedDuration: '1 小时 0 分钟',
+      formattedDuration: '1 小时 0 分钟',
     });
 
     const list = Array.from({ length: 25 }, (_, i) => createContest(`Fav${i}`, i));

@@ -1,0 +1,6 @@
+dist
+release
+node_modules
+electron-dist
+*.min.js
+bun.lock

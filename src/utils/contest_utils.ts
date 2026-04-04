@@ -38,7 +38,7 @@ export class ContestUtils {
       durationSeconds,
       formattedStartTime: startTimeStr,
       formattedEndTime: endTimeStr,
-      fomattedDuration: durationTimeStr,
+      formattedDuration: durationTimeStr,
     };
   }
 
