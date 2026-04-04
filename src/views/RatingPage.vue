@@ -1,7 +1,14 @@
 <template>
   <div class="rating-page">
     <div class="app-bar">
-      <h2>分数查询</h2>
+      <div class="app-bar-left">
+        <n-button quaternary circle class="back-btn" @click="$router.back()">
+          <template #icon>
+            <n-icon :size="24"><arrow-back-outlined /></n-icon>
+          </template>
+        </n-button>
+        <h2>分数查询</h2>
+      </div>
       <div class="actions">
         <n-button quaternary circle @click="refreshAll">
           <template #icon>
@@ -83,7 +90,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { NButton, NIcon, NGrid, NGridItem, NCard, NInput, NProgress } from 'naive-ui';
-import { SearchOutlined, RefreshOutlined } from '@vicons/material';
+import { SearchOutlined, RefreshOutlined, ArrowBackOutlined } from '@vicons/material';
 import { RatingService } from '../services/rating';
 import { getRatingColor, getRatingTierName } from '../utils/rating-colors';
 import HintTooltipIcon from '../components/HintTooltipIcon.vue';
@@ -171,15 +178,43 @@ const refreshAll = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 var(--space-4);
   height: 64px;
-  background-color: var(--color-surface);
+  background: var(--color-surface-muted);
   border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+}
+
+.app-bar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.back-btn {
+  color: var(--color-text-muted) !important;
+}
+
+.back-btn:hover {
+  color: var(--color-primary) !important;
+  background-color: var(--nav-hover-bg) !important;
 }
 
 .app-bar h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
+  font-weight: 650;
+}
+
+@media (max-width: 768px) {
+  .app-bar {
+    padding: 0 12px;
+    height: 56px;
+  }
+
+  .app-bar h2 {
+    font-size: 17px;
+  }
 }
 
 .content {

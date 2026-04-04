@@ -13,15 +13,11 @@
   border-width: 0;
 }
 
-/* Enhanced focus-visible ring */
-:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-/* Remove outline for mouse users */
+/* Focus-visible is handled by theme.css (*:focus-visible box-shadow).
+   Only reset outline for mouse users. */
 :focus:not(:focus-visible) {
   outline: none;
+  box-shadow: none;
 }
 
 /* High contrast mode support */

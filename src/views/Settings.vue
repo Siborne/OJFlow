@@ -521,8 +521,22 @@ const checkForUpdate = async () => {
     min-height: 0;
   }
 
+  /* 移动端优化摘要卡片 */
+  .settings-summary {
+    padding: var(--space-3);
+  }
+
+  .summary-value {
+    font-size: 24px;
+  }
+
+  .summary-minor {
+    font-size: 18px;
+  }
+
   .app-bar {
     padding: 0 12px;
+    height: 56px;
   }
 
   .app-bar h2 {
@@ -531,6 +545,12 @@ const checkForUpdate = async () => {
 
   .content {
     padding: 12px;
+  }
+
+  /* 设置项在移动端增加触摸区域 */
+  .settings-page :deep(.n-list-item) {
+    padding-top: 16px;
+    padding-bottom: 16px;
   }
 }
 

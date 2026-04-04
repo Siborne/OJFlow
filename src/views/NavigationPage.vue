@@ -163,7 +163,32 @@ useKeyboardShortcuts();
   --n-item-color-active: var(--nav-active-bg);
   --n-item-color-active-hover: var(--nav-active-bg);
   --n-item-color-hover: var(--nav-hover-bg);
+  --n-item-color-active-collapsed: var(--nav-active-bg);
   --n-item-font-size: 13px;
+}
+
+/* 覆盖 naive-ui 默认的成功绿色 */
+.side-menu :deep(.n-menu-item-content--selected),
+.side-menu :deep(.n-menu-item-content--selected .n-menu-item-content-header),
+.side-menu :deep(.n-menu-item-content--selected .n-menu-item-content__icon) {
+  color: var(--color-primary) !important;
+}
+
+.side-menu :deep(.n-menu-item.n-menu-item--selected) {
+  position: relative;
+}
+
+/* 统一选中指示器样式 - 左侧指示条 */
+.side-menu :deep(.n-menu-item--selected)::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  background: var(--color-primary);
+  border-radius: 0 2px 2px 0;
 }
 
 .side-menu :deep(.n-menu-item-content),
@@ -225,6 +250,46 @@ useKeyboardShortcuts();
   color: var(--nav-active-color);
   background-color: var(--nav-active-bg);
   box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.16);
+  position: relative;
+}
+
+/* 移动端选中指示器 - 顶部指示条，与桌面端呼应 */
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  background: var(--color-primary);
+  border-radius: 0 0 2px 2px;
+}
+
+/* 选中动画效果 */
+.nav-item.active {
+  animation: navItemActivate var(--motion-base) var(--motion-ease);
+}
+
+@keyframes navItemActivate {
+  0% {
+    transform: scale(0.95);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 图标微动画 */
+.nav-item:active .n-icon {
+  transform: scale(0.9);
+}
+
+.nav-item .n-icon {
+  transition: transform var(--motion-fast) var(--motion-ease);
 }
 
 .nav-item:hover {

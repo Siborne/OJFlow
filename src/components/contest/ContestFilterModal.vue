@@ -53,4 +53,46 @@ const visible = computed({
   justify-content: space-between;
   align-items: center;
 }
+
+/* Override naive-ui checkbox and switch to use theme primary color */
+:deep(.n-checkbox .n-checkbox-box--checked),
+:deep(.n-checkbox .n-checkbox-box--indeterminate) {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+:deep(.n-checkbox .n-checkbox-box--checked .n-checkbox-icon),
+:deep(.n-checkbox .n-checkbox-box--indeterminate .n-checkbox-icon) {
+  color: #fff !important;
+}
+
+:deep(.n-checkbox:hover .n-checkbox-box--checked),
+:deep(.n-checkbox:hover .n-checkbox-box--indeterminate) {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  opacity: 0.85;
+}
+
+:deep(.n-checkbox:focus .n-checkbox-box--checked),
+:deep(.n-checkbox:focus .n-checkbox-box--indeterminate) {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+:deep(.n-checkbox .n-checkbox-box) {
+  --n-color-checked: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+:deep(.n-switch) {
+  --n-rail-color-active: var(--color-primary) !important;
+}
+
+:deep(.n-switch.n-switch--active .n-switch__rail) {
+  background-color: var(--color-primary) !important;
+}
+
+:deep(.n-switch .n-switch__button) {
+  background-color: #fff !important;
+}
 </style>
