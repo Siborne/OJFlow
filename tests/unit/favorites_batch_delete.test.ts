@@ -35,7 +35,7 @@ function createContest(name: string, startTimeSeconds: number): Contest {
     durationSeconds: 3600,
     formattedStartTime: '2026-01-01 00:00',
     formattedEndTime: '2026-01-01 01:00',
-    fomattedDuration: '1 小时 0 分钟',
+    formattedDuration: '1 小时 0 分钟',
   };
 }
 

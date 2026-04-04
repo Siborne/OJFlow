@@ -1,0 +1,61 @@
+{
+  "crawl": {
+    "defaultDays": 7,
+    "minDays": 1,
+    "maxDays": 30
+  },
+  "tooltip": {
+    "showDelayMs": 300,
+    "hideDelayMs": 150,
+    "longPressMs": 300
+  },
+  "theme": {
+    "defaultScheme": "ocean",
+    "defaultMode": "auto"
+  },
+  "designTokens": {
+    "ocean": {
+      "bg": "#f6f8fb",
+      "surface": "#ffffff",
+      "surfaceMuted": "#f1f5f9",
+      "border": "rgba(15, 23, 42, 0.12)",
+      "text": "#0b1220",
+      "textSoft": "rgba(11, 18, 32, 0.86)",
+      "textMuted": "rgba(11, 18, 32, 0.65)",
+      "primary": "#2563eb",
+      "primaryWeak": "rgba(37, 99, 235, 0.14)",
+      "success": "#16a34a",
+      "warning": "#f59e0b",
+      "error": "#ef4444",
+      "gradientStart": "#00c9ff",
+      "gradientEnd": "#92fe9d",
+      "shadow1": "0 10px 24px rgba(0, 0, 0, 0.12)",
+      "shadow2": "0 14px 30px rgba(0, 0, 0, 0.16)",
+      "shadow3": "0 8px 18px rgba(0, 0, 0, 0.14)",
+      "divider": "rgba(0, 0, 0, 0.12)"
+    },
+    "violet": {
+      "bg": "#f6f8fb",
+      "surface": "#ffffff",
+      "surfaceMuted": "#f1f5f9",
+      "border": "rgba(15, 23, 42, 0.12)",
+      "text": "#0b1220",
+      "textSoft": "rgba(11, 18, 32, 0.86)",
+      "textMuted": "rgba(11, 18, 32, 0.65)",
+      "primary": "#7c3aed",
+      "primaryWeak": "rgba(124, 58, 237, 0.14)",
+      "success": "#16a34a",
+      "warning": "#f59e0b",
+      "error": "#ef4444",
+      "gradientStart": "#7c3aed",
+      "gradientEnd": "#22d3ee",
+      "shadow1": "0 10px 24px rgba(0, 0, 0, 0.12)",
+      "shadow2": "0 14px 30px rgba(0, 0, 0, 0.16)",
+      "shadow3": "0 8px 18px rgba(0, 0, 0, 0.14)",
+      "divider": "rgba(0, 0, 0, 0.12)"
+    }
+  },
+  "i18n": {
+    "defaultLocale": "zh-CN"
+  }
+}

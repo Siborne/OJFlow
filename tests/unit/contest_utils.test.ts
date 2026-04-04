@@ -19,7 +19,7 @@ describe('ContestUtils', () => {
     expect(contest.platform).toBe('Codeforces');
     // Note: formatting depends on local timezone. Assuming machine is in consistent timezone or mocking Date.
     // For simplicity, we check if duration string is correct which is independent of timezone mostly.
-    expect(contest.fomattedDuration).toBe('2 小时 0 分钟');
+    expect(contest.formattedDuration).toBe('2 小时 0 分钟');
   });
 
   it('getDayName should return correct relative day', () => {

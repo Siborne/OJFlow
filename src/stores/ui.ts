@@ -4,9 +4,6 @@ import appConfig from '../../electron/app.config.json';
 type ThemeScheme = 'ocean' | 'violet';
 type ColorMode = 'auto' | 'light' | 'dark';
 
-const THEME_SCHEME_KEY = 'theme_scheme';
-const COLOR_MODE_KEY = 'color_mode';
-
 function isThemeScheme(value: unknown): value is ThemeScheme {
   return value === 'ocean' || value === 'violet';
 }
@@ -15,20 +12,44 @@ function isColorMode(value: unknown): value is ColorMode {
   return value === 'auto' || value === 'light' || value === 'dark';
 }
 
+function getElectronStore(): StoreApi | undefined {
+  return typeof window !== 'undefined' ? window.store : undefined;
+}
+
 export const useUiStore = defineStore('ui', {
-  state: () => {
-    const rawScheme = localStorage.getItem(THEME_SCHEME_KEY);
-    const rawMode = localStorage.getItem(COLOR_MODE_KEY);
-
-    const defaultScheme = (appConfig?.theme?.defaultScheme ?? 'ocean') as ThemeScheme;
-    const defaultMode = (appConfig?.theme?.defaultMode ?? 'auto') as ColorMode;
-
-    return {
-      themeScheme: isThemeScheme(rawScheme) ? rawScheme : defaultScheme,
-      colorMode: isColorMode(rawMode) ? rawMode : defaultMode,
-    };
-  },
+  state: () => ({
+    themeScheme: (appConfig?.theme?.defaultScheme ?? 'ocean') as ThemeScheme,
+    colorMode: (appConfig?.theme?.defaultMode ?? 'auto') as ColorMode,
+    initialized: false,
+  }),
   actions: {
+    async init() {
+      if (this.initialized) return;
+
+      try {
+        const eStore = getElectronStore();
+        if (eStore) {
+          const ui = (await eStore.get('ui')) as
+            | { themeScheme?: string; colorMode?: string }
+            | undefined;
+          if (ui) {
+            if (isThemeScheme(ui.themeScheme)) this.themeScheme = ui.themeScheme;
+            if (isColorMode(ui.colorMode)) this.colorMode = ui.colorMode;
+          }
+        } else {
+          // Fallback to localStorage for non-Electron environments
+          const rawScheme = localStorage.getItem('theme_scheme');
+          const rawMode = localStorage.getItem('color_mode');
+          if (isThemeScheme(rawScheme)) this.themeScheme = rawScheme;
+          if (isColorMode(rawMode)) this.colorMode = rawMode;
+        }
+      } catch {
+        // Keep defaults on error
+      }
+
+      this.initialized = true;
+      this.applyToDom();
+    },
     applyToDom() {
       const el = typeof document !== 'undefined' ? document.documentElement : undefined;
       if (!el) return;
@@ -36,15 +57,39 @@ export const useUiStore = defineStore('ui', {
       el.dataset.theme = this.colorMode;
       delete el.dataset.mode;
     },
-    setThemeScheme(scheme: ThemeScheme) {
+    async setThemeScheme(scheme: ThemeScheme) {
       this.themeScheme = scheme;
-      localStorage.setItem(THEME_SCHEME_KEY, scheme);
       this.applyToDom();
+      try {
+        const eStore = getElectronStore();
+        if (eStore) {
+          await eStore.set('ui.themeScheme', scheme);
+        }
+      } catch {
+        // Ignore persistence errors
+      }
+      try {
+        localStorage.setItem('theme_scheme', scheme);
+      } catch {
+        // Ignore
+      }
     },
-    setColorMode(mode: ColorMode) {
+    async setColorMode(mode: ColorMode) {
       this.colorMode = mode;
-      localStorage.setItem(COLOR_MODE_KEY, mode);
       this.applyToDom();
+      try {
+        const eStore = getElectronStore();
+        if (eStore) {
+          await eStore.set('ui.colorMode', mode);
+        }
+      } catch {
+        // Ignore persistence errors
+      }
+      try {
+        localStorage.setItem('color_mode', mode);
+      } catch {
+        // Ignore
+      }
     },
   },
 });
