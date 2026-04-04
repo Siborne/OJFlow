@@ -13,6 +13,11 @@
         >
           全选
         </n-checkbox>
+        <action-tooltip-button quaternary circle i18n-key="tooltip.add" @click="showAddModal = true">
+          <template #icon>
+            <n-icon :size="24"><add-outlined /></n-icon>
+          </template>
+        </action-tooltip-button>
         <action-tooltip-button quaternary circle i18n-key="tooltip.sort" @click="toggleSort">
           <template #icon>
             <n-icon :size="24"><sort-outlined /></n-icon>
@@ -36,7 +41,7 @@
         </action-tooltip-button>
       </div>
     </div>
-    
+
     <div class="search-bar" v-if="showSearch">
       <n-input v-model:value="searchQuery" placeholder="搜索比赛..." clearable />
     </div>
@@ -45,102 +50,159 @@
       <div v-if="filteredFavorites.length === 0" class="no-data">
         <n-empty description="暂无收藏" />
       </div>
-      
+
       <div v-else>
         <div class="favorites-summary-grid">
-          <n-card class="favorite-summary favorite-summary--hero" :bordered="true">
+          <n-card class="favorite-summary" :bordered="true">
             <template #header>收藏总览</template>
             <div class="summary-value">{{ filteredFavorites.length }}</div>
             <div class="summary-label">当前检索结果</div>
             <div class="summary-meta">总收藏 {{ store.favorites.length }} 场</div>
           </n-card>
-
-          <n-card class="favorite-summary favorite-summary--small" :bordered="true">
+          <n-card class="favorite-summary" :bordered="true">
             <template #header>即将开始</template>
-            <div class="summary-minor">{{ upcomingCount }}</div>
+            <div class="summary-value summary-value--info">{{ upcomingCount }}</div>
           </n-card>
-
-          <n-card class="favorite-summary favorite-summary--small" :bordered="true">
+          <n-card class="favorite-summary" :bordered="true">
             <template #header>进行中</template>
-            <div class="summary-minor">{{ runningCount }}</div>
+            <div class="summary-value summary-value--success">{{ runningCount }}</div>
+          </n-card>
+          <n-card class="favorite-summary" :bordered="true">
+            <template #header>已结束</template>
+            <div class="summary-value summary-value--ended">{{ endedCount }}</div>
           </n-card>
         </div>
 
-        <div class="favorites-bento-grid">
-          <div
-            v-for="(contest, index) in pagedFavorites"
-            :key="contest.name"
-            class="favorite-grid-cell"
-            :class="{ 'favorite-grid-cell--hero': index === 0 }"
-          >
+        <!-- Active contests (upcoming + running) -->
+        <div v-if="activeFavorites.length > 0" class="section-label">进行中 & 即将开始</div>
+        <div class="favorites-bento-grid" v-if="activeFavorites.length > 0">
+          <div v-for="contest in pagedActiveFavorites" :key="contest.name" class="favorite-grid-cell">
             <n-card class="contest-card" :content-style="{ padding: '10px 16px' }">
               <div :class="['contest-item', `contest-item--${getContestState(contest)}`]">
-                <n-checkbox 
-                  v-if="isBatchMode" 
-                  v-model:checked="selected[contest.name]" 
-                  :data-testid="`favorite-checkbox-${contest.name}`"
-                  style="margin-right: 10px"
-                />
+                <n-checkbox v-if="isBatchMode" v-model:checked="selected[contest.name]" :data-testid="`favorite-checkbox-${contest.name}`" style="margin-right: 10px" />
                 <div class="platform-icon">
-                    <img :src="getPlatformImage(contest.platform)" :alt="contest.platform" />
+                  <img :src="getPlatformImage(contest.platform)" :alt="contest.platform" />
                 </div>
-                <div
-                  class="contest-info"
-                  role="button"
-                  tabindex="0"
-                  @click="openLink(contest)"
-                  @keydown.enter.prevent="openLink(contest)"
-                  @keydown.space.prevent="openLink(contest)"
-                >
+                <div class="contest-info" role="button" tabindex="0" @click="openLink(contest)" @keydown.enter.prevent="openLink(contest)" @keydown.space.prevent="openLink(contest)">
                   <div class="contest-name">{{ contest.name }}</div>
-                  <div class="contest-time" v-if="!store.hideDate">
-                    {{ contest.formattedStartTime }} ({{ contest.duration }})
-                  </div>
+                  <div class="contest-time" v-if="!store.hideDate">{{ contest.formattedStartTime }} ({{ contest.duration }})</div>
                   <div class="contest-meta-line">
                     <n-tag size="small" :type="getContestStateType(contest)">{{ getContestStateLabel(contest) }}</n-tag>
+                    <n-tag v-if="contest.isManual" size="small" class="manual-tag">手动</n-tag>
                   </div>
                 </div>
                 <div class="contest-action" v-if="!isBatchMode">
                   <n-button quaternary circle @click="store.toggleFavorite(contest)">
-                    <template #icon>
-                      <n-icon :size="24" color="var(--color-warning)">
-                        <star-filled />
-                      </n-icon>
-                    </template>
+                    <template #icon><n-icon :size="24" color="var(--color-warning)"><star-filled /></n-icon></template>
                   </n-button>
                 </div>
               </div>
             </n-card>
           </div>
         </div>
-      </div>
 
-      <div class="pagination" v-if="filteredFavorites.length > pageSize">
-        <n-pagination
-          v-model:page="page"
-          v-model:page-size="pageSize"
-          :item-count="filteredFavorites.length"
-          :page-sizes="[10, 20, 50, 100]"
-          show-size-picker
-          data-testid="favorite-pagination"
-        />
+        <div class="pagination" v-if="activeFavorites.length > pageSize">
+          <n-pagination v-model:page="page" v-model:page-size="pageSize" :item-count="activeFavorites.length" :page-sizes="[10, 20, 50, 100]" show-size-picker data-testid="favorite-pagination" />
+        </div>
+
+        <!-- Ended contests: auto-expand when no active favorites, otherwise collapsible -->
+        <div v-if="endedFavorites.length > 0" class="ended-section">
+          <!-- When there are active favorites, keep ended section collapsible -->
+          <template v-if="activeFavorites.length > 0">
+            <n-collapse>
+              <n-collapse-item :title="`已结束比赛 (${endedFavorites.length})`" name="ended">
+                <div class="favorites-bento-grid">
+                  <div v-for="contest in endedFavorites" :key="contest.name" class="favorite-grid-cell">
+                    <n-card class="contest-card contest-card--ended" :content-style="{ padding: '10px 16px' }">
+                      <div class="contest-item contest-item--ended">
+                        <n-checkbox v-if="isBatchMode" v-model:checked="selected[contest.name]" :data-testid="`favorite-checkbox-${contest.name}`" style="margin-right: 10px" />
+                        <div class="platform-icon">
+                          <img :src="getPlatformImage(contest.platform)" :alt="contest.platform" />
+                        </div>
+                        <div class="contest-info" role="button" tabindex="0" @click="openLink(contest)" @keydown.enter.prevent="openLink(contest)" @keydown.space.prevent="openLink(contest)">
+                          <div class="contest-name">{{ contest.name }}</div>
+                          <div class="contest-time" v-if="!store.hideDate">{{ contest.formattedStartTime }} ({{ contest.duration }})</div>
+                          <div class="contest-meta-line">
+                            <n-tag size="small" type="default">已结束</n-tag>
+                            <n-tag v-if="contest.isManual" size="small" class="manual-tag">手动</n-tag>
+                          </div>
+                        </div>
+                        <div class="contest-action" v-if="!isBatchMode">
+                          <n-button quaternary circle @click="store.toggleFavorite(contest)">
+                            <template #icon><n-icon :size="24" color="var(--color-warning)"><star-filled /></n-icon></template>
+                          </n-button>
+                        </div>
+                      </div>
+                    </n-card>
+                  </div>
+                </div>
+              </n-collapse-item>
+            </n-collapse>
+          </template>
+          <!-- When no active favorites, show ended contests directly -->
+          <template v-else>
+            <div class="section-label">已结束比赛 ({{ endedFavorites.length }})</div>
+            <div class="favorites-bento-grid">
+              <div v-for="contest in endedFavorites" :key="contest.name" class="favorite-grid-cell">
+                <n-card class="contest-card contest-card--ended" :content-style="{ padding: '10px 16px' }">
+                  <div class="contest-item contest-item--ended">
+                    <n-checkbox v-if="isBatchMode" v-model:checked="selected[contest.name]" :data-testid="`favorite-checkbox-${contest.name}`" style="margin-right: 10px" />
+                    <div class="platform-icon">
+                      <img :src="getPlatformImage(contest.platform)" :alt="contest.platform" />
+                    </div>
+                    <div class="contest-info" role="button" tabindex="0" @click="openLink(contest)" @keydown.enter.prevent="openLink(contest)" @keydown.space.prevent="openLink(contest)">
+                      <div class="contest-name">{{ contest.name }}</div>
+                      <div class="contest-time" v-if="!store.hideDate">{{ contest.formattedStartTime }} ({{ contest.duration }})</div>
+                      <div class="contest-meta-line">
+                        <n-tag size="small" type="default">已结束</n-tag>
+                        <n-tag v-if="contest.isManual" size="small" class="manual-tag">手动</n-tag>
+                      </div>
+                    </div>
+                    <div class="contest-action" v-if="!isBatchMode">
+                      <n-button quaternary circle @click="store.toggleFavorite(contest)">
+                        <template #icon><n-icon :size="24" color="var(--color-warning)"><star-filled /></n-icon></template>
+                      </n-button>
+                    </div>
+                  </div>
+                </n-card>
+              </div>
+            </div>
+          </template>
+        </div>
       </div>
 
       <div class="batch-bar" v-if="isBatchMode">
-        <div class="batch-bar-left" data-testid="favorite-selected-count">
-          已选 {{ selectedNames.length }} 项
-        </div>
-        <n-button
-          type="error"
-          @click="deleteSelected"
-          :disabled="!hasSelection"
-          data-testid="favorite-delete-selected"
-          aria-label="删除选中"
-        >
-          删除选中
-        </n-button>
+        <div class="batch-bar-left" data-testid="favorite-selected-count">已选 {{ selectedNames.length }} 项</div>
+        <n-button type="error" @click="deleteSelected" :disabled="!hasSelection" data-testid="favorite-delete-selected" aria-label="删除选中">删除选中</n-button>
       </div>
     </div>
+
+    <!-- Add contest modal -->
+    <n-modal v-model:show="showAddModal" preset="card" title="手动添加比赛" :style="{ width: '480px', maxWidth: '95vw' }" :mask-closable="false" :segmented="{ content: true, footer: true }">
+      <n-form ref="formRef" :model="addForm" :rules="formRules" label-placement="left" label-width="80" require-mark-placement="right-hanging">
+        <n-form-item label="比赛名称" path="name">
+          <n-input v-model:value="addForm.name" placeholder="请输入比赛名称" />
+        </n-form-item>
+        <n-form-item label="开始时间" path="startTime">
+          <n-date-picker v-model:value="addForm.startTime" type="datetime" format="yyyy-MM-dd HH:mm" placeholder="选择开始时间" style="width: 100%" />
+        </n-form-item>
+        <n-form-item label="结束时间" path="endTime">
+          <n-date-picker v-model:value="addForm.endTime" type="datetime" format="yyyy-MM-dd HH:mm" placeholder="选择结束时间" style="width: 100%" />
+        </n-form-item>
+        <n-form-item label="平台" path="platform">
+          <n-select v-model:value="addForm.platform" :options="platformOptions" placeholder="选择平台" filterable tag />
+        </n-form-item>
+        <n-form-item label="比赛链接" path="link">
+          <n-input v-model:value="addForm.link" placeholder="https://（选填）" />
+        </n-form-item>
+      </n-form>
+      <template #footer>
+        <div class="modal-footer">
+          <n-button @click="showAddModal = false">取消</n-button>
+          <n-button type="primary" @click="handleAddContest" :loading="addLoading">添加</n-button>
+        </div>
+      </template>
+    </n-modal>
   </div>
 </template>
 
@@ -148,9 +210,11 @@
 import { ref, computed, reactive, watch, onMounted, onUnmounted } from 'vue';
 import { useContestStore } from '../stores/contest';
 import { ContestService } from '../services/contest';
+import { ContestUtils } from '../utils/contest_utils';
 import { Contest } from '../types';
-import { NButton, NIcon, NCard, NEmpty, NInput, NCheckbox, NPagination, useDialog, useMessage } from 'naive-ui';
-import { StarFilled, SearchOutlined, SortOutlined, EditOutlined } from '@vicons/material';
+import { NButton, NIcon, NCard, NEmpty, NInput, NCheckbox, NPagination, NTag, NModal, NForm, NFormItem, NDatePicker, NSelect, NCollapse, NCollapseItem, useDialog, useMessage } from 'naive-ui';
+import type { FormInst, FormRules } from 'naive-ui';
+import { StarFilled, SearchOutlined, SortOutlined, EditOutlined, AddOutlined } from '@vicons/material';
 import ActionTooltipButton from '../components/ActionTooltipButton.vue';
 
 const store = useContestStore();
@@ -164,6 +228,72 @@ const selected = reactive<Record<string, boolean>>({});
 const page = ref(1);
 const pageSize = ref(20);
 const contentRef = ref<HTMLElement | null>(null);
+
+// Add contest modal state
+const showAddModal = ref(false);
+const addLoading = ref(false);
+const formRef = ref<FormInst | null>(null);
+const addForm = reactive({
+  name: '',
+  startTime: null as number | null,
+  endTime: null as number | null,
+  platform: null as string | null,
+  link: '',
+});
+
+const platformOptions = [
+  { label: 'Codeforces', value: 'Codeforces' },
+  { label: 'AtCoder', value: 'AtCoder' },
+  { label: '洛谷', value: '洛谷' },
+  { label: '蓝桥云课', value: '蓝桥云课' },
+  { label: '力扣', value: '力扣' },
+  { label: '牛客', value: '牛客' },
+  { label: '其他', value: 'Other' },
+];
+
+const formRules: FormRules = {
+  name: [
+    { required: true, message: '请输入比赛名称', trigger: 'blur' },
+    {
+      validator: (_rule: any, value: string) => {
+        if (store.favorites.some(c => c.name === value)) {
+          return new Error('已存在同名收藏比赛');
+        }
+        return true;
+      },
+      trigger: 'blur',
+    },
+  ],
+  startTime: [
+    { type: 'number', required: true, message: '请选择开始时间', trigger: 'change' },
+  ],
+  endTime: [
+    { type: 'number', required: true, message: '请选择结束时间', trigger: 'change' },
+    {
+      validator: (_rule: any, value: number) => {
+        if (addForm.startTime && value && value <= addForm.startTime) {
+          return new Error('结束时间必须晚于开始时间');
+        }
+        return true;
+      },
+      trigger: 'change',
+    },
+  ],
+  platform: [
+    { required: true, message: '请选择平台', trigger: 'change' },
+  ],
+  link: [
+    {
+      validator: (_rule: any, value: string) => {
+        if (value && !/^https?:\/\/.+/.test(value)) {
+          return new Error('请输入有效的URL（以 http:// 或 https:// 开头）');
+        }
+        return true;
+      },
+      trigger: 'blur',
+    },
+  ],
+};
 
 const images: Record<string, string> = {
   'Codeforces': new URL('../assets/platforms/Codeforces.jpg', import.meta.url).href,
@@ -180,16 +310,14 @@ const getPlatformImage = (platform: string) => {
 };
 
 const filteredFavorites = computed(() => {
-  let list = store.favorites.filter(c => 
+  let list = store.favorites.filter(c =>
     c.name.toLowerCase().includes(searchQuery.value.toLowerCase())
   );
-  
   if (sortAsc.value) {
     list.sort((a, b) => a.startTimeSeconds - b.startTimeSeconds);
   } else {
     list.sort((a, b) => b.startTimeSeconds - a.startTimeSeconds);
   }
-  
   return list;
 });
 
@@ -216,16 +344,15 @@ const getContestStateType = (contest: Contest) => {
   return 'default';
 };
 
-const upcomingCount = computed(() => filteredFavorites.value.filter((contest) => getContestState(contest) === 'upcoming').length);
-const runningCount = computed(() => filteredFavorites.value.filter((contest) => getContestState(contest) === 'running').length);
+const activeFavorites = computed(() => filteredFavorites.value.filter(c => getContestState(c) !== 'ended'));
+const endedFavorites = computed(() => filteredFavorites.value.filter(c => getContestState(c) === 'ended'));
 
-const selectedNames = computed(() => {
-  return Object.keys(selected).filter(k => selected[k]);
-});
+const upcomingCount = computed(() => filteredFavorites.value.filter(c => getContestState(c) === 'upcoming').length);
+const runningCount = computed(() => filteredFavorites.value.filter(c => getContestState(c) === 'running').length);
+const endedCount = computed(() => endedFavorites.value.length);
 
-const hasSelection = computed(() => {
-  return selectedNames.value.length > 0;
-});
+const selectedNames = computed(() => Object.keys(selected).filter(k => selected[k]));
+const hasSelection = computed(() => selectedNames.value.length > 0);
 
 const allSelected = computed(() => {
   const list = filteredFavorites.value;
@@ -250,14 +377,14 @@ const toggleSort = () => {
   sortAsc.value = !sortAsc.value;
 };
 
-const pagedFavorites = computed(() => {
+const pagedActiveFavorites = computed(() => {
   const start = (page.value - 1) * pageSize.value;
   const end = start + pageSize.value;
-  return filteredFavorites.value.slice(start, end);
+  return activeFavorites.value.slice(start, end);
 });
 
-watch([filteredFavorites, pageSize], () => {
-  const maxPage = Math.max(1, Math.ceil(filteredFavorites.value.length / pageSize.value));
+watch([activeFavorites, pageSize], () => {
+  const maxPage = Math.max(1, Math.ceil(activeFavorites.value.length / pageSize.value));
   if (page.value > maxPage) page.value = maxPage;
 });
 
@@ -274,7 +401,6 @@ const deleteSelected = () => {
     message.warning('请先选择要删除的收藏');
     return;
   }
-
   dialog.warning({
     title: '确认删除？',
     content: `确定要删除选中的 ${toDelete.length} 条收藏吗？`,
@@ -283,18 +409,12 @@ const deleteSelected = () => {
     onPositiveClick: () => {
       try {
         const { deleted, notFound } = store.removeFavorites(toDelete);
-        for (const name of deleted) {
-          delete selected[name];
-        }
-        for (const name of notFound) {
-          delete selected[name];
-        }
-
-        const maxPage = Math.max(1, Math.ceil(filteredFavorites.value.length / pageSize.value));
+        for (const name of deleted) delete selected[name];
+        for (const name of notFound) delete selected[name];
+        const maxPage = Math.max(1, Math.ceil(activeFavorites.value.length / pageSize.value));
         if (page.value > maxPage) page.value = maxPage;
         page.value = 1;
         contentRef.value?.scrollTo({ top: 0 });
-
         if (notFound.length > 0 && deleted.length > 0) {
           message.warning(`已删除 ${deleted.length} 条，${notFound.length} 条已不存在`);
         } else if (notFound.length > 0) {
@@ -314,9 +434,7 @@ const openLink = (contest: Contest) => {
     selected[contest.name] = !selected[contest.name];
     return;
   }
-  
   if (!contest.link) return;
-  
   dialog.info({
     title: '确认访问？',
     content: `即将访问: ${contest.name}`,
@@ -328,15 +446,50 @@ const openLink = (contest: Contest) => {
   });
 };
 
+const resetAddForm = () => {
+  addForm.name = '';
+  addForm.startTime = null;
+  addForm.endTime = null;
+  addForm.platform = null;
+  addForm.link = '';
+};
+
+const handleAddContest = async () => {
+  try {
+    await formRef.value?.validate();
+  } catch {
+    return;
+  }
+  addLoading.value = true;
+  try {
+    const startTimeSeconds = Math.floor(addForm.startTime! / 1000);
+    const durationSeconds = Math.floor((addForm.endTime! - addForm.startTime!) / 1000);
+    const contest = ContestUtils.createContest(
+      addForm.name,
+      startTimeSeconds,
+      durationSeconds,
+      addForm.platform!,
+      addForm.link || undefined
+    );
+    contest.isManual = true;
+    store.addManualContest(contest);
+    message.success('比赛添加成功');
+    showAddModal.value = false;
+    resetAddForm();
+  } catch (error: any) {
+    message.error(error?.message || '添加失败');
+  } finally {
+    addLoading.value = false;
+  }
+};
+
 const onKeyDown = (e: KeyboardEvent) => {
   if (!isBatchMode.value) return;
-
   if (e.key.toLowerCase() === 'a' && e.ctrlKey) {
     e.preventDefault();
     setAllSelected(true);
     return;
   }
-
   if (e.key === 'Delete') {
     e.preventDefault();
     deleteSelected();
@@ -401,7 +554,7 @@ onUnmounted(() => {
 
 .favorites-summary-grid {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-3);
   margin-bottom: var(--space-4);
 }
@@ -422,15 +575,7 @@ onUnmounted(() => {
   background: linear-gradient(135deg, rgba(14, 165, 233, 0.14), rgba(52, 211, 153, 0.04) 48%, transparent 80%);
 }
 
-.favorite-summary--hero {
-  grid-column: span 8;
-  min-height: 118px;
-}
 
-.favorite-summary--small {
-  grid-column: span 2;
-  min-height: 118px;
-}
 
 .summary-value {
   font-size: 32px;
@@ -451,25 +596,26 @@ onUnmounted(() => {
   color: var(--color-text-soft);
 }
 
-.summary-minor {
-  font-size: 26px;
-  line-height: 1.2;
-  font-weight: 680;
-  color: var(--color-text-soft);
+.summary-value--info {
+  color: var(--color-info, #0ea5e9);
+}
+
+.summary-value--success {
+  color: var(--color-success, #34d399);
+}
+
+.summary-value--ended {
+  color: var(--color-text-muted);
 }
 
 .favorites-bento-grid {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--space-3);
 }
 
 .favorite-grid-cell {
-  grid-column: span 4;
-}
-
-.favorite-grid-cell--hero {
-  grid-column: span 8;
+  display: flex;
 }
 
 .no-data {
@@ -489,6 +635,7 @@ onUnmounted(() => {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   transition: transform var(--motion-base) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease), border-color var(--motion-base) var(--motion-ease);
+  width: 100%;
 }
 
 .contest-card::before {
@@ -573,6 +720,11 @@ onUnmounted(() => {
   font-size: 15px;
   font-weight: 610;
   margin-bottom: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
 }
 
 .contest-time {
@@ -616,6 +768,42 @@ onUnmounted(() => {
   border-radius: 8px;
 }
 
+.section-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-soft);
+  margin-bottom: var(--space-2);
+  padding-left: 2px;
+}
+
+.ended-section {
+  margin-top: var(--space-4);
+}
+
+.ended-section :deep(.n-collapse-item__header-main) {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.contest-card--ended {
+  opacity: 0.72;
+}
+
+.contest-card--ended:hover {
+  opacity: 1;
+}
+
+.manual-tag {
+  margin-left: 6px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
 .contest-item:nth-child(1) { animation-delay: 20ms; }
 .contest-item:nth-child(2) { animation-delay: 40ms; }
 .contest-item:nth-child(3) { animation-delay: 60ms; }
@@ -635,16 +823,17 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
-  .favorites-summary-grid,
+  .favorites-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+  }
+
   .favorites-bento-grid {
     grid-template-columns: 1fr;
     gap: var(--space-2);
   }
 
-  .favorite-summary--hero,
-  .favorite-summary--small,
-  .favorite-grid-cell,
-  .favorite-grid-cell--hero {
+  .favorite-grid-cell {
     grid-column: span 1;
   }
 

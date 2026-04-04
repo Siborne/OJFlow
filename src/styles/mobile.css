@@ -9,6 +9,22 @@
   }
 }
 
+/* 平板设备 (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  :root {
+    --nav-height: 60px;
+  }
+
+  /* 平板设备侧边导航宽度调整 */
+  .side-nav {
+    --collapsed-width: 56px;
+  }
+
+  .side-menu :deep(.n-menu-item-content) {
+    padding: 0 14px !important;
+  }
+}
+
 /* 44px minimum touch targets (Apple HIG / WCAG 2.5.5) */
 @media (max-width: 768px) {
   button,
@@ -95,15 +111,21 @@
     --space-4: 12px;
     --space-5: 16px;
     --space-6: 20px;
+    --nav-height: 52px;
   }
 
   .nav-item {
-    min-width: 56px;
-    padding: 6px 8px;
+    min-width: 52px;
+    padding: 4px 6px;
   }
 
   .nav-item span {
     font-size: 10px;
+  }
+
+  /* 超小屏幕隐藏底部导航文字，只显示图标 */
+  .nav-item span {
+    display: none;
   }
 }
 

@@ -260,6 +260,15 @@ h6 {
   border-radius: var(--radius-sm);
 }
 
+/* Naive UI manages its own focus rings; remove global override */
+.n-input *:focus-visible,
+.n-input-number *:focus-visible,
+.n-select *:focus-visible,
+.n-date-picker *:focus-visible,
+.n-button:focus-visible {
+  box-shadow: none;
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity var(--motion-page) var(--motion-ease), transform var(--motion-page) var(--motion-ease);

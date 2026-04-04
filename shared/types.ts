@@ -23,6 +23,8 @@ export interface Contest {
   formattedStartTime: string;
   formattedEndTime: string;
   formattedDuration: string;
+  /** Whether this contest was manually added by the user */
+  isManual?: boolean;
 }
 
 export interface Rating {

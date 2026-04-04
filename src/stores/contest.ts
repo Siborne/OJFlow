@@ -319,5 +319,18 @@ export const useContestStore = defineStore('contest', {
     isFavorite(contestName: string): boolean {
       return this.favorites.some(c => c.name === contestName);
     },
+    addManualContest(contest: Contest) {
+      if (this.favorites.some(c => c.name === contest.name)) {
+        throw new Error('已存在同名收藏比赛');
+      }
+      const prevFavorites = this.favorites.slice();
+      this.favorites.push(contest);
+      try {
+        this.persistFavorites(this.favorites, prevFavorites);
+      } catch (error) {
+        this.favorites = prevFavorites;
+        throw error;
+      }
+    },
   },
 });

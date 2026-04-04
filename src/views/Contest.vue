@@ -3,10 +3,6 @@
     <div class="app-bar">
       <h2>近期比赛</h2>
       <div class="actions">
-        <div class="hide-date-toggle">
-          <span class="toggle-label">隐藏日期</span>
-          <n-switch :value="store.hideDate" @update:value="store.toggleHideDate" />
-        </div>
         <action-tooltip-button quaternary circle i18n-key="tooltip.filter" @click="showFilter = true">
           <template #icon>
             <n-icon :size="28"><filter-alt-outlined /></n-icon>
@@ -127,7 +123,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useContestStore } from '../stores/contest';
 import { ContestService } from '../services/contest';
 import type { Contest } from '../types';
-import { NButton, NIcon, NSwitch, NEmpty, useDialog } from 'naive-ui';
+import { NIcon, NEmpty, useDialog } from 'naive-ui';
 import { FilterAltOutlined, SearchOutlined } from '@vicons/material';
 import ActionTooltipButton from '../components/ActionTooltipButton.vue';
 import ContestDateTabs from '../components/contest/ContestDateTabs.vue';
@@ -374,22 +370,6 @@ onUnmounted(() => {
   gap: var(--space-2);
 }
 
-.hide-date-toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.58);
-  border: 1px solid var(--color-border);
-}
-
-.toggle-label {
-  font-size: 13px;
-  color: var(--color-text-soft);
-  white-space: nowrap;
-}
-
 .content {
   flex: 1;
   overflow-y: auto;
@@ -422,10 +402,6 @@ onUnmounted(() => {
 
   .app-bar h2 {
     font-size: 16px;
-  }
-
-  .hide-date-toggle {
-    display: none;
   }
 
   .content {

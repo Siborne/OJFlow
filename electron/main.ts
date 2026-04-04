@@ -388,7 +388,7 @@ function createWindow(): BrowserWindow {
 
   if (isDev) {
     win.loadURL('http://localhost:5173');
-    win.webContents.openDevTools();
+    win.webContents.openDevTools({ mode: 'detach' });
   } else {
     win.loadFile(path.join(__dirname, '../dist/index.html'));
   }
