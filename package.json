@@ -29,7 +29,7 @@
       "OJ Helper Reborn in Electron for Windows 11"
     ]
   },
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "main": "electron-dist/electron/main.js",
   "scripts": {
     "build:electron": "tsc -p tsconfig.electron.json && node -e \"require('fs').cpSync('electron/app.config.json','electron-dist/electron/app.config.json')\"",
