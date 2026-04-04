@@ -65,6 +65,22 @@ function readLocalStorageHideDate(): boolean {
   }
 }
 
+function normalizeText(value: unknown): string {
+  return String(value ?? '').trim().toLowerCase();
+}
+
+function getContestFavoriteKey(contest: Partial<Contest>): string {
+  const platform = normalizeText(contest.platform);
+  const start = Number(contest.startTimeSeconds ?? 0);
+  const link = normalizeText(contest.link);
+  const name = normalizeText(contest.name);
+
+  if (link) {
+    return `${platform}|${start}|${link}`;
+  }
+  return `${platform}|${start}|${name}`;
+}
+
 function getElectronStore(): StoreApi | undefined {
   return typeof window !== 'undefined' ? window.store : undefined;
 }
@@ -141,7 +157,7 @@ export const useContestStore = defineStore('contest', {
             }
           }
 
-          if (Array.isArray(favorites) && favorites.length > 0) {
+          if (Array.isArray(favorites)) {
             this.favorites = favorites;
           }
         }
@@ -152,11 +168,14 @@ export const useContestStore = defineStore('contest', {
       this.initialized = true;
     },
     persistFavorites(nextFavorites: Contest[], prevFavorites: Contest[]) {
+      // Avoid persisting reactive proxies across storage boundaries.
+      const nextSnapshot = nextFavorites.map((item) => ({ ...item }));
+      const prevSnapshot = prevFavorites.map((item) => ({ ...item }));
       try {
-        localStorage.setItem('favourite_contests_list', JSON.stringify(nextFavorites));
+        localStorage.setItem('favourite_contests_list', JSON.stringify(nextSnapshot));
       } catch (error) {
         try {
-          localStorage.setItem('favourite_contests_list', JSON.stringify(prevFavorites));
+          localStorage.setItem('favourite_contests_list', JSON.stringify(prevSnapshot));
         } catch {
           // Ignore
         }
@@ -165,7 +184,7 @@ export const useContestStore = defineStore('contest', {
       // Also persist to electron-store (async, fire-and-forget)
       const eStore = getElectronStore();
       if (eStore) {
-        eStore.set('favorites', nextFavorites).catch(() => {});
+        eStore.set('favorites', nextSnapshot).catch(() => {});
       }
     },
     persistMaxCrawlDays(nextDay: number, prevDay: number) {
@@ -263,7 +282,8 @@ export const useContestStore = defineStore('contest', {
     },
     toggleFavorite(contest: Contest) {
       const prevFavorites = this.favorites.slice();
-      const index = this.favorites.findIndex(c => c.name === contest.name);
+      const targetKey = getContestFavoriteKey(contest);
+      const index = this.favorites.findIndex(c => getContestFavoriteKey(c) === targetKey);
       if (index > -1) {
         this.favorites.splice(index, 1);
       } else {
@@ -316,8 +336,14 @@ export const useContestStore = defineStore('contest', {
 
       return { deleted, notFound };
     },
-    isFavorite(contestName: string): boolean {
-      return this.favorites.some(c => c.name === contestName);
+    isFavorite(contestOrName: Contest | string): boolean {
+      if (typeof contestOrName === 'string') {
+        const targetName = normalizeText(contestOrName);
+        return this.favorites.some(c => normalizeText(c.name) === targetName);
+      }
+
+      const targetKey = getContestFavoriteKey(contestOrName);
+      return this.favorites.some(c => getContestFavoriteKey(c) === targetKey);
     },
     addManualContest(contest: Contest) {
       if (this.favorites.some(c => c.name === contest.name)) {
