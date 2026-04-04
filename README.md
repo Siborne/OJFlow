@@ -5,14 +5,14 @@
   <p>基于 Electron + Vue 3 的现代化算法竞赛辅助工具</p>
 
   <p>
-    <a href="https://github.com/2754LM/OJFlow">
+    <a href="https://github.com/Siborne/OJFlow">
       <img src="https://img.shields.io/badge/build-passing-brightgreen?style=flat-square" alt="Build Status" />
     </a>
-    <a href="https://github.com/2754LM/OJFlow/releases">
-      <img src="https://img.shields.io/badge/release-v1.0.0-blue?style=flat-square" alt="Latest Release" />
+    <a href="https://github.com/Siborne/OJFlow/releases">
+      <img src="https://img.shields.io/badge/release-v1.1.0-blue?style=flat-square" alt="Latest Release" />
     </a>
     <a href="./LICENSE">
-      <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License" />
+      <img src="https://img.shields.io/badge/license-GPLv3-green?style=flat-square" alt="License" />
     </a>
     <br />
     <img src="https://img.shields.io/badge/Vue-3.x-4FC08D?style=flat-square&logo=vue.js&logoColor=white" alt="Vue 3" />
@@ -24,7 +24,7 @@
   </p>
 
   <p>
-    <a href="./README.md">中文</a> | <a href="./README_EN.md">English</a>
+    <a href="./README.md">中文</a>
   </p>
 </div>
 
@@ -79,7 +79,7 @@
 1. **克隆仓库**
 
    ```bash
-   git clone https://github.com/your-username/OJFlow.git
+  git clone https://github.com/Siborne/OJFlow.git
    cd OJFlow
    ```
 
@@ -112,6 +112,28 @@
    bun run dist:mac   # macOS
    bun run dist:linux # Linux
    ```
+
+### 常用脚本
+
+```bash
+# 开发
+bun run dev
+
+# 类型检查
+bun run type-check
+
+# Lint
+bun run lint
+
+# 自动修复 Lint
+bun run lint:fix
+
+# 单元测试
+bun run test:unit
+
+# E2E 测试
+bun run test:e2e
+```
 
 ## 📺 使用示例 (Usage Examples)
 
@@ -146,13 +168,21 @@
 请确保在提交前运行代码检查：
 
 ```bash
-# 运行类型检查
-bun run type-check # (如果有配置) 或 vue-tsc --noEmit
+# 运行类型检查与 Lint
+bun run type-check
+bun run lint
 ```
+
+## 📚 相关文档
+
+- [版本发布指南](./RELEASE_GUIDE.md)
+- [项目产品文档](./docs/PRD.md)
+- [Contest Tab 设计说明](./docs/CONTEST_TAB_DESIGN.md)
+- [Contest Tab 实现总结](./docs/CONTEST_TAB_IMPLEMENTATION_SUMMARY.md)
 
 ## 📄 开源协议 (License)
 
-本项目采用 [MIT License](./LICENSE) 开源协议。
+本项目采用 [GNU General Public License v3.0](./LICENSE) 开源协议。
 
 ---
 
