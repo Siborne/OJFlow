@@ -36,7 +36,7 @@
             v-if="selectedPlatforms[contest.platform]"
             :contest="contest"
             :now="now"
-            :is-favorite="isFavorite(contest.name)"
+            :is-favorite="isFavorite(contest)"
             :platform-image="getPlatformImage(contest.platform)"
             @open="$emit('open-contest', $event)"
             @toggle-favorite="$emit('toggle-favorite', $event)"
@@ -59,7 +59,7 @@ const props = defineProps<{
   contests: Contest[];
   now: number;
   selectedPlatforms: Record<string, boolean>;
-  isFavorite: (name: string) => boolean;
+  isFavorite: (contest: Contest) => boolean;
   getPlatformImage: (platform: string) => string;
   variant?: 'today' | 'tomorrow' | 'future' | 'history';
   collapsible?: boolean;

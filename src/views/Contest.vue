@@ -194,7 +194,7 @@ const filteredContestsByTab = computed(() => {
 });
 
 const favoriteCountByTab = computed(() =>
-  filteredContestsByTab.value.filter((c) => store.isFavorite(c.name)).length,
+  filteredContestsByTab.value.filter((c) => store.isFavorite(c)).length,
 );
 
 const runningCountByTab = computed(() =>
