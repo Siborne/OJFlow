@@ -316,11 +316,19 @@ async function checkForUpdatesOnStartup(win) {
 }
 // Determine if running in development mode
 const isDev = process.env.NODE_ENV === 'development' || !electron_1.app.isPackaged;
+function getIconPath() {
+    // In development, use project root src/assets (go up from electron-dist/electron to project root)
+    if (isDev) {
+        return path.join(__dirname, '../../src/assets/icon.png');
+    }
+    // In production, icon is in extraResources (copied to resources folder)
+    return path.join(process.resourcesPath, 'src/assets/icon.png');
+}
 function createWindow() {
     const win = new electron_1.BrowserWindow({
         width: 1000,
         height: 700,
-        icon: path.join(__dirname, '../src/assets/icon.png'),
+        icon: getIconPath(),
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,

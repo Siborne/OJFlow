@@ -354,11 +354,20 @@ async function checkForUpdatesOnStartup(win: BrowserWindow): Promise<void> {
 // Determine if running in development mode
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
+function getIconPath(): string {
+  // In development, use project root src/assets (go up from electron-dist/electron to project root)
+  if (isDev) {
+    return path.join(__dirname, '../../src/assets/icon.png');
+  }
+  // In production, icon is in extraResources (copied to resources folder)
+  return path.join(process.resourcesPath, 'src/assets/icon.png');
+}
+
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1000,
     height: 700,
-    icon: path.join(__dirname, '../src/assets/icon.png'),
+    icon: getIconPath(),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
