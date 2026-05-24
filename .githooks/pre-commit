@@ -1,0 +1,22 @@
+#!/bin/sh
+# Pre-commit hook: auto-fix lint + format staged files
+
+set -e
+
+STAGED_TSX=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(tsx?)$' || true)
+STAGED_CSS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.css$' || true)
+
+if [ -n "$STAGED_TSX" ] || [ -n "$STAGED_CSS" ]; then
+  echo "[pre-commit] Running eslint --fix on staged files..."
+  echo "$STAGED_TSX" | xargs -r bun run eslint --fix --no-warn-ignored 2>/dev/null || true
+
+  echo "[pre-commit] Running prettier on staged files..."
+  echo "$STAGED_TSX $STAGED_CSS" | xargs -r bun run prettier --write --no-error-on-unmatched-pattern 2>/dev/null || true
+
+  echo "[pre-commit] Re-staging formatted files..."
+  echo "$STAGED_TSX $STAGED_CSS" | xargs -r git add
+
+  echo "[pre-commit] Done."
+else
+  echo "[pre-commit] No staged TS/CSS files, skipping."
+fi
