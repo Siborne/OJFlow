@@ -260,9 +260,9 @@ export default function SolvedNumPage() {
       series: [
         {
           type: 'pie',
-          radius: ['45%', '75%'],
+          radius: ['40%', '65%'],
           center: ['50%', '50%'],
-          avoidLabelOverlap: false,
+          avoidLabelOverlap: true,
           itemStyle: {
             borderRadius: 4,
             borderColor: 'transparent',
@@ -270,8 +270,16 @@ export default function SolvedNumPage() {
           },
           label: {
             show: true,
-            formatter: '{b}\n{d}%',
-            fontSize: 11,
+            position: 'outside',
+            formatter: '{b}\n{c}题',
+            fontSize: 12,
+            distanceToLabelLine: 4,
+          },
+          labelLine: {
+            show: true,
+            length: 16,
+            length2: 24,
+            smooth: true,
           },
           emphasis: {
             label: { fontSize: 16, fontWeight: 'bold' as const },
@@ -325,7 +333,7 @@ export default function SolvedNumPage() {
       {pieData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setPieData(null)} />
-          <div className="relative z-10 w-full max-w-md rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-xl">
+          <div className="relative z-10 w-full max-w-lg rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-xl">
             <h3 className="mb-4 text-center text-lg font-semibold text-[var(--color-text)]">解题统计</h3>
             {pieData.platforms.length === 0 ? (
               <div className="py-8 text-center text-[var(--color-text-muted)]">
@@ -336,7 +344,7 @@ export default function SolvedNumPage() {
                 <div className="mb-2 text-xl font-bold text-[var(--color-success)]">
                   总计：{pieData.platforms.reduce((s, p) => s + p.solved, 0)}题
                 </div>
-                <div ref={chartRef} className="mx-auto h-72 w-72" />
+                <div ref={chartRef} className="mx-auto h-80 w-full max-w-sm" />
               </div>
             )}
             <div className="mt-4 flex justify-center">
