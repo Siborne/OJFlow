@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Filter, RefreshCw } from 'lucide-react';
+import { PageHeader } from '@/components/PageHeader';
 import { useContestStore } from '@/stores/contest';
 import { ContestService } from '@/services/contest';
 import type { Contest as ContestType } from '@/types';
@@ -254,27 +255,29 @@ export default function Contest() {
 
   return (
     <div className="flex h-full flex-col bg-transparent">
-      <div className="flex h-16 flex-shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface-muted)] px-4 shadow-sm backdrop-blur-[var(--frost-blur)]">
-        <h2 className="text-lg font-[650] tracking-wide">近期比赛</h2>
-        <div className="flex items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={() => setShowFilter(true)}>
-                <Filter size={22} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>筛选</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={fetchContests}>
-                <RefreshCw size={22} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>刷新</TooltipContent>
-          </Tooltip>
-        </div>
-      </div>
+      <PageHeader
+        title="近期比赛"
+        actions={
+          <>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={() => setShowFilter(true)}>
+                  <Filter size={22} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>筛选</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={fetchContests}>
+                  <RefreshCw size={22} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>刷新</TooltipContent>
+            </Tooltip>
+          </>
+        }
+      />
 
       {loading ? (
         <div className="flex-1 overflow-y-auto p-3">

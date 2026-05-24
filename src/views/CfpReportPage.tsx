@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Search, BarChart3 } from 'lucide-react';
+import { PageHeader } from '@/components/PageHeader';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 
@@ -87,9 +88,7 @@ export default function CfpReportPage() {
 
   return (
     <div className="flex h-full flex-col bg-transparent">
-      <div className="flex h-16 flex-shrink-0 items-center border-b border-[var(--color-border)] bg-[var(--color-surface-muted)] px-4 shadow-sm">
-        <h2 className="text-lg font-[650]">CF 年度报告</h2>
-      </div>
+      <PageHeader title="CF 年度报告" />
       <div className="flex-1 overflow-y-auto p-4">
         <div className="mx-auto max-w-3xl">
           {/* Search */}
