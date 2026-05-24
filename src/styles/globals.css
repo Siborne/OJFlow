@@ -11,11 +11,9 @@
 @theme {
   --color-bg: var(--color-bg);
   --color-surface: var(--color-surface);
-  --color-primary: var(--color-primary);
   --color-primary-weak: var(--color-primary-weak);
   --color-text: var(--color-text);
   --color-text-muted: var(--color-text-muted);
-  --color-border: var(--color-border);
   --color-success: var(--color-success);
   --color-warning: var(--color-warning);
   --color-error: var(--color-error);
