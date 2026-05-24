@@ -77,9 +77,9 @@ export default function Settings() {
         )}
 
         {/* Summary grid */}
-        <div className="mb-4 grid grid-cols-[8fr_2fr_2fr] gap-3 max-md:grid-cols-1">
+        <div className="mb-4 grid grid-cols-3 gap-3 max-md:grid-cols-1">
           <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] p-5">
-            <div className="absolute inset-0 bg-[linear-gradient(130deg,rgba(14,165,233,0.14),rgba(52,211,153,0.04)_52%,transparent_82%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(130deg,rgba(255,161,22,0.12),rgba(20,184,166,0.04)_52%,transparent_82%)]" />
             <div className="relative z-10">
               <div className="mb-1 text-sm font-medium text-[var(--color-text-soft)]">系统状态</div>
               <div className="text-3xl font-bold leading-tight text-[var(--color-primary)]">{curVersion}</div>
@@ -89,17 +89,31 @@ export default function Settings() {
             </div>
           </div>
           <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] p-5">
-            <div className="absolute inset-0 bg-[linear-gradient(130deg,rgba(14,165,233,0.14),rgba(52,211,153,0.04)_52%,transparent_82%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(130deg,rgba(255,161,22,0.12),rgba(20,184,166,0.04)_52%,transparent_82%)]" />
             <div className="relative z-10">
               <div className="mb-1 text-sm font-medium text-[var(--color-text-soft)]">保留天数</div>
               <div className="text-2xl font-[680] text-[var(--color-text-soft)]">{maxDays}</div>
             </div>
           </div>
           <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] p-5">
-            <div className="absolute inset-0 bg-[linear-gradient(130deg,rgba(14,165,233,0.14),rgba(52,211,153,0.04)_52%,transparent_82%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(130deg,rgba(255,161,22,0.12),rgba(20,184,166,0.04)_52%,transparent_82%)]" />
             <div className="relative z-10">
-              <div className="mb-1 text-sm font-medium text-[var(--color-text-soft)]">主题模式</div>
-              <div className="text-2xl font-[680] text-[var(--color-text-soft)]">{uiStore.colorMode}</div>
+              <div className="mb-2 text-sm font-medium text-[var(--color-text-soft)]">主题模式</div>
+              <div className="flex items-center gap-2">
+                {(['auto', 'light', 'dark'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => uiStore.setColorMode(mode)}
+                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                      uiStore.colorMode === mode
+                        ? 'bg-[var(--color-primary)] text-white'
+                        : 'bg-[var(--color-surface-muted)] text-[var(--color-text-muted)] hover:bg-[var(--nav-hover-bg)]'
+                    }`}
+                  >
+                    {mode === 'auto' ? '自动' : mode === 'light' ? '亮色' : '暗色'}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -107,7 +121,7 @@ export default function Settings() {
         {/* Settings list */}
         <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[var(--card-shadow)]">
           {/* Retention days */}
-          <div className="flex items-center gap-3 border-b border-[var(--color-border)] px-5 py-3.5 transition-colors hover:bg-[rgba(14,165,233,0.06)]">
+          <div className="flex items-center gap-3 border-b border-[var(--color-border)] px-5 py-3.5 transition-colors hover:bg-[var(--nav-hover-bg)]">
             <div className="flex h-6 w-6 items-center justify-center rounded-[10px] text-[var(--settings-icon-default)] transition-colors hover:bg-[rgba(14,165,233,0.1)] hover:text-[var(--color-primary)]">
               <RefreshCw size={18} />
             </div>
@@ -141,7 +155,7 @@ export default function Settings() {
             tabIndex={0}
             onClick={checkForUpdate}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); checkForUpdate(); } }}
-            className="group flex cursor-pointer items-center gap-3 border-b border-[var(--color-border)] px-5 py-3.5 transition-colors hover:bg-[rgba(14,165,233,0.06)]"
+            className="group flex cursor-pointer items-center gap-3 border-b border-[var(--color-border)] px-5 py-3.5 transition-colors hover:bg-[var(--nav-hover-bg)]"
           >
             <div className="flex h-6 w-6 items-center justify-center rounded-[10px] text-[var(--settings-icon-default)] transition-colors group-hover:bg-[rgba(14,165,233,0.1)] group-hover:text-[var(--color-primary)]">
               <RefreshCw size={18} />
@@ -162,7 +176,7 @@ export default function Settings() {
             tabIndex={0}
             onClick={() => openUrl('https://github.com/Siborne/OJFlow')}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openUrl('https://github.com/Siborne/OJFlow'); } }}
-            className="group flex cursor-pointer items-center gap-3 border-b border-[var(--color-border)] px-5 py-3.5 transition-colors hover:bg-[rgba(14,165,233,0.06)]"
+            className="group flex cursor-pointer items-center gap-3 border-b border-[var(--color-border)] px-5 py-3.5 transition-colors hover:bg-[var(--nav-hover-bg)]"
           >
             <div className="flex h-6 w-6 items-center justify-center rounded-[10px] text-[var(--settings-icon-default)] transition-colors group-hover:bg-[rgba(14,165,233,0.1)] group-hover:text-[var(--color-primary)]">
               <Info size={18} />
@@ -180,7 +194,7 @@ export default function Settings() {
             tabIndex={0}
             onClick={() => openUrl('https://github.com/2754LM/oj_helper')}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openUrl('https://github.com/2754LM/oj_helper'); } }}
-            className="group flex cursor-pointer items-center gap-3 px-5 py-3.5 transition-colors hover:bg-[rgba(14,165,233,0.06)]"
+            className="group flex cursor-pointer items-center gap-3 px-5 py-3.5 transition-colors hover:bg-[var(--nav-hover-bg)]"
           >
             <div className="flex h-6 w-6 items-center justify-center rounded-[10px] text-[var(--settings-icon-default)] transition-colors group-hover:bg-[rgba(14,165,233,0.1)] group-hover:text-[var(--color-primary)]">
               <Link2 size={18} />
