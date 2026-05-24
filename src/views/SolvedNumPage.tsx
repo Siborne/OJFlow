@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import * as echarts from 'echarts';
 import { Search, RefreshCw, PieChart, HelpCircle, X } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { SolvedNumService } from '@/services/solved';
@@ -190,7 +191,9 @@ function PlatformCard({
 }
 
 export default function SolvedNumPage() {
-  const [pieData, setPieData] = useState<{ solved: number; total: number } | null>(null);
+  const [pieData, setPieData] = useState<{
+    platforms: { name: string; solved: number; color: string }[];
+  } | null>(null);
 
   const queryAll = useCallback(() => {
     for (const p of PLATFORMS) {
@@ -199,8 +202,7 @@ export default function SolvedNumPage() {
   }, []);
 
   const showPieChart = useCallback(async () => {
-    let totalSolved = 0;
-    let platformCount = 0;
+    const platformData: { name: string; solved: number; color: string }[] = [];
     const loaded = loadSavedUsernames();
 
     for (const p of PLATFORMS) {
@@ -214,20 +216,63 @@ export default function SolvedNumPage() {
           sum += (data as { solvedNum: number }).solvedNum || 0;
         }
         if (sum > 0) {
-          totalSolved += sum;
-          platformCount++;
+          platformData.push({ name: p.name, solved: sum, color: p.color });
         }
       } catch {
-        // skip
+        // skip platform on error
       }
     }
 
-    if (totalSolved === 0 && platformCount === 0) {
-      setPieData({ solved: 0, total: 0 });
+    if (platformData.length === 0) {
+      setPieData({ platforms: [] });
     } else {
-      setPieData({ solved: totalSolved, total: platformCount });
+      setPieData({ platforms: platformData });
     }
   }, []);
+
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!pieData || pieData.platforms.length === 0 || !chartRef.current) return;
+
+    const chart = echarts.init(chartRef.current);
+
+    chart.setOption({
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}: {c}题 ({d}%)',
+      },
+      series: [
+        {
+          type: 'pie',
+          radius: ['45%', '75%'],
+          center: ['50%', '50%'],
+          avoidLabelOverlap: false,
+          itemStyle: {
+            borderRadius: 4,
+            borderColor: 'transparent',
+            borderWidth: 2,
+          },
+          label: {
+            show: true,
+            formatter: '{b}\n{d}%',
+            fontSize: 11,
+          },
+          emphasis: {
+            label: { fontSize: 16, fontWeight: 'bold' as const },
+            scaleSize: 10,
+          },
+          data: pieData.platforms.map((p) => ({
+            name: p.name,
+            value: p.solved,
+            itemStyle: { color: p.color },
+          })),
+        },
+      ],
+    });
+
+    return () => chart.dispose();
+  }, [pieData]);
 
   return (
     <div className="flex h-full flex-col bg-transparent">
@@ -267,21 +312,16 @@ export default function SolvedNumPage() {
           <div className="absolute inset-0 bg-black/50" onClick={() => setPieData(null)} />
           <div className="relative z-10 w-full max-w-md rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-xl">
             <h3 className="mb-4 text-center text-lg font-semibold text-[var(--color-text)]">解题统计</h3>
-            {pieData.total === 0 ? (
+            {pieData.platforms.length === 0 ? (
               <div className="py-8 text-center text-[var(--color-text-muted)]">
                 暂无数据，请先查询题目
               </div>
             ) : (
               <div className="text-center">
-                <div className="mb-4 text-xl font-bold text-[var(--color-success)]">
-                  总计：{pieData.solved}题
+                <div className="mb-2 text-xl font-bold text-[var(--color-success)]">
+                  总计：{pieData.platforms.reduce((s, p) => s + p.solved, 0)}题
                 </div>
-                <div className="relative mx-auto h-64 w-64 rounded-full border-4 border-[var(--color-border)] bg-[var(--color-surface-muted)] flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-[var(--color-primary)]">{pieData.solved}</div>
-                    <div className="text-xs text-[var(--color-text-muted)]">Total AC</div>
-                  </div>
-                </div>
+                <div ref={chartRef} className="mx-auto h-72 w-72" />
               </div>
             )}
             <div className="mt-4 flex justify-center">
