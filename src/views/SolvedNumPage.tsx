@@ -150,6 +150,9 @@ function PlatformCard({
               save(e.target.value);
               setResult(null);
             }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && username.trim() && !loading) query();
+            }}
             disabled={loading}
             placeholder={config.name === '牛客' || config.name === '蓝桥云课' ? 'id' : '用户名'}
             className="w-full border-b border-[var(--color-border)] bg-transparent py-1.5 pr-8 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)] disabled:opacity-50"
@@ -163,7 +166,17 @@ function PlatformCard({
             </button>
           )}
         </div>
-        <div className="mt-0.5 text-[11px] text-gray-400">多用户用;分隔</div>
+        <div className="mt-1.5 flex items-center gap-2">
+          <span className="text-[11px] text-gray-400">多用户用;分隔</span>
+          <div className="flex-1" />
+          <button
+            onClick={() => query()}
+            disabled={loading || !username.trim()}
+            className="rounded-md bg-[var(--color-primary)] px-4 py-1 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+          >
+            {loading ? '查询中...' : '查询'}
+          </button>
+        </div>
       </div>
 
       {/* Body */}
@@ -178,8 +191,10 @@ function PlatformCard({
 
         {result && !loading && (
           <div
-            className={`text-center text-sm ${
-              result.info.includes('失败') ? 'text-[var(--color-error)]' : 'text-[var(--color-success)]'
+            className={`rounded-md px-3 py-2 text-sm font-medium ${
+              result.info.includes('失败')
+                ? 'bg-[rgba(255,161,22,0.08)] text-[var(--color-warning)]'
+                : 'bg-[rgba(20,184,166,0.08)] text-[var(--color-accent)]'
             }`}
           >
             {result.info}

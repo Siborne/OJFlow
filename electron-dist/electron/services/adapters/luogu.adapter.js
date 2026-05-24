@@ -84,7 +84,7 @@ class LuoguAdapter extends base_adapter_1.BaseAdapter {
     async fetchSolvedCount(handle) {
         const searchRes = await this.http.get(`${this.searchUrl}?keyword=${encodeURIComponent(handle)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
         if (!searchRes.data?.users?.length) {
-            return { name: handle, solvedNum: 0 };
+            throw new Error(`Luogu user not found: ${handle}`);
         }
         const userId = searchRes.data.users[0].uid;
         const userRes = await this.http.get(`https://www.luogu.com.cn/user/${userId}`, { maxRedirects: 3, timeout: 8000 });
@@ -105,7 +105,7 @@ class LuoguAdapter extends base_adapter_1.BaseAdapter {
         if (match) {
             return { name: handle, solvedNum: parseInt(match[1], 10) };
         }
-        return { name: handle, solvedNum: 0 };
+        throw new Error(`Luogu: unable to parse solved count for ${handle}`);
     }
 }
 exports.LuoguAdapter = LuoguAdapter;

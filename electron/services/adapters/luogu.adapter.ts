@@ -110,7 +110,7 @@ export class LuoguAdapter extends BaseAdapter {
     );
 
     if (!searchRes.data?.users?.length) {
-      return { name: handle, solvedNum: 0 };
+      throw new Error(`Luogu user not found: ${handle}`);
     }
 
     const userId = searchRes.data.users[0].uid;
@@ -140,6 +140,6 @@ export class LuoguAdapter extends BaseAdapter {
       return { name: handle, solvedNum: parseInt(match[1], 10) };
     }
 
-    return { name: handle, solvedNum: 0 };
+    throw new Error(`Luogu: unable to parse solved count for ${handle}`);
   }
 }

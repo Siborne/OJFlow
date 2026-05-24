@@ -13,7 +13,7 @@ class QojAdapter extends base_adapter_1.BaseAdapter {
         if (match) {
             return { name: handle, solvedNum: parseInt(match[1], 10) };
         }
-        return { name: handle, solvedNum: 0 };
+        throw new Error(`QOJ user not found or profile not accessible: ${handle}`);
     }
 }
 exports.QojAdapter = QojAdapter;

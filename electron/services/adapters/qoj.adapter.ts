@@ -15,6 +15,6 @@ export class QojAdapter extends BaseAdapter {
       return { name: handle, solvedNum: parseInt(match[1], 10) };
     }
 
-    return { name: handle, solvedNum: 0 };
+    throw new Error(`QOJ user not found or profile not accessible: ${handle}`);
   }
 }

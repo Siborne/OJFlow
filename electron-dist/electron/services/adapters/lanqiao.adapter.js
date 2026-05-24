@@ -59,7 +59,7 @@ class LanqiaoAdapter extends base_adapter_1.BaseAdapter {
                 break;
             }
         }
-        return { name: handle, solvedNum: 0 };
+        throw new Error(`Lanqiao: user ${handle} not found in problem-rank`);
     }
 }
 exports.LanqiaoAdapter = LanqiaoAdapter;
