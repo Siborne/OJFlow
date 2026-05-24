@@ -121,7 +121,7 @@ export default function CfpReportPage() {
             <div className="space-y-4">
               {/* Summary card */}
               <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] p-6 shadow-[var(--card-shadow)]">
-                <div className="absolute inset-0 bg-[linear-gradient(130deg,rgba(14,165,233,0.12),rgba(52,211,153,0.03)_42%,transparent_72%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(130deg,rgba(255,161,22,0.12),rgba(20,184,166,0.03)_42%,transparent_72%)]" />
                 <div className="relative z-10 text-center">
                   <div className="mb-1 text-sm text-[var(--color-text-muted)]">{handle} 解题统计</div>
                   <div className="text-5xl font-bold text-[var(--color-primary)]">{totalSolved}</div>

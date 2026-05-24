@@ -122,7 +122,7 @@ export default function Settings() {
         <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[var(--card-shadow)]">
           {/* Retention days */}
           <div className="flex items-center gap-3 border-b border-[var(--color-border)] px-5 py-3.5 transition-colors hover:bg-[var(--nav-hover-bg)]">
-            <div className="flex h-6 w-6 items-center justify-center rounded-[10px] text-[var(--settings-icon-default)] transition-colors hover:bg-[rgba(14,165,233,0.1)] hover:text-[var(--color-primary)]">
+            <div className="flex h-6 w-6 items-center justify-center rounded-[10px] text-[var(--settings-icon-default)] transition-colors hover:bg-[rgba(255,161,22,0.1)] hover:text-[var(--color-primary)]">
               <RefreshCw size={18} />
             </div>
             <div className="flex-1">
@@ -157,7 +157,7 @@ export default function Settings() {
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); checkForUpdate(); } }}
             className="group flex cursor-pointer items-center gap-3 border-b border-[var(--color-border)] px-5 py-3.5 transition-colors hover:bg-[var(--nav-hover-bg)]"
           >
-            <div className="flex h-6 w-6 items-center justify-center rounded-[10px] text-[var(--settings-icon-default)] transition-colors group-hover:bg-[rgba(14,165,233,0.1)] group-hover:text-[var(--color-primary)]">
+            <div className="flex h-6 w-6 items-center justify-center rounded-[10px] text-[var(--settings-icon-default)] transition-colors group-hover:bg-[rgba(255,161,22,0.1)] group-hover:text-[var(--color-primary)]">
               <RefreshCw size={18} />
             </div>
             <div className="flex-1">
@@ -178,7 +178,7 @@ export default function Settings() {
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openUrl('https://github.com/Siborne/OJFlow'); } }}
             className="group flex cursor-pointer items-center gap-3 border-b border-[var(--color-border)] px-5 py-3.5 transition-colors hover:bg-[var(--nav-hover-bg)]"
           >
-            <div className="flex h-6 w-6 items-center justify-center rounded-[10px] text-[var(--settings-icon-default)] transition-colors group-hover:bg-[rgba(14,165,233,0.1)] group-hover:text-[var(--color-primary)]">
+            <div className="flex h-6 w-6 items-center justify-center rounded-[10px] text-[var(--settings-icon-default)] transition-colors group-hover:bg-[rgba(255,161,22,0.1)] group-hover:text-[var(--color-primary)]">
               <Info size={18} />
             </div>
             <div className="flex-1">
@@ -196,7 +196,7 @@ export default function Settings() {
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openUrl('https://github.com/2754LM/oj_helper'); } }}
             className="group flex cursor-pointer items-center gap-3 px-5 py-3.5 transition-colors hover:bg-[var(--nav-hover-bg)]"
           >
-            <div className="flex h-6 w-6 items-center justify-center rounded-[10px] text-[var(--settings-icon-default)] transition-colors group-hover:bg-[rgba(14,165,233,0.1)] group-hover:text-[var(--color-primary)]">
+            <div className="flex h-6 w-6 items-center justify-center rounded-[10px] text-[var(--settings-icon-default)] transition-colors group-hover:bg-[rgba(255,161,22,0.1)] group-hover:text-[var(--color-primary)]">
               <Link2 size={18} />
             </div>
             <div className="flex-1">

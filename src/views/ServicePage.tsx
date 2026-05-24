@@ -40,7 +40,7 @@ export default function ServicePage() {
           'group relative overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--card-bg)] shadow-[var(--card-shadow)] transition-all',
           disabled
             ? 'cursor-default border-dashed opacity-58 shadow-none'
-            : 'cursor-pointer border-[var(--card-border)] hover:-translate-y-0.5 hover:shadow-[var(--card-shadow-hover)] hover:border-[rgba(14,165,233,0.22)] active:translate-y-0 active:scale-[0.99]',
+            : 'cursor-pointer border-[var(--card-border)] hover:-translate-y-0.5 hover:shadow-[var(--card-shadow-hover)] hover:border-[rgba(255,161,22,0.22)] active:translate-y-0 active:scale-[0.99]',
         )}
         style={{ animationDelay: `${idx * 20}ms` }}
       >

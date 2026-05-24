@@ -35,14 +35,14 @@ function getStateLabel(state: string) {
 }
 
 function getStateColor(state: string) {
-  if (state === 'upcoming') return 'text-[var(--color-primary)] bg-[rgba(14,165,233,0.1)]';
-  if (state === 'running') return 'text-[var(--color-success)] bg-[rgba(52,211,153,0.1)]';
+  if (state === 'upcoming') return 'text-[var(--color-primary)] bg-[rgba(255,161,22,0.1)]';
+  if (state === 'running') return 'text-[var(--color-success)] bg-[rgba(20,184,166,0.1)]';
   return 'text-[var(--color-text-muted)] bg-[var(--color-surface-muted)]';
 }
 
 function getBarColor(state: string) {
-  if (state === 'upcoming') return 'bg-[rgba(14,165,233,0.7)]';
-  if (state === 'running') return 'bg-[rgba(52,211,153,0.78)]';
+  if (state === 'upcoming') return 'bg-[rgba(255,161,22,0.7)]';
+  if (state === 'running') return 'bg-[rgba(20,184,166,0.78)]';
   return 'bg-[rgba(148,163,184,0.62)]';
 }
 
@@ -125,9 +125,9 @@ export default function Favorite() {
     return (
       <div
         key={contest.name}
-        className="group relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[var(--card-shadow)] backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:shadow-[var(--card-shadow-hover)] hover:border-[rgba(14,165,233,0.2)]"
+        className="group relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[var(--card-shadow)] backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:shadow-[var(--card-shadow-hover)] hover:border-[rgba(255,161,22,0.2)]"
       >
-        <div className="pointer-events-none absolute inset-0 rounded-[var(--radius-lg)] bg-[linear-gradient(180deg,rgba(14,165,233,0.14),rgba(52,211,153,0.08))]" style={{ padding: '1px', mask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', WebkitMaskComposite: 'xor', maskComposite: 'exclude' }} />
+        <div className="pointer-events-none absolute inset-0 rounded-[var(--radius-lg)] bg-[linear-gradient(180deg,rgba(255,161,22,0.14),rgba(20,184,166,0.08))]" style={{ padding: '1px', mask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', WebkitMaskComposite: 'xor', maskComposite: 'exclude' }} />
         <div className="relative flex items-center p-3">
           {isBatchMode && (
             <input
@@ -195,7 +195,7 @@ export default function Favorite() {
             {/* Summary grid */}
             <div className="mb-4 grid grid-cols-4 gap-3 max-md:grid-cols-2">
               <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] p-4">
-                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(14,165,233,0.14),rgba(52,211,153,0.04)_48%,transparent_80%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,161,22,0.14),rgba(20,184,166,0.04)_48%,transparent_80%)]" />
                 <div className="relative z-10">
                   <div className="text-2xl font-bold text-[var(--color-primary)]">{filteredFavorites.length}</div>
                   <div className="mt-1 text-xs text-[var(--color-text-muted)]">当前检索结果</div>
@@ -203,15 +203,15 @@ export default function Favorite() {
                 </div>
               </div>
               <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] p-4">
-                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(14,165,233,0.14),rgba(52,211,153,0.04)_48%,transparent_80%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,161,22,0.14),rgba(20,184,166,0.04)_48%,transparent_80%)]" />
                 <div className="relative z-10 text-2xl font-bold text-[var(--color-primary)]">{activeFavorites.filter((c) => getContestState(c) === 'upcoming').length}</div>
               </div>
               <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] p-4">
-                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(14,165,233,0.14),rgba(52,211,153,0.04)_48%,transparent_80%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,161,22,0.14),rgba(20,184,166,0.04)_48%,transparent_80%)]" />
                 <div className="relative z-10 text-2xl font-bold text-[var(--color-success)]">{activeFavorites.filter((c) => getContestState(c) === 'running').length}</div>
               </div>
               <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] p-4">
-                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(14,165,233,0.14),rgba(52,211,153,0.04)_48%,transparent_80%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,161,22,0.14),rgba(20,184,166,0.04)_48%,transparent_80%)]" />
                 <div className="relative z-10 text-2xl font-bold text-[var(--color-text-muted)]">{endedFavorites.length}</div>
               </div>
             </div>

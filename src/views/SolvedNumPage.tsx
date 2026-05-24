@@ -116,7 +116,7 @@ function PlatformCard({
   return (
     <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[var(--card-shadow)]">
       {/* Header */}
-      <div className="flex items-center gap-2 border-b border-[var(--card-divider)] bg-[rgba(211,218,220,0.3)] px-3 py-2">
+      <div className="flex items-center gap-2 border-b border-[var(--card-divider)] bg-[var(--color-surface-muted)] px-3 py-2">
         <img src={images[config.name]} alt={config.name} className="h-7 w-7 rounded-md border border-[var(--color-border)]" />
         <span className="text-sm font-bold text-[var(--color-text)]">{config.name}</span>
         <div className="flex-1" />
@@ -170,7 +170,7 @@ function PlatformCard({
       <div className="px-3 pb-3 pt-2">
         {loading && (
           <div className="flex items-center gap-2 py-1">
-            <div className="h-1 flex-1 overflow-hidden rounded-full bg-[rgba(126,186,213,0.3)]">
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--color-surface-muted)]">
               <div className="h-full animate-pulse rounded-full bg-[var(--color-primary)]" style={{ width: '60%' }} />
             </div>
           </div>
