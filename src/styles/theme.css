@@ -103,6 +103,33 @@
 
   /* Elevated card surface */
   --card-bg-elevated: rgba(255, 255, 255, 0.92);
+
+  /* shadcn/ui design tokens — mapped to project theme */
+  --background: var(--color-bg);
+  --foreground: var(--color-text);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-text);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-text);
+  --primary: var(--color-primary);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-surface-muted);
+  --secondary-foreground: var(--color-text);
+  --muted: var(--color-surface-muted);
+  --muted-foreground: var(--color-text-muted);
+  --accent: var(--color-primary-weak);
+  --accent-foreground: var(--color-text);
+  --destructive: var(--color-error);
+  --destructive-foreground: #ffffff;
+  --border: var(--color-border);
+  --input: var(--color-border);
+  --ring: var(--color-primary);
+  --radius: 0.625rem;
+  --chart-1: var(--chart-1);
+  --chart-2: var(--chart-2);
+  --chart-3: var(--chart-3);
+  --chart-4: var(--chart-4);
+  --chart-5: var(--chart-5);
 }
 
 :root[data-scheme="violet"] {
@@ -159,6 +186,27 @@
 
   /* Elevated card surface - dark */
   --card-bg-elevated: rgba(30, 41, 59, 0.92);
+
+  /* shadcn/ui design tokens — dark */
+  --background: var(--color-bg);
+  --foreground: var(--color-text);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-text);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-text);
+  --primary: var(--color-primary);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-surface-muted);
+  --secondary-foreground: var(--color-text);
+  --muted: var(--color-surface-muted);
+  --muted-foreground: var(--color-text-muted);
+  --accent: var(--color-primary-weak);
+  --accent-foreground: var(--color-text);
+  --destructive: var(--color-error);
+  --destructive-foreground: #ffffff;
+  --border: var(--color-border);
+  --input: var(--color-border);
+  --ring: var(--color-primary);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -203,6 +251,27 @@
 
     /* Elevated card surface - dark */
     --card-bg-elevated: rgba(30, 41, 59, 0.92);
+
+    /* shadcn/ui design tokens — auto dark */
+    --background: var(--color-bg);
+    --foreground: var(--color-text);
+    --card: var(--color-surface);
+    --card-foreground: var(--color-text);
+    --popover: var(--color-surface);
+    --popover-foreground: var(--color-text);
+    --primary: var(--color-primary);
+    --primary-foreground: #ffffff;
+    --secondary: var(--color-surface-muted);
+    --secondary-foreground: var(--color-text);
+    --muted: var(--color-surface-muted);
+    --muted-foreground: var(--color-text-muted);
+    --accent: var(--color-primary-weak);
+    --accent-foreground: var(--color-text);
+    --destructive: var(--color-error);
+    --destructive-foreground: #ffffff;
+    --border: var(--color-border);
+    --input: var(--color-border);
+    --ring: var(--color-primary);
   }
 }
 
