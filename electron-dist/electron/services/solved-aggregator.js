@@ -15,6 +15,7 @@ const platformIdMap = {
     POJ: 'poj',
     '\u725b\u5ba2': 'nowcoder',
     QOJ: 'qoj',
+    '\u84dd\u6865\u4e91\u8bfe': 'lanqiao',
 };
 /**
  * Fetch solved count for a given platform and handle.

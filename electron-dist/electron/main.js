@@ -397,11 +397,11 @@ electron_1.app.whenReady().then(() => {
                 (0, rating_aggregator_1.fetchRatingDedup)(platform, name)
                     .then((fresh) => (0, cache_service_1.setCachedRating)(platform, name, fresh))
                     .catch(() => { });
-                return cached;
+                return cached.rating;
             }
             const response = await (0, rating_aggregator_1.fetchRatingDedup)(platform, name);
             (0, cache_service_1.setCachedRating)(platform, name, response);
-            return response;
+            return response.rating;
         }
         catch (error) {
             console.error(`Error fetching rating for ${platform}:`, error);
@@ -422,11 +422,11 @@ electron_1.app.whenReady().then(() => {
                 (0, solved_aggregator_1.fetchSolvedCountDedup)(platform, name)
                     .then((fresh) => (0, cache_service_1.setCachedSolved)(platform, name, fresh))
                     .catch(() => { });
-                return cached;
+                return cached.solved;
             }
             const response = await (0, solved_aggregator_1.fetchSolvedCountDedup)(platform, name);
             (0, cache_service_1.setCachedSolved)(platform, name, response);
-            return response;
+            return response.solved;
         }
         catch (error) {
             console.error(`Error fetching solved num for ${platform}:`, error);

@@ -454,12 +454,12 @@ app.whenReady().then(() => {
           fetchRatingDedup(platform, name)
             .then((fresh) => setCachedRating(platform, name, fresh))
             .catch(() => {});
-          return cached;
+          return cached.rating;
         }
 
         const response = await fetchRatingDedup(platform, name);
         setCachedRating(platform, name, response);
-        return response;
+        return response.rating;
       } catch (error) {
         console.error(`Error fetching rating for ${platform}:`, error);
         throw error;
@@ -483,12 +483,12 @@ app.whenReady().then(() => {
           fetchSolvedCountDedup(platform, name)
             .then((fresh) => setCachedSolved(platform, name, fresh))
             .catch(() => {});
-          return cached;
+          return cached.solved;
         }
 
         const response = await fetchSolvedCountDedup(platform, name);
         setCachedSolved(platform, name, response);
-        return response;
+        return response.solved;
       } catch (error) {
         console.error(`Error fetching solved num for ${platform}:`, error);
         throw error;
