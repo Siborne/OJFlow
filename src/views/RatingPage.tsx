@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 export default function RatingPage() {
   const [platform, setPlatform] = useState('Codeforces');
   const [username, setUsername] = useState('');
-  const [result, setResult] = useState<{ rating: number; rank?: string } | null>(null);
+  const [result, setResult] = useState<{ rating: number; maxRating: number; name: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -18,7 +18,7 @@ export default function RatingPage() {
     setResult(null);
     try {
       const data = await RatingService.getRating(platform, username);
-      setResult(data as { rating: number; rank?: string });
+      setResult({ rating: data.curRating, maxRating: data.maxRating, name: data.name });
     } catch (e) {
       setError(e instanceof Error ? e.message : '查询失败');
     } finally {
@@ -62,7 +62,7 @@ export default function RatingPage() {
             <div className="rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] p-6 shadow-[var(--card-shadow)]">
               <div className="mb-2 text-sm text-[var(--color-text-muted)]">{platform} - {username}</div>
               <div className="text-4xl font-bold text-[var(--color-primary)]">{result.rating}</div>
-              {result.rank && <div className="mt-2 text-sm text-[var(--color-text-muted)]">排名: {result.rank}</div>}
+              <div className="mt-2 text-sm text-[var(--color-text-muted)]">最高: {result.maxRating}</div>
             </div>
           )}
         </div>
