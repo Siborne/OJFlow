@@ -107,6 +107,10 @@
   /* Elevated card surface */
   --card-bg-elevated: rgba(255, 255, 255, 0.92);
 
+  --body-gradient-start: #fefefe;
+  --body-gradient-end: #f8f8f8;
+  --dot-color: rgba(15, 23, 42, 0.04);
+
   /* shadcn/ui design tokens — mapped to project theme */
   --background: var(--color-bg);
   --foreground: var(--color-text);
@@ -181,6 +185,10 @@
   /* Elevated card surface - dark */
   --card-bg-elevated: rgba(38, 38, 38, 0.92);
 
+  --body-gradient-start: #1a1a1a;
+  --body-gradient-end: #141414;
+  --dot-color: rgba(229, 229, 229, 0.06);
+
 }
 
 @media (prefers-color-scheme: dark) {
@@ -226,6 +234,10 @@
     /* Elevated card surface - dark */
     --card-bg-elevated: rgba(38, 38, 38, 0.92);
 
+    --body-gradient-start: #1a1a1a;
+    --body-gradient-end: #141414;
+    --dot-color: rgba(229, 229, 229, 0.06);
+
     }
 }
 
@@ -238,7 +250,7 @@ body,
   font-family: "SF Pro Text", "Segoe UI Variable", "PingFang SC", "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
   background:
     radial-gradient(900px 500px at 50% -10%, var(--gradient-start), transparent 50%),
-    linear-gradient(180deg, #fefefe 0%, var(--color-bg) 42%, #f8f8f8 100%);
+    linear-gradient(180deg, var(--body-gradient-start) 0%, var(--color-bg) 42%, var(--body-gradient-end) 100%);
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -249,7 +261,7 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image: radial-gradient(rgba(15, 23, 42, 0.04) 0.5px, transparent 0.5px);
+  background-image: radial-gradient(var(--dot-color) 0.5px, transparent 0.5px);
   background-size: 3px 3px;
   opacity: 0.15;
   z-index: 0;
