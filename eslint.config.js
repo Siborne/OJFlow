@@ -1,39 +1,23 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
-import pluginVue from 'eslint-plugin-vue';
+import reactHooks from 'eslint-plugin-react-hooks';
 import prettier from 'eslint-config-prettier';
 
 export default [
-  // Global ignores
   { ignores: ['dist/**', 'release/**', 'node_modules/**', 'electron-dist/**'] },
-
-  // JavaScript/TypeScript base rules
   js.configs.recommended,
   ...tseslint.configs.recommended,
-
-  // Vue rules
-  ...pluginVue.configs['flat/recommended'],
-
-  // TypeScript parser for Vue files
   {
-    files: ['**/*.vue'],
-    languageOptions: {
-      parserOptions: {
-        parser: tseslint.parser,
-      },
+    files: ['**/*.{ts,tsx}'],
+    plugins: {
+      'react-hooks': reactHooks,
     },
-  },
-
-  // Project-specific rules
-  {
     rules: {
+      ...reactHooks.configs.recommended.rules,
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      'vue/multi-word-component-names': 'off',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
   },
-
-  // Disable rules that conflict with Prettier (must be last)
   prettier,
 ];

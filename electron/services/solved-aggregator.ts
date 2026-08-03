@@ -14,6 +14,7 @@ const platformIdMap: Record<string, string> = {
   POJ: 'poj',
   '\u725b\u5ba2': 'nowcoder',
   QOJ: 'qoj',
+  '\u84dd\u6865\u4e91\u8bfe': 'lanqiao',
 };
 
 /**
@@ -37,10 +38,7 @@ export async function fetchSolvedCount(
   const solved = await adapter.fetchSolvedCount(handle);
 
   if (!validateSolvedNum(solved)) {
-    console.warn(
-      `[solved-aggregator] Invalid solved count from ${adapterId}:`,
-      solved,
-    );
+    console.warn(`[solved-aggregator] Invalid solved count from ${adapterId}:`, solved);
     return {
       solved: { name: handle, solvedNum: 0 },
       fromCache: false,
@@ -60,7 +58,5 @@ export function fetchSolvedCountDedup(
   platform: string,
   handle: string,
 ): Promise<SolvedFetchResponse> {
-  return dedup(`solved:${platform}:${handle}`, () =>
-    fetchSolvedCount(platform, handle),
-  );
+  return dedup(`solved:${platform}:${handle}`, () => fetchSolvedCount(platform, handle));
 }

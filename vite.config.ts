@@ -1,12 +1,18 @@
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig({
-  plugins: [vue()],
-  base: './', // 关键：确保资源路径是相对的，否则打包后白屏
+  plugins: [react()],
+  base: './',
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   server: {
     port: 5173,
-    strictPort: true, // 如果端口被占用直接报错，不要自动换端口
+    strictPort: true,
   },
   build: {
     outDir: 'dist',
@@ -23,5 +29,5 @@ export default defineConfig({
         },
       },
     },
-  }
-})
+  },
+});
