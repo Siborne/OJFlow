@@ -1,15 +1,31 @@
+import type {
+  AppFeatures,
+  AppMode,
+  LocalePreference,
+  ScheduleItem,
+  SurfaceStyle,
+  ThemeScheme,
+  WindowCloseBehavior,
+} from './types';
+
 export interface UserConfig {
   /** UI preferences */
   ui: {
-    themeScheme: 'ocean' | 'violet';
+    themeScheme: ThemeScheme;
     colorMode: 'auto' | 'light' | 'dark';
-    locale: 'zh-CN' | 'en-US';
+    locale: LocalePreference;
+    surfaceStyle: SurfaceStyle;
+    startAtLogin: boolean;
+    closeBehavior: WindowCloseBehavior;
+    appMode: AppMode;
+    features: AppFeatures;
   };
 
   /** Contest settings */
   contest: {
     maxCrawlDays: number;
     hideDate: boolean;
+    showEmptyDay: boolean;
     selectedPlatforms: Record<string, boolean>;
   };
 
@@ -54,6 +70,9 @@ export interface UserConfig {
     enabled: boolean;
     reminderMinutes: number;
   };
+
+  /** User-created dashboard schedule */
+  schedule: ScheduleItem[];
 
   /** Internal: migration flag */
   _migrated?: boolean;

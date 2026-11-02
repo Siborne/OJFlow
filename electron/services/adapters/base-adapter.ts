@@ -24,10 +24,7 @@ export abstract class BaseAdapter implements PlatformAdapter {
   }
 
   /** Wrap an async operation with unified error handling and timing */
-  protected async safeFetch<T>(
-    fn: () => Promise<T>,
-    fallback: T,
-  ): Promise<FetchResult<T>> {
+  protected async safeFetch<T>(fn: () => Promise<T>, fallback: T): Promise<FetchResult<T>> {
     const start = Date.now();
     try {
       const data = await fn();

@@ -3,6 +3,7 @@ import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { Contest } from '@/types';
+import { useI18n } from '@/i18n';
 
 type ContestState = 'upcoming' | 'running' | 'ended';
 
@@ -23,6 +24,7 @@ export function ContestCard({
   onOpen,
   onToggleFavorite,
 }: ContestCardProps) {
+  const { t } = useI18n();
   const state = useMemo<ContestState>(() => {
     const start = contest.startTimeSeconds * 1000;
     const end = start + contest.durationSeconds * 1000;
@@ -31,20 +33,25 @@ export function ContestCard({
     return 'ended';
   }, [contest.startTimeSeconds, contest.durationSeconds, now]);
 
-  const stateLabel = state === 'upcoming' ? '即将开始' : state === 'running' ? '进行中' : '已结束';
+  const stateLabel =
+    state === 'upcoming'
+      ? t('contest.stateUpcoming')
+      : state === 'running'
+        ? t('contest.stateRunning')
+        : t('contest.stateEnded');
 
   const stateColorClass =
     state === 'upcoming'
-      ? 'bg-[rgba(255,161,22,0.7)]'
+      ? 'bg-[var(--color-primary)]'
       : state === 'running'
-        ? 'bg-[rgba(20,184,166,0.78)]'
+        ? 'bg-[var(--color-success)]'
         : 'bg-[rgba(148,163,184,0.62)]';
 
   const tagClass =
     state === 'upcoming'
-      ? 'bg-[rgba(255,161,22,0.1)] text-[var(--color-primary)]'
+      ? 'bg-[var(--color-primary-weak)] text-[var(--color-primary)]'
       : state === 'running'
-        ? 'bg-[rgba(20,184,166,0.1)] text-[var(--color-success)]'
+        ? 'bg-[var(--color-success-weak)] text-[var(--color-success)]'
         : 'bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]';
 
   const countdown = useMemo(() => {
@@ -53,12 +60,14 @@ export function ContestCard({
     if (diff <= 0 || diff > 24 * 60 * 60 * 1000) return null;
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    return `${hours}小时${minutes}分后`;
-  }, [contest.startTimeSeconds, now]);
+    return t('contest.startsIn', { hours, minutes });
+  }, [contest.startTimeSeconds, now, t]);
 
   return (
     <div className="relative flex items-center px-4 py-3">
-      <div className={cn('absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-full', stateColorClass)} />
+      <div
+        className={cn('absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-full', stateColorClass)}
+      />
       <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-lg border border-[var(--color-border)]">
         <img src={platformImage} alt={contest.platform} className="h-full w-full object-cover" />
       </div>
@@ -67,7 +76,7 @@ export function ContestCard({
         role="button"
         tabIndex={0}
         onClick={() => onOpen(contest)}
-        onKeyDown={(e) => {
+        onKeyDown={e => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onOpen(contest);
@@ -81,7 +90,7 @@ export function ContestCard({
           </span>
           <span className={cn('rounded-full px-2 py-0.5 text-xs', tagClass)}>{stateLabel}</span>
           {countdown && (
-            <span className="rounded-full bg-[rgba(20,184,166,0.1)] px-2 py-0.5 text-xs text-[var(--color-success)]">
+            <span className="rounded-full bg-[var(--color-success-weak)] px-2 py-0.5 text-xs text-[var(--color-success)]">
               {countdown}
             </span>
           )}
@@ -92,9 +101,9 @@ export function ContestCard({
           size="sm"
           variant="outline"
           onClick={() => onOpen(contest)}
-          className="border-[rgba(255,161,22,0.28)] text-[var(--color-primary)] hover:bg-[rgba(255,161,22,0.08)]"
+          className="border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary-weak)]"
         >
-          参赛
+          {t('contest.join')}
         </Button>
         <button
           onClick={() => onToggleFavorite(contest)}
@@ -104,7 +113,9 @@ export function ContestCard({
             size={20}
             className={cn(
               'transition-colors',
-              isFavorite ? 'fill-[var(--color-warning)] text-[var(--color-warning)]' : 'text-[var(--color-text-muted)]',
+              isFavorite
+                ? 'fill-[var(--color-warning)] text-[var(--color-warning)]'
+                : 'text-[var(--color-text-muted)]',
             )}
           />
         </button>

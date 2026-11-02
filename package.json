@@ -6,7 +6,7 @@
     "name": "Siborne",
     "email": "bo7785888@gmail.com"
   },
-  "homepage": "https://github.com/Siborne/OJFlow",
+  "homepage": "https://siborne.github.io/OJFlow/",
   "repository": {
     "type": "git",
     "url": "https://github.com/Siborne/OJFlow.git",
@@ -32,7 +32,8 @@
   "license": "GPL-3.0-only",
   "main": "electron-dist/electron/main.js",
   "scripts": {
-    "build:electron": "tsc -p tsconfig.electron.json && node -e \"require('fs').cpSync('electron/app.config.json','electron-dist/electron/app.config.json')\"",
+    "clean:electron": "node -e \"require('fs').rmSync('electron-dist',{recursive:true,force:true})\"",
+    "build:electron": "bun run clean:electron && tsc -p tsconfig.electron.json && node -e \"require('fs').cpSync('electron/app.config.json','electron-dist/electron/app.config.json')\"",
     "rebuild": "electron-rebuild",
     "dev": "bun run build:electron && concurrently \"bun run vite\" \"wait-on http://localhost:5173 && electron .\"",
     "vite": "vite",
@@ -43,12 +44,16 @@
     "dist:win": "bun run build:electron && bun run build && electron-builder --win",
     "dist:mac": "bun run build:electron && bun run build && electron-builder --mac",
     "dist:linux": "bun run build:electron && bun run build && electron-builder --linux",
-    "test:unit": "bun test tests/unit",
-    "test:e2e": "playwright test tests/e2e",
+    "test:unit": "bun scripts/run-unit-tests.ts",
+    "test:e2e": "bun run build:electron && bun run build && playwright test",
     "lint": "eslint src/ electron/ shared/ tests/",
     "lint:fix": "eslint --fix src/ electron/ shared/ tests/",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"electron/**/*.ts\" \"shared/**/*.ts\"",
-    "type-check": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit"
+    "site:check": "node scripts/check-site.mjs",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"electron/**/*.ts\" \"shared/**/*.ts\" \"tests/**/*.{ts,tsx}\" \"scripts/**/*.{ts,mjs}\" \"site/**/*.{html,css,js}\" \"playwright.config.ts\" \"vite.config.mts\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"electron/**/*.ts\" \"shared/**/*.ts\" \"tests/**/*.{ts,tsx}\" \"scripts/**/*.{ts,mjs}\" \"site/**/*.{html,css,js}\" \"playwright.config.ts\" \"vite.config.mts\"",
+    "type-check": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "verify:fast": "bun run type-check && bun run lint && bun run format:check && bun run site:check && bun run test:unit && bun run build",
+    "verify": "bun run type-check && bun run lint && bun run format:check && bun run site:check && bun run test:unit && bun run test:e2e"
   },
   "overrides": {
     "entities": "6.0.0"
@@ -68,6 +73,7 @@
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-router-dom": "^6.28.0",
+    "sql.js": "^1.15.2",
     "tailwind-merge": "^2.5.0",
     "tailwindcss-animate": "^1.0.7",
     "zustand": "^5.0.0"
@@ -76,9 +82,11 @@
     "@eslint/js": "^9.0.0",
     "@playwright/test": "^1.40.0",
     "@tailwindcss/postcss": "^4.3.0",
+    "@types/bun": "^1.4.4",
     "@types/node": "^20.9.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "@types/sql.js": "^1.4.11",
     "@vitejs/plugin-react": "^4.3.0",
     "concurrently": "^8.2.2",
     "electron": "^30.0.0",
@@ -87,6 +95,7 @@
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-react-hooks": "^5.0.0",
+    "happy-dom": "^21.0.4",
     "jimp": "^1.6.0",
     "png-to-ico": "^3.0.1",
     "png2icons": "^2.0.1",

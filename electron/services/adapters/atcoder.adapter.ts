@@ -7,8 +7,7 @@ export class AtCoderAdapter extends BaseAdapter {
 
   private readonly contestUrl = 'https://atcoder.jp/contests/';
   private readonly userUrl = 'https://atcoder.jp/users/';
-  private readonly kenkooooUrl =
-    'https://kenkoooo.com/atcoder/atcoder-api/v3/user/ac_rank';
+  private readonly kenkooooUrl = 'https://kenkoooo.com/atcoder/atcoder-api/v3/user/ac_rank';
 
   async fetchContests(days: number): Promise<RawContest[]> {
     const response = await this.http.get(this.contestUrl);

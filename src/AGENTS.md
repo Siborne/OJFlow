@@ -2,51 +2,53 @@
 
 ## OVERVIEW
 
-Vue 3 renderer process — the user-facing UI layer. Uses Composition API exclusively with `<script setup>`.
+React 18 renderer for OJFlow. State uses Zustand, routing uses React Router 6,
+styling uses Tailwind CSS 4 with CSS variables, and asynchronous server data uses
+TanStack Query where appropriate.
 
 ## STRUCTURE
 
-```
-src/
-├── main.ts              # App entry: creates Vue app, initializes Pinia + router
-├── App.vue              # Root component
-├── router/index.ts      # Vue Router v5 config
-├── views/               # Page components (11 views)
-├── components/          # Reusable UI components
-│   └── contest/         # Contest-specific sub-components (6 files)
-├── stores/              # Pinia stores (contest, ui)
-├── services/            # Frontend data fetching (contest, rating, solved)
-├── composables/         # Vue composables (useKeyboardShortcuts)
-├── utils/               # Pure utilities (contest_utils, echarts-setup, platform-icons, rating-colors)
-├── types/               # Re-exports from shared/types
-├── styles/              # CSS (theme, a11y, animations, mobile)
-├── assets/              # Icons (ico, icns, png)
-└── updater/             # Auto-update logic
+```text
+main.tsx              React root and startup migration
+App.tsx               Providers, store initialization, IPC subscriptions
+router.tsx            Hash router and lazy page loading
+views/                Pages
+components/           Shared and contest components
+components/ui/        shadcn/Radix primitives
+stores/               Zustand UI and contest stores
+services/             Typed renderer wrappers around window.api
+utils/                Pure utilities
+hooks/                React hooks
+styles/               Theme, accessibility, motion and mobile CSS
+updater/              Renderer-side update manifest checks
 ```
 
-## WHERE TO LOOK
+## RULES
 
-| Task | File |
-|------|------|
-| Add new page | Create in `views/`, add route in `router/index.ts` |
-| Add reusable component | `components/` (contest-specific → `components/contest/`) |
-| Add Pinia store | `stores/` using `defineStore` with Composition API |
-| Add composable | `composables/` — name as `use*.ts` |
-| Add frontend service | `services/` — wraps IPC calls to main process |
-| Add utility | `utils/` — pure functions only, no side effects |
-| Modify theme | `styles/theme.css` |
-| Add mobile styles | `styles/mobile.css` |
+- Use function components and hooks.
+- Use `useUiStore` selectors rather than subscribing to the entire UI store.
+- Every Settings toggle must persist and affect runtime behavior.
+- Use CSS variables from `styles/theme.css`; do not add hard-coded orange/teal
+  rgba values.
+- Use `ContestService.openUrl` instead of browser navigation for external links.
+- Keep pages usable at 320 px width and in both simple/full app modes.
+- Add `aria-label`/`title` to icon-only controls.
+- Test every page and interactive component under `tests/unit/`.
 
-## CONVENTIONS
+## UI MODES
 
-- **Vue**: `<script setup lang="ts">` exclusively — no Options API
-- **Component naming**: PascalCase filenames matching component name
-- **Store pattern**: `defineStore` with Composition API (setup function syntax)
-- **Services**: Thin wrappers around `window.api.*` IPC calls
-- **Composables**: Return reactive state + methods, name with `use` prefix
+- `simple`: fewer navigation entries, no quick-stat dashboard or history section.
+- `full`: all navigation entries and advanced tools.
+- Color modes: `auto`, `light`, `dark`.
+- Accent schemes: `ocean`, `ember`.
 
-## ANTI-PATTERNS
+The DOM exposes `data-mode`, `data-theme`, `data-scheme` and
+`data-reduce-motion` on `<html>`.
 
-- **NEVER** import from `electron/` or `shared/` directly — use `window.api.*` for IPC
-- **NEVER** use `any` type — use proper interfaces from `types/` or `shared/types`
-- **ALWAYS** stub Naive UI components in tests (`n-button`, `n-grid`, etc.)
+## ANTIPATTERNS
+
+- Do not import `electron/` runtime code into the renderer.
+- Do not call `window.api` directly from views; use `src/services/`.
+- Do not use `as any`; model the IPC response in `shared/types.ts`.
+- Do not leave a button with only visual styling and no behavior.
+- Do not use Vue directives, SFCs, Pinia or Naive UI APIs.

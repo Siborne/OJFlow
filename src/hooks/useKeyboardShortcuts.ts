@@ -5,43 +5,48 @@ export interface KeyboardShortcutOptions {
   onRefresh?: () => void;
   onEscape?: () => void;
   onSearch?: () => void;
+  enabled?: boolean;
+  routes?: string[];
 }
 
-const ROUTES = ['/contest', '/star', '/service', '/setting'];
+const DEFAULT_ROUTES = ['/contest', '/star', '/service', '/setting'];
 
 export function useKeyboardShortcuts(options: KeyboardShortcutOptions = {}) {
   const navigate = useNavigate();
+  const { enabled = true, routes = DEFAULT_ROUTES } = options;
+  const { onRefresh, onEscape, onSearch } = options;
 
   useEffect(() => {
+    if (!enabled) return;
     const handler = (e: KeyboardEvent) => {
       const isCtrl = e.ctrlKey || e.metaKey;
 
-      if (isCtrl && e.key >= '1' && e.key <= '4') {
+      if (isCtrl && /^[1-9]$/.test(e.key)) {
         e.preventDefault();
         const idx = parseInt(e.key) - 1;
-        if (ROUTES[idx]) navigate(ROUTES[idx]);
+        if (routes[idx]) navigate(routes[idx]);
         return;
       }
 
       if (isCtrl && e.key === 'r') {
         e.preventDefault();
-        options.onRefresh?.();
+        onRefresh?.();
         return;
       }
 
-      if (isCtrl && e.key === 'f') {
+      if (isCtrl && (e.key === 'f' || e.key === 'k')) {
         e.preventDefault();
-        options.onSearch?.();
+        onSearch?.();
         return;
       }
 
       if (e.key === 'Escape') {
-        options.onEscape?.();
+        onEscape?.();
         return;
       }
     };
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [navigate, options.onRefresh, options.onEscape, options.onSearch]);
+  }, [enabled, navigate, onEscape, onRefresh, onSearch, routes]);
 }

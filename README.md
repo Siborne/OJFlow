@@ -1,191 +1,179 @@
 <div align="center">
-  <img src="docs/assets/logo.png" alt="OJFlow Logo" width="120" height="120" />
+  <img src="docs/assets/logo.png" alt="OJFlow Logo" width="128" height="128" />
   <h1>OJFlow</h1>
   <p><strong>Stay in the zone, skip the clutter.</strong></p>
-  <p>基于 Electron + Vue 3 的现代化算法竞赛辅助工具</p>
+  <p>面向算法竞赛选手的多平台数据工作台</p>
 
   <p>
-    <a href="https://github.com/Siborne/OJFlow">
-      <img src="https://img.shields.io/badge/build-passing-brightgreen?style=flat-square" alt="Build Status" />
-    </a>
-    <a href="https://github.com/Siborne/OJFlow/releases">
-      <img src="https://img.shields.io/badge/release-v1.1.0-blue?style=flat-square" alt="Latest Release" />
-    </a>
-    <a href="./LICENSE">
-      <img src="https://img.shields.io/badge/license-GPLv3-green?style=flat-square" alt="License" />
-    </a>
-    <br />
-    <img src="https://img.shields.io/badge/Vue-3.x-4FC08D?style=flat-square&logo=vue.js&logoColor=white" alt="Vue 3" />
-    <img src="https://img.shields.io/badge/Naive%20UI-2.x-5fbc87?style=flat-square&logo=naiveui&logoColor=white" alt="Naive UI" />
-    <img src="https://img.shields.io/badge/Electron-30.x-47848F?style=flat-square&logo=electron&logoColor=white" alt="Electron" />
-    <img src="https://img.shields.io/badge/Vite-5.x-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" />
-    <img src="https://img.shields.io/badge/Bun-1.x-000000?style=flat-square&logo=bun&logoColor=white" alt="Bun" />
-    <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+    <a href="https://siborne.github.io/OJFlow/"><strong>官网</strong></a>
+    ·
+    <a href="https://github.com/Siborne/OJFlow/releases/latest"><strong>下载</strong></a>
+    ·
+    <a href="https://github.com/Siborne/OJFlow/issues">问题反馈</a>
   </p>
 
-  <p>
-    <a href="./README.md">中文</a>
-  </p>
+  <a href="https://github.com/Siborne/OJFlow/actions/workflows/ci.yml"><img src="https://github.com/Siborne/OJFlow/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
+  <a href="https://siborne.github.io/OJFlow/"><img src="https://github.com/Siborne/OJFlow/actions/workflows/pages.yml/badge.svg?branch=main" alt="Official Site" /></a>
+  <a href="https://github.com/Siborne/OJFlow/actions/workflows/release.yml"><img src="https://github.com/Siborne/OJFlow/actions/workflows/release.yml/badge.svg" alt="Release Builds" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/Siborne/OJFlow" alt="License" /></a>
 </div>
 
----
+> 产品官网：[**https://siborne.github.io/OJFlow/**](https://siborne.github.io/OJFlow/)
 
-> **致谢**：本项目参考并致敬了 [oj_helper](https://github.com/2754LM/oj_helper) 项目，感谢原作者的开源贡献。
+OJFlow 把 Codeforces、AtCoder、LeetCode、洛谷、牛客、蓝桥云课、VJudge、HDU、POJ 和
+QOJ 的比赛、Rating、解题数据、题目检索与训练日程集中到一个桌面工作台。
 
-## 📖 项目简介 (Introduction)
+![Electron](https://img.shields.io/badge/Electron-30-2b2e3a)
+![React](https://img.shields.io/badge/React-18-087f8c)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-2563eb)
+![SQLite](https://img.shields.io/badge/SQLite-persistent-0f766e)
 
-**OJFlow** 是一个专为算法竞赛（ACM/ICPC, OI）选手打造的跨平台桌面应用。它致力于解决多平台账号管理混乱、比赛信息分散、数据查看不便等痛点。
+## 为什么是 OJFlow
 
-通过 **OJFlow**，你可以：
+大多数 OJ 工具解决“查一次数据”。OJFlow 解决的是“今天应该做什么”。
 
-- **一站式管理**：聚合 Codeforces, AtCoder, LeetCode 等主流 OJ 平台。
-- **专注训练**：提供沉浸式的刷题体验，减少无关信息的干扰。
-- **数据可视化**：直观展示你的 Rating 变化曲线与解题数量统计，助你科学分析训练进度。
+- **Bento 数据工作台**：比赛、Rating、历史解题量、算法主题树、平台分布和日程同屏呈现。
+- **十平台比赛聚合**：缓存优先、后台刷新，单平台失败不会阻塞其他平台。
+- **跨平台题目检索**：Codeforces、AtCoder、力扣、洛谷、牛客和 QOJ 联合检索。
+- **中英算法标签字典**：76+ 标签支持中英文显示、别名归一化和稳定的英文 API 值。
+- **收藏与日程联动**：关注比赛自动生成日程，取消关注同步移除自动日程。
+- **SQLite 查询快照**：比赛、Rating 和解题数持久化到本地数据库，重启后仍有上下文。
+- **数据大屏式统计**：分段环图、平台排行、平均解题数和主力平台一屏呈现。
+- **个性化界面**：7 套配色、玻璃/平铺/云雾/粘土 4 种质感、亮色/暗色/跟随系统。
+- **完整桌面体验**：无边框窗口、自绘窗口按钮、托盘常驻、开机自启和可配置关闭行为。
 
-## 🛠 技术栈 (Tech Stack)
+## 支持平台
 
-本项目基于现代化的前端技术栈构建，确保了高性能与良好的开发体验：
+| 平台 | 比赛 | Rating | 解题数 | 题目检索 |
+| --- | :---: | :---: | :---: | :---: |
+| Codeforces | ✓ | ✓ | ✓ | ✓ |
+| AtCoder | ✓ | ✓ | ✓ | ✓ |
+| LeetCode / 力扣 | ✓ | ✓ | ✓ | ✓ |
+| 洛谷 | ✓ | ✓ | ✓ | ✓ |
+| 牛客 | ✓ | ✓ | ✓ | ✓ |
+| 蓝桥云课 | ✓ |  | ✓ |  |
+| VJudge | ✓ |  | ✓ |  |
+| HDU | ✓ |  | ✓ |  |
+| POJ | ✓ |  | ✓ |  |
+| QOJ |  |  | ✓ | ✓ |
 
-| 模块 | 技术选型 | 说明 |
-| :--- | :--- | :--- |
-| **Core** | [Electron](https://www.electronjs.org/) | 跨平台桌面应用容器 (v30.x) |
-| **Framework** | [Vue 3](https://vuejs.org/) | 渐进式 JavaScript 框架 |
-| **Language** | [TypeScript](https://www.typescriptlang.org/) | 强类型的 JavaScript 超集 |
-| **Build Tool** | [Vite](https://vitejs.dev/) + [Bun](https://bun.sh/) | 极速的构建工具与运行时 |
-| **UI Library** | [Naive UI](https://www.naiveui.com/) | Vue 3 组件库，极简风格 |
-| **State** | [Pinia](https://pinia.vuejs.org/) | 直观、类型安全的状态管理 |
-| **Utils** | [Cheerio](https://cheerio.js.org/) | 服务端 HTML 解析与爬虫 |
-| **Charts** | [ECharts](https://echarts.apache.org/) | 强大的数据可视化库 |
+## 截图与官网
 
-## ✨ 功能特性 (Features)
+官网包含完整产品介绍、交互式配色/质感预览和下载入口：
 
-- [x] 📅 **比赛日历**：实时同步各大 OJ 近期比赛信息，支持添加提醒。
-- [x] 📈 **Rating 追踪**：可视化展示 Codeforces / AtCoder 等平台的积分变化。
-- [x] 📊 **刷题统计**：自动统计各平台 AC 题目数量，生成能力雷达图。
-- [x] 🚀 **快捷导航**：内置常用 OJ 平台入口，支持自定义添加。
-- [x] 🎨 **现代化 UI**：基于 Naive UI 设计，支持深色模式。
-- [ ] 📝 **本地题解**：支持 Markdown 编写与管理本地题解库 (Planned)。
-- [ ] 🤖 **虚拟竞赛**：模拟真实比赛环境，支持倒计时与榜单 (Planned)。
+**[https://siborne.github.io/OJFlow/](https://siborne.github.io/OJFlow/)**
 
-## 🚀 快速开始 (Quick Start)
+官网源码位于 [`site/`](./site)，通过 GitHub Pages 自动部署。
 
-### 环境要求
+## 下载
 
-- **Node.js**: >= 18.0.0
-- **Bun**: >= 1.0.0 (推荐) 或 npm/pnpm
+前往 [GitHub Releases](https://github.com/Siborne/OJFlow/releases/latest) 获取最新版本：
 
-### 安装步骤
+- Windows：`.exe`
+- macOS：`.dmg` / `.zip`
+- Linux：`.AppImage` / `.deb`
 
-1. **克隆仓库**
+## 技术栈
 
-   ```bash
-  git clone https://github.com/Siborne/OJFlow.git
-   cd OJFlow
-   ```
+- Electron 30 + React 18 + TypeScript Strict
+- Zustand + TanStack Query + React Router
+- Tailwind CSS 4 + Radix UI
+- SQLite（`sql.js` WASM）查询快照
+- Bun + Vite
+- Playwright 真实 Electron E2E
 
-2. **安装依赖**
+## 本地开发
 
-   ```bash
-   bun install
-   # 或者
-   npm install
-   ```
-
-3. **启动开发环境**
-
-   ```bash
-   bun run dev
-   # 或者
-   npm run dev
-   ```
-
-   此命令将同时启动 Vite 开发服务器和 Electron 应用窗口。
-
-4. **构建应用**
-
-   ```bash
-   # 构建生产环境包
-   bun run dist
-   
-   # 针对特定平台构建
-   bun run dist:win   # Windows
-   bun run dist:mac   # macOS
-   bun run dist:linux # Linux
-   ```
-
-### 常用脚本
+要求 Node.js 20+、Bun 1.3+。
 
 ```bash
-# 开发
+bun install
 bun run dev
+```
 
-# 类型检查
+`bun run dev` 会先编译 Electron 主进程，再启动 Vite 与 Electron。
+
+## 构建
+
+```bash
+bun run build:electron
+bun run build
+bun run dist
+
+bun run dist:win
+bun run dist:mac
+bun run dist:linux
+```
+
+## 质量门禁
+
+每个模块和用户可见功能都有测试。提交前运行完整门禁：
+
+```bash
+bun run verify
+```
+
+它会依次执行：
+
+1. TypeScript 类型检查
+2. ESLint
+3. Prettier 格式检查
+4. 官网静态资源与链接检查
+5. 单元/组件测试
+6. 真实 Electron E2E
+7. Electron 主进程与渲染进程生产构建
+
+也可以单独运行：
+
+```bash
 bun run type-check
-
-# Lint
 bun run lint
-
-# 自动修复 Lint
-bun run lint:fix
-
-# 单元测试
+bun run format:check
+bun run site:check
 bun run test:unit
-
-# E2E 测试
 bun run test:e2e
 ```
 
-## 📺 使用示例 (Usage Examples)
+## CI / CD
 
-### 1. 个人能力概览
+- [`ci.yml`](./.github/workflows/ci.yml)：每次 push 和 PR 执行类型、Lint、格式、官网、
+  单测、构建和真实 Electron E2E。
+- [`release.yml`](./.github/workflows/release.yml)：推送 `v*` tag 或手动触发时，
+  在 Windows、macOS、Linux 三平台构建安装包并上传 Release Assets。
+- [`pages.yml`](./.github/workflows/pages.yml)：主分支更新 `site/` 后自动部署 GitHub Pages。
 
-启动应用后，首页直观展示各大平台的刷题数据与 Rating 积分，助你快速了解当前状态。
+## 数据与持久化
 
-<div align="center">
-  <img src="docs/assets/solvednum.jpg" alt="Solved Statistics" width="80%" />
-  <p><em>各平台解题数量统计</em></p>
-</div>
+- UI 设置、收藏、日程和平台账号使用 `electron-store` 持久化。
+- 比赛、Rating、解题数查询快照写入
+  `app.getPath('userData')/ojflow.sqlite`。
+- 清理缓存时会同时清理内存缓存、electron-store 缓存和 SQLite 查询快照。
 
-### 2. Rating 曲线追踪
+## 安全边界
 
-进入 Rating 页面，查看你在 Codeforces 和 AtCoder 的积分走势，激励自己不断突破。
+- 渲染进程不启用 Node.js，`contextIsolation` 保持开启。
+- 渲染进程只使用白名单 `window.api`。
+- 外部链接仅允许 HTTP(S)。
+- 更新包仅允许 HTTPS，localhost 开发例外。
+- 持久化存储键经过白名单校验。
 
-<div align="center">
-  <img src="docs/assets/rating.png" alt="Rating Trend" width="80%" />
-  <p><em>Rating 变化趋势图</em></p>
-</div>
+## 目录
 
-## 🤝 贡献指南 (Contributing)
-
-我们非常欢迎社区贡献！如果您想参与开发，请遵循以下步骤：
-
-1. **Fork** 本仓库。
-2. 创建您的特性分支 (`git checkout -b feature/AmazingFeature`)。
-3. 提交您的更改 (`git commit -m 'Add some AmazingFeature'`)。
-4. 推送到分支 (`git push origin feature/AmazingFeature`)。
-5. 开启一个 **Pull Request**。
-
-请确保在提交前运行代码检查：
-
-```bash
-# 运行类型检查与 Lint
-bun run type-check
-bun run lint
+```text
+src/                  React 渲染进程
+electron/             主进程、preload、适配器、SQLite 与缓存
+shared/               IPC 与领域类型
+tests/unit/           Bun 单元/组件测试
+tests/e2e/            Playwright Electron E2E
+site/                 产品官网静态站点
+docs/                 产品、设计与发布文档
 ```
 
-## 📚 相关文档
+## 致谢
 
-- [版本发布指南](./RELEASE_GUIDE.md)
-- [项目产品文档](./docs/PRD.md)
-- [Contest Tab 设计说明](./docs/CONTEST_TAB_DESIGN.md)
-- [Contest Tab 实现总结](./docs/CONTEST_TAB_IMPLEMENTATION_SUMMARY.md)
-
-## 📄 开源协议 (License)
-
-本项目采用 [GNU General Public License v3.0](./LICENSE) 开源协议。
-
----
+接口和产品行为参考了 [oj_helper](https://github.com/2754LM/oj_helper)。
+本项目采用 [GPL-3.0-only](./LICENSE)。
 
 <div align="center">
-  <p>Made with ❤️ by OJFlow Team</p>
+  <sub>Built for people who would rather solve one more problem than manage ten tabs.</sub>
 </div>

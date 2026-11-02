@@ -1,133 +1,82 @@
-name: Build & Release Electron App
+name: Release Desktop Builds
 
 on:
   push:
-    branches:
-      - main # 监听主分支的推送
     tags:
-      - 'v*' # 核心触发规则：当推送形如 v1.0.0 的标签时，触发自动构建和发布流程
+      - 'v*'
+  workflow_dispatch:
 
 permissions:
-  contents: write  # 必须权限：允许创建 GitHub Release 和上传构建产物
-  actions: read    # 可选权限：允许读取工作流运行状态
+  contents: write
+  actions: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
+    name: Build ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        # 矩阵构建：同时在 Windows, macOS, Ubuntu 上运行构建任务
         os: [windows-latest, macos-latest, ubuntu-latest]
-
     runs-on: ${{ matrix.os }}
-
+    timeout-minutes: 45
     steps:
-      # 1. 检出代码
-      # 获取当前仓库的代码，ref 默认为触发 workflow 的 tag 或 branch
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. 设置 Node.js 环境
-      # Electron Builder 和 npx 依赖 Node.js 环境
-      # 虽然 Bun 可以运行脚本，但 electron-builder 的核心部分仍需 Node
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          # cache: 'npm' # 因为我们使用 bun.lock，所以这里禁用了 npm 缓存，避免报错
 
-      # 3. 设置 Bun 环境
-      # 使用官方 Action 安装 Bun，用于快速安装依赖和构建前端
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      # 4. 安装依赖
-      # --frozen-lockfile 确保安装的依赖版本与 bun.lock 完全一致
-      - name: Install Dependencies
+      - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # 5. Type Check + Lint
-      - name: Type Check
+      - name: Type check
         run: bun run type-check
 
-      # 6. 编译 Electron 主进程 TypeScript → electron-dist/
-      - name: Build Electron
+      - name: Lint
+        run: bun run lint
+
+      - name: Build Electron main process
         run: bun run build:electron
 
-      # 7. 构建前端资源 (Vite)
-      - name: Build Frontend
+      - name: Build renderer
         run: bun run build
 
-      # 8. Build Electron App
-      # 只负责构建，不通过 electron-builder 直接发布
-      # 我们改用专门的 GitHub Action 来处理发布，这样更稳定且支持并发上传
-      - name: Build Electron App
+      - name: Package
         shell: bash
-        env:
-          # 强制重新编译原生模块 (如 sqlite3, node-pty 等)
-          npm_config_build_from_source: true
         run: |
-          # 使用 npx 运行本地安装的 electron-builder
-          # -p never: 禁止 electron-builder 自动发布，我们后续单独处理
-          
-          if [ "$RUNNER_OS" == "macOS" ]; then
-             # macOS 特殊处理：检查是否有签名证书
-             if [ -n "${{ secrets.CSC_LINK }}" ] && [ -n "${{ secrets.CSC_KEY_PASSWORD }}" ]; then
-                export CSC_LINK="${{ secrets.CSC_LINK }}"
-                export CSC_KEY_PASSWORD="${{ secrets.CSC_KEY_PASSWORD }}"
-                npx electron-builder -p never
-             else
-                echo "macOS Code Signing Secrets missing. Skipping signing."
-                # -c.mac.identity=null 显式禁用签名
-                npx electron-builder -p never -c.mac.identity=null
-             fi
-          elif [ "$RUNNER_OS" == "Windows" ]; then
-             # Windows 特殊处理：检查是否有签名证书
-             if [ -n "${{ secrets.WIN_CSC_LINK }}" ] && [ -n "${{ secrets.WIN_CSC_KEY_PASSWORD }}" ]; then
-                export WIN_CSC_LINK="${{ secrets.WIN_CSC_LINK }}"
-                export WIN_CSC_KEY_PASSWORD="${{ secrets.WIN_CSC_KEY_PASSWORD }}"
-                npx electron-builder -p never
-             else
-                echo "Windows Code Signing Secrets missing. Skipping signing."
-                # 显式不设置 WIN_CSC_LINK 环境变量
-                npx electron-builder -p never
-             fi
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            if [ -n "${{ secrets.CSC_LINK }}" ] && [ -n "${{ secrets.CSC_KEY_PASSWORD }}" ]; then
+              export CSC_LINK="${{ secrets.CSC_LINK }}"
+              export CSC_KEY_PASSWORD="${{ secrets.CSC_KEY_PASSWORD }}"
+              npx electron-builder -p never
+            else
+              npx electron-builder -p never -c.mac.identity=null
+            fi
+          elif [ "$RUNNER_OS" = "Windows" ]; then
+            if [ -n "${{ secrets.WIN_CSC_LINK }}" ] && [ -n "${{ secrets.WIN_CSC_KEY_PASSWORD }}" ]; then
+              export WIN_CSC_LINK="${{ secrets.WIN_CSC_LINK }}"
+              export WIN_CSC_KEY_PASSWORD="${{ secrets.WIN_CSC_KEY_PASSWORD }}"
+            fi
+            npx electron-builder -p never
           else
-             # Linux 构建
-             npx electron-builder -p never
+            npx electron-builder -p never
           fi
 
-      # 9. 发布到 GitHub Releases
-      # 使用 softprops/action-gh-release 自动创建 Release 并上传文件
-      # 这个 Action 会自动处理并发问题（多个 Job 同时上传到同一个 Release）
-      - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/') # 仅在 Tag 触发时运行
-        with:
-          files: |
-            release/*.exe
-            release/*.dmg
-            release/*.AppImage
-            release/*.deb
-            release/*.rpm
-            release/*.zip
-            release/*.msi
-            release/*.snap
-          draft: true       # 默认为草稿，方便您发布前编辑 Release Note
-          prerelease: false # 是否为预发布版本
-          generate_release_notes: true # 自动生成基于 Commit 的更新日志
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # 10. 上传构建产物 (备份)
-      # 将构建好的安装包上传到 GitHub Actions 的 Artifacts 中
-      # 即使发布失败，也可以在这里下载到安装包进行测试
-      - name: Upload Artifacts
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
-        if: always() # 即使构建过程中有部分失败，也尝试上传
         with:
-          name: build-artifacts-${{ matrix.os }}
+          name: ojflow-${{ matrix.os }}
           path: |
             release/*.exe
             release/*.dmg
@@ -138,3 +87,22 @@ jobs:
             release/*.msi
             release/*.snap
           if-no-files-found: warn
+
+      - name: Publish GitHub release assets
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.exe
+            release/*.dmg
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+            release/*.zip
+            release/*.msi
+            release/*.snap
+          draft: true
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

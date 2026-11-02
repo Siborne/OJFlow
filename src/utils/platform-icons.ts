@@ -13,7 +13,12 @@ const platformBrands: PlatformBrand[] = [
   { id: 'luogu', displayName: '\u6d1b\u8c37', cssVar: '--platform-luogu', abbr: 'LG' },
   { id: 'leetcode', displayName: '\u529b\u6263', cssVar: '--platform-leetcode', abbr: 'LC' },
   { id: 'nowcoder', displayName: '\u725b\u5ba2', cssVar: '--platform-nowcoder', abbr: 'NC' },
-  { id: 'lanqiao', displayName: '\u84dd\u6865\u4e91\u8bfe', cssVar: '--platform-lanqiao', abbr: 'LQ' },
+  {
+    id: 'lanqiao',
+    displayName: '\u84dd\u6865\u4e91\u8bfe',
+    cssVar: '--platform-lanqiao',
+    abbr: 'LQ',
+  },
 ];
 
 const brandMap = new Map<string, PlatformBrand>();

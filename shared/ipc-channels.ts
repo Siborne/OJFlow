@@ -1,4 +1,11 @@
-import type { RawContest, Rating, SolvedNum, ContestFetchResponse } from './types';
+import type {
+  CodeforcesReport,
+  ContestFetchResponse,
+  ProblemSearchRequest,
+  ProblemSearchResult,
+  Rating,
+  SolvedNum,
+} from './types';
 
 export const IPC_CHANNELS = {
   GET_CONTESTS: 'get-recent-contests',
@@ -6,6 +13,16 @@ export const IPC_CHANNELS = {
   GET_SOLVED_NUM: 'get-solved-num',
   OPEN_URL: 'open-url',
   UPDATER_INSTALL: 'updater-install',
+  SEARCH_PROBLEMS: 'search-problems',
+  GET_CF_REPORT: 'get-cf-report',
+  CLEAR_CACHE: 'clear-cache',
+  WINDOW_MINIMIZE: 'window-minimize',
+  WINDOW_TOGGLE_MAXIMIZE: 'window-toggle-maximize',
+  WINDOW_CLOSE: 'window-close',
+  WINDOW_GET_STATE: 'window-get-state',
+  WINDOW_STATE_CHANGED: 'window-state-changed',
+  AUTO_LAUNCH_GET: 'auto-launch-get',
+  AUTO_LAUNCH_SET: 'auto-launch-set',
 
   // Store management
   STORE_GET: 'store-get',
@@ -14,6 +31,7 @@ export const IPC_CHANNELS = {
 
   // Streaming / push channels
   CONTESTS_PARTIAL: 'contests-partial',
+  REFRESH_CONTESTS: 'refresh-contests',
 
   // Notification
   NOTIFICATION_SET: 'notification-set',
@@ -43,6 +61,42 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.UPDATER_INSTALL]: {
     args: [payload: { url: string }];
     return: boolean;
+  };
+  [IPC_CHANNELS.SEARCH_PROBLEMS]: {
+    args: [payload: ProblemSearchRequest];
+    return: ProblemSearchResult;
+  };
+  [IPC_CHANNELS.GET_CF_REPORT]: {
+    args: [handle: string];
+    return: CodeforcesReport;
+  };
+  [IPC_CHANNELS.CLEAR_CACHE]: {
+    args: [];
+    return: void;
+  };
+  [IPC_CHANNELS.WINDOW_MINIMIZE]: {
+    args: [];
+    return: void;
+  };
+  [IPC_CHANNELS.WINDOW_TOGGLE_MAXIMIZE]: {
+    args: [];
+    return: void;
+  };
+  [IPC_CHANNELS.WINDOW_CLOSE]: {
+    args: [];
+    return: void;
+  };
+  [IPC_CHANNELS.WINDOW_GET_STATE]: {
+    args: [];
+    return: { maximized: boolean };
+  };
+  [IPC_CHANNELS.AUTO_LAUNCH_GET]: {
+    args: [];
+    return: boolean;
+  };
+  [IPC_CHANNELS.AUTO_LAUNCH_SET]: {
+    args: [enabled: boolean];
+    return: void;
   };
   [IPC_CHANNELS.STORE_GET]: {
     args: [key: string];

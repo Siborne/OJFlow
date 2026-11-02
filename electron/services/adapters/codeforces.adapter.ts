@@ -31,13 +31,23 @@ export class CodeforcesAdapter extends BaseAdapter {
         const end = start + item.durationSeconds;
         return end >= todayStart && start <= queryEnd && item.durationSeconds < 86400;
       })
-      .map((item: { name: string; startTimeSeconds: number; durationSeconds: number }) => ({
-        name: item.name,
-        startTime: item.startTimeSeconds,
-        duration: item.durationSeconds,
-        platform: this.displayName,
-        link: 'https://codeforces.com/contests',
-      }))
+      .map(
+        (item: {
+          id?: number;
+          name: string;
+          startTimeSeconds: number;
+          durationSeconds: number;
+        }) => ({
+          name: item.name,
+          startTime: item.startTimeSeconds,
+          duration: item.durationSeconds,
+          platform: this.displayName,
+          link:
+            typeof item.id === 'number'
+              ? `https://codeforces.com/contest/${item.id}`
+              : 'https://codeforces.com/contests',
+        }),
+      )
       .sort((a: RawContest, b: RawContest) => b.startTime - a.startTime);
   }
 

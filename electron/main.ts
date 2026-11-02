@@ -1,24 +1,8 @@
-// Polyfill for File in Node < 20 (Electron < 29)
-if (typeof File === 'undefined') {
-  const { Blob } = require('buffer');
-  (global as any).File = class File extends Blob {
-    name: string;
-    lastModified: number;
-    constructor(
-      fileBits: BlobPart[],
-      fileName: string,
-      options?: FilePropertyBag & { lastModified?: number },
-    ) {
-      super(fileBits, options);
-      this.name = fileName;
-      this.lastModified = options?.lastModified || Date.now();
-    }
-  };
-}
-
 import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { fetchAllContestsDedup } from './services/contest-aggregator';
 import { fetchRatingDedup } from './services/rating-aggregator';
 import { fetchSolvedCountDedup } from './services/solved-aggregator';
@@ -30,18 +14,25 @@ import {
   setCachedRating,
   getCachedSolved,
   setCachedSolved,
+  clearAllCache,
+  CACHE_TTL,
 } from './services/cache-service';
 import { store } from './store';
 import { IPC_CHANNELS } from '../shared/ipc-channels';
+import { getCodeforcesReport } from './services/codeforces-service';
+import { clearProblemSearchCache, searchProblems } from './services/problem-service';
+import { isAllowedStoreKey, isSafeExternalUrl, isSafeUpdateUrl } from './services/url-security';
+import {
+  clearQuerySnapshots,
+  closeQueryDatabase,
+  getPersistedQuerySnapshot,
+  initQueryDatabase,
+  persistQuerySnapshot,
+  waitForQueryDatabase,
+} from './services/query-store';
+import type { ContestFetchResponse, Rating, SolvedNum } from '../shared/types';
 
-interface AppConfig {
-  crawl: { defaultDays: number; minDays: number; maxDays: number };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const appConfig: AppConfig = require('./app.config.json');
-
-function loadDotEnv(dotenvPath: string): void {
+export function loadDotEnv(dotenvPath: string): void {
   try {
     if (!fs.existsSync(dotenvPath)) return;
     const raw = fs.readFileSync(dotenvPath, 'utf8');
@@ -62,22 +53,23 @@ function loadDotEnv(dotenvPath: string): void {
 
 loadDotEnv(path.join(__dirname, '..', '.env'));
 
-function normalizeVersion(raw: string | undefined): string {
+export function normalizeVersion(raw: string | undefined): string {
   const v = String(raw ?? '').trim();
   if (!v) return 'v0.0.0';
   return v.startsWith('v') ? v : `v${v}`;
 }
 
-function parseSemver(v: string): [number, number, number] {
+export function parseSemver(v: string): [number, number, number] {
   const normalized = normalizeVersion(v).slice(1);
   const parts = normalized
+    .split('-')[0]
     .split('.')
     .slice(0, 3)
     .map(n => Number(n));
   return [parts[0] || 0, parts[1] || 0, parts[2] || 0];
 }
 
-function compareVersions(a: string, b: string): number {
+export function compareVersions(a: string, b: string): number {
   const pa = parseSemver(a);
   const pb = parseSemver(b);
   for (let i = 0; i < 3; i++) {
@@ -94,47 +86,55 @@ interface UpdateManifest {
   packageUrl?: string;
 }
 
-function detectManifest(payload: any): UpdateManifest | null {
+function toRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
+}
+
+export function detectManifest(payload: unknown): UpdateManifest | null {
   if (!payload || typeof payload !== 'object') return null;
-  if (typeof payload.version === 'string') return payload;
-  if (typeof payload.tag_name === 'string') {
-    const assets = Array.isArray(payload.assets) ? payload.assets : [];
-    const packageUrl = assets.find(
-      (a: any) => typeof a?.browser_download_url === 'string',
-    )?.browser_download_url;
+  const object = payload as Record<string, unknown>;
+  if (typeof object.version === 'string') {
+    return object as unknown as UpdateManifest;
+  }
+  if (typeof object.tag_name === 'string') {
+    const assets = Array.isArray(object.assets) ? object.assets : [];
+    const packageAsset = assets.find(asset => {
+      const item = toRecord(asset);
+      return typeof item?.browser_download_url === 'string';
+    });
+    const packageUrl = toRecord(packageAsset)?.browser_download_url as string | undefined;
     return {
-      version: payload.tag_name,
-      notes: typeof payload.body === 'string' ? payload.body : undefined,
-      homepageUrl: typeof payload.html_url === 'string' ? payload.html_url : undefined,
+      version: object.tag_name,
+      notes: typeof object.body === 'string' ? object.body : undefined,
+      homepageUrl: typeof object.html_url === 'string' ? object.html_url : undefined,
       packageUrl,
     };
   }
   return null;
 }
 
-function pickPackageUrl(manifest: UpdateManifest): string | undefined {
+export function pickPackageUrl(manifest: UpdateManifest): string | undefined {
   const byPlatform = manifest.packages?.[process.platform]?.url;
   return byPlatform ?? manifest.packageUrl;
 }
 
-function sleep(ms: number): Promise<void> {
+export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-class TimeoutError extends Error {
+export class TimeoutError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'TimeoutError';
   }
 }
 
-async function fetchWithTimeout(
+export async function fetchWithTimeout(
   url: string,
   options: RequestInit,
   timeoutMs: number,
 ): Promise<Response> {
-  const controller =
-    typeof AbortController !== 'undefined' ? new AbortController() : undefined;
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : undefined;
   const fetchPromise = fetch(url, { ...options, signal: controller?.signal });
 
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -157,19 +157,22 @@ interface ClassifiedError {
   message: string;
 }
 
-function classifyFetchError(e: any): ClassifiedError {
+function getErrorCode(error: unknown): string | undefined {
+  const record = toRecord(error);
+  const cause = toRecord(record?.cause);
+  const code = cause?.code ?? record?.code;
+  return typeof code === 'string' ? code : undefined;
+}
+
+export function classifyFetchError(e: unknown): ClassifiedError {
   const message =
     e instanceof Error ? e.message : typeof e === 'string' ? e : '\u672a\u77e5\u9519\u8bef';
   if (e instanceof TimeoutError) return { type: 'timeout', message };
-  if (e && typeof e === 'object' && e.name === 'AbortError')
+  if (toRecord(e)?.name === 'AbortError')
     return { type: 'timeout', message: '\u8bf7\u6c42\u8d85\u65f6' };
-  if (/Failed to fetch/i.test(message))
-    return { type: 'network', message: 'Failed to fetch' };
-  const code = e?.cause?.code || e?.code;
-  if (
-    typeof code === 'string' &&
-    /ENOTFOUND|EAI_AGAIN|ECONNRESET|ETIMEDOUT/i.test(code)
-  ) {
+  if (/Failed to fetch/i.test(message)) return { type: 'network', message: 'Failed to fetch' };
+  const code = getErrorCode(e);
+  if (typeof code === 'string' && /ENOTFOUND|EAI_AGAIN|ECONNRESET|ETIMEDOUT/i.test(code)) {
     return { type: 'network', message: String(code) };
   }
   return { type: 'unknown', message };
@@ -177,12 +180,12 @@ function classifyFetchError(e: any): ClassifiedError {
 
 interface FetchJsonResult {
   ok: boolean;
-  payload?: any;
+  payload?: unknown;
   status?: number;
   error?: ClassifiedError;
 }
 
-async function fetchJsonWithRetry(
+export async function fetchJsonWithRetry(
   url: string,
   opts: { timeoutMs: number; retryCount: number; backoffBaseMs: number },
 ): Promise<FetchJsonResult> {
@@ -211,18 +214,17 @@ async function fetchJsonWithRetry(
       }
       const payload = await res.json();
       return { ok: true, payload };
-    } catch (e: any) {
+    } catch (e: unknown) {
       lastError = classifyFetchError(e);
       console.warn('[updater] fetch failed', {
         attempt,
         url,
         errorType: lastError.type,
         errorMessage: lastError.message,
-        causeCode: e?.cause?.code || e?.code,
+        causeCode: getErrorCode(e),
       });
       const canRetry =
-        (lastError.type === 'timeout' || lastError.type === 'network') &&
-        attempt < opts.retryCount;
+        (lastError.type === 'timeout' || lastError.type === 'network') && attempt < opts.retryCount;
       if (canRetry) {
         await sleep(opts.backoffBaseMs * attempt);
         continue;
@@ -233,22 +235,13 @@ async function fetchJsonWithRetry(
   return { ok: false, status: lastStatus, error: lastError };
 }
 
-async function downloadAndLaunch(url: string): Promise<void> {
-  if (!url) return;
-  if (!/^https?:\/\//i.test(url)) {
-    await shell.openPath(url);
-    app.quit();
-    return;
+export async function downloadAndLaunch(url: string): Promise<void> {
+  if (!isSafeUpdateUrl(url)) {
+    throw new Error('Invalid update URL');
   }
 
-  const { pipeline } = require('stream/promises');
-  const { Readable } = require('stream');
-
   const timeoutMs = Number(process.env.VITE_UPDATE_TIMEOUT_MS) || 8_000;
-  const retryCount = Math.max(
-    1,
-    Math.min(3, Number(process.env.VITE_UPDATE_RETRY_COUNT) || 3),
-  );
+  const retryCount = Math.max(1, Math.min(3, Number(process.env.VITE_UPDATE_RETRY_COUNT) || 3));
   const backoffBaseMs = Number(process.env.VITE_UPDATE_RETRY_BACKOFF_MS) || 1_000;
 
   let last: Response | undefined;
@@ -270,7 +263,7 @@ async function downloadAndLaunch(url: string): Promise<void> {
       }
       last = res;
       break;
-    } catch (e: any) {
+    } catch (e: unknown) {
       const classified = classifyFetchError(e);
       console.warn('[updater] download failed', {
         attempt,
@@ -293,23 +286,19 @@ async function downloadAndLaunch(url: string): Promise<void> {
 
   const ext = path.extname(new URL(url).pathname) || '.bin';
   const dest = path.join(app.getPath('temp'), `OJFlow-update-${Date.now()}${ext}`);
-  await pipeline(Readable.fromWeb(last.body), fs.createWriteStream(dest));
+  const webStream = last.body as unknown as import('node:stream/web').ReadableStream<Uint8Array>;
+  await pipeline(Readable.fromWeb(webStream), fs.createWriteStream(dest));
   await shell.openPath(dest);
   app.quit();
 }
 
-async function checkForUpdatesOnStartup(win: BrowserWindow): Promise<void> {
+export async function checkForUpdatesOnStartup(win: BrowserWindow): Promise<void> {
   const manifestUrl = process.env.VITE_UPDATE_MANIFEST_URL;
   if (!manifestUrl) return;
 
-  const currentVersion = normalizeVersion(
-    process.env.VITE_APP_VERSION ?? app.getVersion(),
-  );
+  const currentVersion = normalizeVersion(process.env.VITE_APP_VERSION ?? app.getVersion());
   const timeoutMs = Number(process.env.VITE_UPDATE_TIMEOUT_MS) || 8_000;
-  const retryCount = Math.max(
-    1,
-    Math.min(3, Number(process.env.VITE_UPDATE_RETRY_COUNT) || 3),
-  );
+  const retryCount = Math.max(1, Math.min(3, Number(process.env.VITE_UPDATE_RETRY_COUNT) || 3));
   const backoffBaseMs = Number(process.env.VITE_UPDATE_RETRY_BACKOFF_MS) || 1_000;
 
   try {
@@ -349,34 +338,46 @@ async function checkForUpdatesOnStartup(win: BrowserWindow): Promise<void> {
     if (packageUrl) {
       await downloadAndLaunch(packageUrl);
     }
-  } catch (e: any) {
+  } catch (e: unknown) {
     const classified = classifyFetchError(e);
     console.warn('[updater] startup check failed', {
       manifestUrl,
       errorType: classified.type,
       errorMessage: classified.message,
-      causeCode: e?.cause?.code || e?.code,
+      causeCode: getErrorCode(e),
     });
   }
 }
 
-// Determine if running in development mode
-const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+// Determine if running in development mode. Playwright uses NODE_ENV=test to load dist/.
+const isTest = process.env.NODE_ENV === 'test';
+const isPreview = process.env.NODE_ENV === 'preview' || process.env.OJFLOW_PREVIEW_DIST === '1';
+const isDev = !isTest && !isPreview && (process.env.NODE_ENV === 'development' || !app.isPackaged);
+if (isTest) {
+  app.setPath('userData', path.join(app.getPath('temp'), `ojflow-e2e-${process.pid}`));
+}
+let isQuitting = false;
 
-function getIconPath(): string {
-  // In development, use project root src/assets (go up from electron-dist/electron to project root)
-  if (isDev) {
+export function getIconPath(): string {
+  // Unpackaged runs use the project asset, including production previews with NODE_ENV=test.
+  if (!app.isPackaged) {
     return path.join(__dirname, '../../src/assets/icon.png');
   }
   // In production, icon is in extraResources (copied to resources folder)
-  return path.join(process.resourcesPath, 'src/assets/icon.png');
+  const resourcesRoot =
+    typeof process.resourcesPath === 'string'
+      ? process.resourcesPath
+      : path.join(__dirname, '../..');
+  return path.join(resourcesRoot, 'src/assets/icon.png');
 }
 
-function createWindow(): BrowserWindow {
+export function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1000,
     height: 700,
     icon: getIconPath(),
+    frame: false,
+    titleBarStyle: 'hidden',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -386,16 +387,34 @@ function createWindow(): BrowserWindow {
     autoHideMenuBar: true,
   });
 
+  const sendWindowState = () => {
+    if (!win.isDestroyed()) {
+      win.webContents.send(IPC_CHANNELS.WINDOW_STATE_CHANGED, {
+        maximized: win.isMaximized(),
+      });
+    }
+  };
+  win.on('maximize', sendWindowState);
+  win.on('unmaximize', sendWindowState);
+  win.on('close', event => {
+    if (!isQuitting && store.get('ui.closeBehavior') === 'tray') {
+      event.preventDefault();
+      win.hide();
+    }
+  });
+
   if (isDev) {
     win.loadURL('http://localhost:5173');
     win.webContents.openDevTools({ mode: 'detach' });
   } else {
-    win.loadFile(path.join(__dirname, '../dist/index.html'));
+    win.loadFile(path.join(__dirname, '../../dist/index.html'));
   }
 
   // Handle external links
   win.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    if (isSafeExternalUrl(url)) {
+      void shell.openExternal(url);
+    }
     return { action: 'deny' };
   });
 
@@ -403,7 +422,21 @@ function createWindow(): BrowserWindow {
 }
 
 app.whenReady().then(() => {
+  void initQueryDatabase(path.join(app.getPath('userData'), 'ojflow.sqlite')).catch(error => {
+    console.warn('[query-store] SQLite initialization failed:', error);
+  });
   const win = createWindow();
+  if (store.get('ui.startAtLogin')) {
+    app.setLoginItemSettings({
+      openAtLogin: true,
+      ...(app.isPackaged
+        ? {}
+        : {
+            path: process.execPath,
+            args: [path.resolve(__dirname, '../..')],
+          }),
+    });
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -414,17 +447,43 @@ app.whenReady().then(() => {
   // IPC Handlers
   ipcMain.handle(IPC_CHANNELS.GET_CONTESTS, async (_event, day: number) => {
     try {
+      if (!Number.isFinite(day)) {
+        throw new Error('Invalid day');
+      }
       // Cache-first: return cached data immediately, then fetch fresh in background
       const cached = getCachedContests();
       if (cached) {
         fetchAllContestsDedup(day, win)
-          .then((fresh) => setCachedContests(fresh))
-          .catch((e) => console.warn('[ipc] background contest refresh failed:', e));
+          .then(fresh => setCachedContests(fresh))
+          .catch(e => console.warn('[ipc] background contest refresh failed:', e));
         return cached;
+      }
+
+      await waitForQueryDatabase().catch(() => {});
+      const persisted = getPersistedQuerySnapshot<ContestFetchResponse>(
+        'contests',
+        'all',
+        `days-${day}`,
+        CACHE_TTL.contests,
+      );
+      if (persisted) {
+        const response = {
+          ...persisted.payload,
+          fromCache: true,
+          cachedAt: persisted.fetchedAt,
+        };
+        setCachedContests(response);
+        return response;
       }
 
       const response = await fetchAllContestsDedup(day, win);
       setCachedContests(response);
+      await waitForQueryDatabase().catch(() => {});
+      try {
+        persistQuerySnapshot('contests', 'all', `days-${day}`, response);
+      } catch {
+        // SQLite persistence is best-effort.
+      }
       return response;
     } catch (error) {
       console.error('Error fetching contests:', error);
@@ -452,13 +511,36 @@ app.whenReady().then(() => {
         const cached = getCachedRating(platform, name);
         if (cached) {
           fetchRatingDedup(platform, name)
-            .then((fresh) => setCachedRating(platform, name, fresh))
+            .then(fresh => setCachedRating(platform, name, fresh))
             .catch(() => {});
           return cached.rating;
         }
 
+        await waitForQueryDatabase().catch(() => {});
+        const persisted = getPersistedQuerySnapshot<Rating>(
+          'rating',
+          platform,
+          name,
+          CACHE_TTL.ratings,
+        );
+        if (persisted) {
+          const response = {
+            rating: persisted.payload,
+            fromCache: true,
+            cachedAt: persisted.fetchedAt,
+          };
+          setCachedRating(platform, name, response);
+          return response.rating;
+        }
+
         const response = await fetchRatingDedup(platform, name);
         setCachedRating(platform, name, response);
+        await waitForQueryDatabase().catch(() => {});
+        try {
+          persistQuerySnapshot('rating', platform, name, response.rating);
+        } catch {
+          // SQLite persistence is best-effort.
+        }
         return response.rating;
       } catch (error) {
         console.error(`Error fetching rating for ${platform}:`, error);
@@ -481,13 +563,36 @@ app.whenReady().then(() => {
         const cached = getCachedSolved(platform, name);
         if (cached) {
           fetchSolvedCountDedup(platform, name)
-            .then((fresh) => setCachedSolved(platform, name, fresh))
+            .then(fresh => setCachedSolved(platform, name, fresh))
             .catch(() => {});
           return cached.solved;
         }
 
+        await waitForQueryDatabase().catch(() => {});
+        const persisted = getPersistedQuerySnapshot<SolvedNum>(
+          'solved',
+          platform,
+          name,
+          CACHE_TTL.solved,
+        );
+        if (persisted) {
+          const response = {
+            solved: persisted.payload,
+            fromCache: true,
+            cachedAt: persisted.fetchedAt,
+          };
+          setCachedSolved(platform, name, response);
+          return response.solved;
+        }
+
         const response = await fetchSolvedCountDedup(platform, name);
         setCachedSolved(platform, name, response);
+        await waitForQueryDatabase().catch(() => {});
+        try {
+          persistQuerySnapshot('solved', platform, name, response.solved);
+        } catch {
+          // SQLite persistence is best-effort.
+        }
         return response.solved;
       } catch (error) {
         console.error(`Error fetching solved num for ${platform}:`, error);
@@ -497,27 +602,86 @@ app.whenReady().then(() => {
   );
 
   ipcMain.handle(IPC_CHANNELS.OPEN_URL, async (_event, url: string) => {
-    // Security: only allow http/https protocols
-    if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
+    if (!isSafeExternalUrl(url)) {
       throw new Error('Invalid URL protocol');
     }
     await shell.openExternal(url);
   });
 
+  ipcMain.handle(IPC_CHANNELS.UPDATER_INSTALL, async (_event, { url }: { url: string }) => {
+    if (!isSafeUpdateUrl(url)) {
+      throw new Error('Invalid update URL');
+    }
+    await downloadAndLaunch(url);
+    return true;
+  });
+
   ipcMain.handle(
-    IPC_CHANNELS.UPDATER_INSTALL,
-    async (_event, { url }: { url: string }) => {
-      await downloadAndLaunch(url);
-      return true;
+    IPC_CHANNELS.SEARCH_PROBLEMS,
+    async (_event, payload: Parameters<typeof searchProblems>[0]) => {
+      return searchProblems(payload ?? {});
     },
   );
 
+  ipcMain.handle(IPC_CHANNELS.GET_CF_REPORT, async (_event, handle: string) => {
+    return getCodeforcesReport(handle);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CLEAR_CACHE, () => {
+    clearAllCache();
+    clearProblemSearchCache();
+    clearQuerySnapshots();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.WINDOW_MINIMIZE, () => {
+    win.minimize();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.WINDOW_TOGGLE_MAXIMIZE, () => {
+    if (win.isMaximized()) win.unmaximize();
+    else win.maximize();
+    if (!win.isDestroyed()) {
+      win.webContents.send(IPC_CHANNELS.WINDOW_STATE_CHANGED, {
+        maximized: win.isMaximized(),
+      });
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.WINDOW_CLOSE, () => {
+    win.close();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.WINDOW_GET_STATE, () => ({
+    maximized: win.isMaximized(),
+  }));
+
+  ipcMain.handle(IPC_CHANNELS.AUTO_LAUNCH_GET, () => {
+    return app.getLoginItemSettings().openAtLogin;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.AUTO_LAUNCH_SET, (_event, enabled: boolean) => {
+    if (typeof enabled !== 'boolean') throw new Error('Invalid auto launch setting');
+    const loginSettings = {
+      openAtLogin: enabled,
+      ...(enabled && !app.isPackaged
+        ? {
+            path: process.execPath,
+            args: [path.resolve(__dirname, '../..')],
+          }
+        : {}),
+    };
+    app.setLoginItemSettings(loginSettings);
+    store.set('ui.startAtLogin', enabled);
+  });
+
   // Store IPC handlers
   ipcMain.handle(IPC_CHANNELS.STORE_GET, (_event, key: string) => {
+    if (!isAllowedStoreKey(key)) throw new Error('Invalid store key');
     return store.get(key);
   });
 
   ipcMain.handle(IPC_CHANNELS.STORE_SET, (_event, key: string, value: unknown) => {
+    if (!isAllowedStoreKey(key)) throw new Error('Invalid store key');
     store.set(key, value);
   });
 
@@ -529,7 +693,17 @@ app.whenReady().then(() => {
   ipcMain.handle(
     IPC_CHANNELS.NOTIFICATION_SET,
     (_event, payload: { enabled: boolean; reminderMinutes: number }) => {
+      if (
+        !payload ||
+        typeof payload.enabled !== 'boolean' ||
+        !Number.isFinite(payload.reminderMinutes) ||
+        payload.reminderMinutes < 1 ||
+        payload.reminderMinutes > 1440
+      ) {
+        throw new Error('Invalid notification settings');
+      }
       store.set('notification', payload);
+      void scheduleContestReminders();
     },
   );
 
@@ -553,4 +727,10 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+app.on('before-quit', () => {
+  isQuitting = true;
+  destroyTray();
+  closeQueryDatabase();
 });

@@ -1,4 +1,4 @@
-import type { SolvedNum, SolvedFetchResponse } from '../../shared/types';
+import type { SolvedFetchResponse } from '../../shared/types';
 import { getAdapter } from './adapters';
 import { validateSolvedNum } from './validators';
 import { dedup } from './request-dedup';
@@ -24,13 +24,14 @@ const platformIdMap: Record<string, string> = {
 export async function fetchSolvedCount(
   platform: string,
   handle: string,
+  adapterOverride?: NonNullable<ReturnType<typeof getAdapter>>,
 ): Promise<SolvedFetchResponse> {
   const adapterId = platformIdMap[platform];
   if (!adapterId) {
     throw new Error(`Unsupported solved platform: ${platform}`);
   }
 
-  const adapter = getAdapter(adapterId);
+  const adapter = adapterOverride ?? getAdapter(adapterId);
   if (!adapter?.fetchSolvedCount) {
     throw new Error(`Adapter ${adapterId} does not support solved count queries`);
   }

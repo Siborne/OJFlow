@@ -1,20 +1,14 @@
 import { useState, useCallback } from 'react';
-import { Search, BarChart3 } from 'lucide-react';
+import { Search, BarChart3, Download } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
-import axios from 'axios';
 import { Button } from '@/components/ui/button';
-
-interface ProblemStats {
-  rating: number;
-  count: number;
-}
-
-interface TagStats {
-  tag: string;
-  count: number;
-}
+import { ReportService } from '@/services/report';
+import type { ProblemStats, TagStats } from '../../shared/types';
+import { useI18n } from '@/i18n';
+import { getProblemTagLabel } from '../../shared/problem-tags';
 
 export default function CfpReportPage() {
+  const { t, locale } = useI18n();
   const [handle, setHandle] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -31,64 +25,47 @@ export default function CfpReportPage() {
     setTotalSolved(0);
 
     try {
-      const url = `https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle.trim())}&from=1&count=1000000000`;
-      const res = await axios.get(url, { timeout: 15000 });
-
-      if (res.data?.status !== 'OK') {
-        throw new Error(res.data?.comment || 'API error');
-      }
-
-      const submissions = res.data.result;
-      if (!Array.isArray(submissions)) {
-        throw new Error('Invalid response format');
-      }
-
-      const seen = new Set<string>();
-      const ratingMap = new Map<number, number>();
-      const tagMap = new Map<string, number>();
-      let solved = 0;
-
-      for (const sub of submissions) {
-        if (!sub.problem || sub.verdict !== 'OK') continue;
-        const key = `${sub.problem.contestId}${sub.problem.index}${sub.problem.name}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        solved++;
-
-        const rating = sub.problem.rating || 0;
-        ratingMap.set(rating, (ratingMap.get(rating) || 0) + 1);
-
-        const tags: string[] = sub.problem.tags || [];
-        for (const tag of tags) {
-          tagMap.set(tag, (tagMap.get(tag) || 0) + 1);
-        }
-      }
-
-      setTotalSolved(solved);
-
-      const ratings = Array.from(ratingMap.entries())
-        .filter(([r]) => r > 0)
-        .sort((a, b) => a[0] - b[0]);
-      setRatingStats(ratings.map(([rating, count]) => ({ rating, count })));
-
-      const tags = Array.from(tagMap.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 20);
-      setTagStats(tags.map(([tag, count]) => ({ tag, count })));
+      const report = await ReportService.getCodeforcesReport(handle.trim());
+      setTotalSolved(report.totalSolved);
+      setRatingStats(report.ratingStats);
+      setTagStats(report.tagStats);
     } catch (e) {
-      setError(e instanceof Error ? e.message : '查询失败');
+      setError(
+        locale === 'en-US'
+          ? t('report.queryFailed')
+          : e instanceof Error
+            ? e.message
+            : t('report.queryFailed'),
+      );
     } finally {
       setLoading(false);
     }
-  }, [handle]);
+  }, [handle, locale, t]);
 
-  const maxCount = Math.max(1, ...ratingStats.map((r) => r.count), ...tagStats.map((t) => t.count));
+  const maxCount = Math.max(1, ...ratingStats.map(r => r.count), ...tagStats.map(t => t.count));
+
+  const exportReport = useCallback(() => {
+    const payload = {
+      handle: handle.trim(),
+      generatedAt: new Date().toISOString(),
+      totalSolved,
+      ratingStats,
+      tagStats,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `ojflow-cf-report-${handle.trim() || 'user'}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, [handle, ratingStats, tagStats, totalSolved]);
 
   const ratingColors = ['#22c55e', '#06b6d4', '#3b82f6', '#a855f7', '#fbbf24', '#ef4444'];
 
   return (
     <div className="flex h-full flex-col bg-transparent">
-      <PageHeader title="CF 年度报告" />
+      <PageHeader title={t('report.title')} />
       <div className="flex-1 overflow-y-auto p-4">
         <div className="mx-auto max-w-3xl">
           {/* Search */}
@@ -96,9 +73,9 @@ export default function CfpReportPage() {
             <input
               type="text"
               value={handle}
-              onChange={(e) => setHandle(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && fetchReport()}
-              placeholder="输入 Codeforces Handle..."
+              onChange={e => setHandle(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && fetchReport()}
+              placeholder={t('report.handlePlaceholder')}
               className="flex-1 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
             />
             <Button onClick={fetchReport} disabled={loading || !handle.trim()}>
@@ -107,7 +84,7 @@ export default function CfpReportPage() {
               ) : (
                 <Search size={16} />
               )}
-              生成报告
+              {t('report.generate')}
             </Button>
           </div>
 
@@ -121,11 +98,21 @@ export default function CfpReportPage() {
             <div className="space-y-4">
               {/* Summary card */}
               <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] p-6 shadow-[var(--card-shadow)]">
-                <div className="absolute inset-0 bg-[linear-gradient(130deg,rgba(255,161,22,0.12),rgba(20,184,166,0.03)_42%,transparent_72%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(130deg,var(--gradient-start),var(--gradient-end)_42%,transparent_72%)]" />
                 <div className="relative z-10 text-center">
-                  <div className="mb-1 text-sm text-[var(--color-text-muted)]">{handle} 解题统计</div>
-                  <div className="text-5xl font-bold text-[var(--color-primary)]">{totalSolved}</div>
-                  <div className="mt-1 text-sm text-[var(--color-text-muted)]">Total AC (已去重)</div>
+                  <div className="mb-1 text-sm text-[var(--color-text-muted)]">
+                    {t('report.summary', { handle })}
+                  </div>
+                  <div className="text-5xl font-bold text-[var(--color-primary)]">
+                    {totalSolved}
+                  </div>
+                  <div className="mt-1 text-sm text-[var(--color-text-muted)]">
+                    {t('report.totalAc')}
+                  </div>
+                  <Button variant="outline" size="sm" className="mt-4 gap-2" onClick={exportReport}>
+                    <Download size={14} />
+                    {t('report.export')}
+                  </Button>
                 </div>
               </div>
 
@@ -134,12 +121,14 @@ export default function CfpReportPage() {
                 <div className="rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] p-5 shadow-[var(--card-shadow)]">
                   <h4 className="mb-4 flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
                     <BarChart3 size={16} className="text-[var(--color-primary)]" />
-                    题目难度分布
+                    {t('report.difficulty')}
                   </h4>
                   <div className="space-y-2">
                     {ratingStats.map((r, i) => (
                       <div key={r.rating} className="flex items-center gap-3">
-                        <span className="w-14 text-right text-xs text-[var(--color-text-muted)]">{r.rating}</span>
+                        <span className="w-14 text-right text-xs text-[var(--color-text-muted)]">
+                          {r.rating}
+                        </span>
                         <div className="flex-1">
                           <div
                             className="h-5 rounded transition-all duration-300"
@@ -149,7 +138,9 @@ export default function CfpReportPage() {
                             }}
                           />
                         </div>
-                        <span className="w-8 text-xs font-medium text-[var(--color-text)]">{r.count}</span>
+                        <span className="w-8 text-xs font-medium text-[var(--color-text)]">
+                          {r.count}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -159,20 +150,22 @@ export default function CfpReportPage() {
               {/* Tag distribution */}
               {tagStats.length > 0 && (
                 <div className="rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] p-5 shadow-[var(--card-shadow)]">
-                  <h4 className="mb-4 text-sm font-semibold text-[var(--color-text)]">算法标签分布 (Top 20)</h4>
+                  <h4 className="mb-4 text-sm font-semibold text-[var(--color-text)]">
+                    {t('report.tags')}
+                  </h4>
                   <div className="flex flex-wrap gap-2">
-                    {tagStats.map((t) => {
-                      const opacity = 0.4 + (t.count / maxCount) * 0.6;
+                    {tagStats.map(topic => {
+                      const opacity = 0.4 + (topic.count / maxCount) * 0.6;
                       return (
                         <span
-                          key={t.tag}
+                          key={topic.tag}
                           className="rounded-full px-3 py-1 text-xs font-medium transition-all hover:scale-105"
                           style={{
                             backgroundColor: `rgba(255, 161, 22, ${opacity})`,
                             color: 'var(--color-primary)',
                           }}
                         >
-                          {t.tag} ({t.count})
+                          {getProblemTagLabel(topic.tag, locale)} ({topic.count})
                         </span>
                       );
                     })}

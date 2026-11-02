@@ -3,6 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ContestCard } from './ContestCard';
 import type { Contest } from '@/types';
+import { useI18n } from '@/i18n';
 
 interface ContestDayGroupProps {
   title: string;
@@ -33,8 +34,9 @@ export function ContestDayGroup({
   onOpenContest,
   onToggleFavorite,
 }: ContestDayGroupProps) {
+  const { t } = useI18n();
   const visibleContests = useMemo(
-    () => contests.filter((c) => selectedPlatforms[c.platform]),
+    () => contests.filter(c => selectedPlatforms[c.platform]),
     [contests, selectedPlatforms],
   );
 
@@ -46,18 +48,22 @@ export function ContestDayGroup({
       {collapsible && (
         <div className="mb-2">
           <div
-            className="flex cursor-pointer select-none items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--card-border)] bg-[var(--card-bg)] px-5 py-3 shadow-[var(--card-shadow)] transition-all hover:bg-[rgba(255,161,22,0.08)]"
+            className="glass-panel flex cursor-pointer select-none items-center gap-2 rounded-[var(--radius-md)] px-5 py-3 transition-all hover:-translate-y-0.5 hover:border-[var(--color-primary)]"
             onClick={onToggle}
           >
             <span
               className={cn(
                 'text-[15px] font-[620]',
-                variant === 'history' ? 'text-[var(--color-text-soft)]' : 'text-[var(--color-text)]',
+                variant === 'history'
+                  ? 'text-[var(--color-text-soft)]'
+                  : 'text-[var(--color-text)]',
               )}
             >
               {title}
             </span>
-            <span className="text-[13px] text-[var(--color-text-muted)]">({visibleCount} 场)</span>
+            <span className="text-[13px] text-[var(--color-text-muted)]">
+              ({t('common.contests', { count: visibleCount })})
+            </span>
             <ChevronDown
               size={18}
               className={cn(
@@ -71,9 +77,18 @@ export function ContestDayGroup({
 
       {/* Content card */}
       {(!collapsible || expanded) && (
-        <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[var(--card-shadow)] backdrop-blur-sm">
+        <div className="glass-panel relative overflow-hidden rounded-[var(--radius-lg)]">
           {/* Gradient border effect */}
-          <div className="pointer-events-none absolute inset-0 rounded-[var(--radius-lg)] bg-[linear-gradient(180deg,rgba(255,161,22,0.14),rgba(20,184,166,0.08))]" style={{ padding: '1px', mask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', WebkitMaskComposite: 'xor', maskComposite: 'exclude' }} />
+          <div
+            className="pointer-events-none absolute inset-0 rounded-[var(--radius-lg)] bg-[linear-gradient(180deg,var(--gradient-start),var(--gradient-end))]"
+            style={{
+              padding: '1px',
+              mask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+              WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+              WebkitMaskComposite: 'xor',
+              maskComposite: 'exclude',
+            }}
+          />
 
           {!collapsible && (
             <div className="border-b border-[var(--card-divider)] px-5 py-3">
@@ -82,7 +97,9 @@ export function ContestDayGroup({
           )}
 
           {visibleCount === 0 && collapsible ? (
-            <div className="p-5 text-center text-sm text-[var(--color-text-muted)]">这里没有比赛喵~</div>
+            <div className="p-5 text-center text-sm text-[var(--color-text-muted)]">
+              {t('contest.emptyGroup')}
+            </div>
           ) : (
             <div>
               {visibleContests.map((contest, idx) => (

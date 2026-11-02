@@ -7,7 +7,7 @@ export class ContestUtils {
     startTimeSeconds: number,
     durationSeconds: number,
     platform: string,
-    link?: string
+    link?: string,
   ): Contest {
     const startTime = new Date(startTimeSeconds * 1000);
     const duration = durationSeconds;
@@ -20,7 +20,14 @@ export class ContestUtils {
     const minutes = Math.floor((duration % 3600) / 60);
     const durationTimeStr = `${hours} 小时 ${minutes} 分钟`;
 
-    const startDateTimeDay = new Date(startTime.getFullYear(), startTime.getMonth(), startTime.getDate(), 23, 59, 59);
+    const startDateTimeDay = new Date(
+      startTime.getFullYear(),
+      startTime.getMonth(),
+      startTime.getDate(),
+      23,
+      59,
+      59,
+    );
     const startHourMinute = format(startTime, 'HH:mm');
     const endHourMinute = format(endTime, 'HH:mm');
 
@@ -43,15 +50,6 @@ export class ContestUtils {
   }
 
   static getDayName(index: number): string {
-    const today = new Date();
-    const targetDate = new Date(today);
-    targetDate.setDate(today.getDate() + index);
-    
-    const diffTime = targetDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-    // This is a simple approximation. For precise "Today", "Tomorrow", we should compare dates.
-    
-    // Better logic:
     const now = new Date();
     const date = new Date(now.getTime() + index * 24 * 60 * 60 * 1000);
     const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];

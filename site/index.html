@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="OJFlow 是面向算法竞赛选手的多平台桌面工作台，聚合比赛、Rating、解题数、题目检索、训练主题和日程。"
+    />
+    <meta name="theme-color" content="#087f8c" />
+    <link rel="icon" href="./assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>OJFlow - 算法竞赛数据工作台</title>
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="OJFlow 官网首页">
+        <img src="./assets/logo.png" alt="" width="42" height="42" />
+        <span>
+          <strong>OJFlow</strong>
+          <small>Practice Studio</small>
+        </span>
+      </a>
+      <nav class="site-nav" aria-label="官网导航">
+        <a href="#features">功能</a>
+        <a href="#workbench">工作台</a>
+        <a href="#appearance">外观</a>
+        <a href="#download">下载</a>
+      </nav>
+      <a
+        class="header-action"
+        href="https://github.com/Siborne/OJFlow/releases"
+        target="_blank"
+        rel="noreferrer"
+      >
+        获取 OJFlow
+      </a>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy reveal">
+          <div class="eyebrow"><span></span> Multi-judge command center</div>
+          <h1>把十个 OJ，收进一个<br /><em>会呼吸的训练工作台。</em></h1>
+          <p class="hero-lead">
+            比赛、Rating、解题数、题目检索、算法主题和训练日程，不再散落在十几个标签页里。
+          </p>
+          <div class="hero-actions">
+            <a
+              class="button button-primary"
+              href="https://github.com/Siborne/OJFlow/releases"
+              target="_blank"
+              rel="noreferrer"
+            >
+              下载桌面版
+              <span aria-hidden="true">↗</span>
+            </a>
+            <a
+              class="button button-quiet"
+              href="https://github.com/Siborne/OJFlow"
+              target="_blank"
+              rel="noreferrer"
+            >
+              查看源码
+            </a>
+          </div>
+          <div class="hero-proof">
+            <div><strong>10</strong><span>个 OJ 平台</span></div>
+            <div><strong>7</strong><span>套强调色</span></div>
+            <div><strong>4</strong><span>种界面质感</span></div>
+            <div><strong>∞</strong><span>持续迭代</span></div>
+          </div>
+        </div>
+
+        <div class="hero-visual reveal">
+          <div class="orbit orbit-a"></div>
+          <div class="orbit orbit-b"></div>
+          <div class="app-frame">
+            <div class="app-titlebar">
+              <span class="app-mark"><img src="./assets/logo.png" alt="" /></span>
+              <span class="app-name">OJFlow <small>Practice Studio</small></span>
+              <span class="window-dots"><i></i><i></i><i></i></span>
+            </div>
+            <div class="app-body">
+              <aside class="app-rail" aria-hidden="true">
+                <span class="rail-active">⌂</span>
+                <span>▦</span>
+                <span>☆</span>
+                <span>⌘</span>
+                <span>◉</span>
+              </aside>
+              <div class="app-main">
+                <div class="app-heading">
+                  <div><small>OJFlow</small><strong>数据工作台</strong></div>
+                  <span>更新于 22:10</span>
+                </div>
+                <div class="bento">
+                  <article class="bento-hero">
+                    <img src="./assets/logo.png" alt="" />
+                    <div>
+                      <span class="greeting">Good evening</span>
+                      <h2>把训练、比赛和日程<br />放在同一张数据地图里。</h2>
+                      <div class="mini-stats">
+                        <span><strong>2,418</strong>历史解题</span>
+                        <span><strong>1836</strong>当前 Rating</span>
+                        <span><strong>12</strong>主攻标签</span>
+                      </div>
+                    </div>
+                  </article>
+                  <article class="bento-contest">
+                    <span class="card-label">下一场</span>
+                    <b>Codeforces Round 1024</b>
+                    <span>Codeforces · 20:05</span>
+                    <i>参赛 ↗</i>
+                  </article>
+                  <article class="bento-donut">
+                    <span class="card-label">解题分布</span>
+                    <div class="donut"><strong>2,418</strong><span>Problems</span></div>
+                  </article>
+                  <article class="bento-tree">
+                    <span class="card-label">做题树</span>
+                    <div class="topic-cloud">
+                      <span style="--size: 1">动态规划</span>
+                      <span style="--size: 2">图论</span>
+                      <span style="--size: 1.4">数据结构</span>
+                      <span style="--size: 0.9">数学</span>
+                      <span style="--size: 1.2">字符串</span>
+                    </div>
+                  </article>
+                  <article class="bento-schedule">
+                    <span class="card-label">今日日程</span>
+                    <div>
+                      <i></i><span>DP 专题训练<small>19:30 · 90 min</small></span>
+                    </div>
+                    <div>
+                      <i></i><span>Codeforces Round<small>20:05 · 2 h</small></span>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="floating-chip chip-rating">
+            <span>CF</span>
+            <div><small>Current</small><b>1836</b></div>
+          </div>
+          <div class="floating-chip chip-streak">
+            <span>↗</span>
+            <div><small>Weekly</small><b>+24 solved</b></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="platform-strip" aria-label="支持平台">
+        <span>Codeforces</span><i></i><span>AtCoder</span><i></i><span>LeetCode</span><i></i>
+        <span>Luogu</span><i></i><span>Nowcoder</span><i></i><span>Lanqiao</span><i></i>
+        <span>VJudge</span><i></i><span>HDU</span><i></i><span>POJ</span><i></i><span>QOJ</span>
+      </section>
+
+      <section id="features" class="section">
+        <div class="section-heading reveal">
+          <div>
+            <div class="eyebrow"><span></span> Built for focus</div>
+            <h2>不是又一个 OJ 列表，<br />而是训练决策界面。</h2>
+          </div>
+          <p>把真正影响训练节奏的信息放在第一层，其余内容安静地待在手边。</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card reveal feature-wide">
+            <span class="feature-index">01</span>
+            <div class="feature-icon">◈</div>
+            <h3>多平台数据聚合</h3>
+            <p>十个平台统一呈现。缓存优先、后台刷新，单个平台失败不会拖垮整页数据。</p>
+            <div class="feature-visual bars">
+              <span style="--value: 90%"></span><span style="--value: 62%"></span>
+              <span style="--value: 74%"></span><span style="--value: 48%"></span>
+            </div>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-index">02</span>
+            <div class="feature-icon">⌕</div>
+            <h3>跨平台题目检索</h3>
+            <p>Codeforces、AtCoder、力扣、洛谷、牛客、QOJ 联合检索，中文标签映射英文 API。</p>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-index">03</span>
+            <div class="feature-icon">◒</div>
+            <h3>数据大屏</h3>
+            <p>分段环图、平台排行、训练主题树和 Rating 快照组成你的 Bento 工作台。</p>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-index">04</span>
+            <div class="feature-icon">□</div>
+            <h3>收藏与日程联动</h3>
+            <p>关注比赛自动生成日程，取消关注自动解除，不和手动训练计划混在一起。</p>
+          </article>
+          <article class="feature-card reveal feature-wide">
+            <span class="feature-index">05</span>
+            <div class="feature-icon">◐</div>
+            <h3>真正属于你的界面</h3>
+            <p>简洁/完整布局、中英双语、跟随系统明暗、7 套配色与玻璃、平铺、云雾、粘土四种质感。</p>
+            <div class="swatch-line">
+              <span style="--c: #087f8c"></span><span style="--c: #c6532c"></span>
+              <span style="--c: #3f7a42"></span><span style="--c: #b5385d"></span>
+              <span style="--c: #2563eb"></span><span style="--c: #a96618"></span>
+              <span style="--c: #475569"></span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="workbench" class="section split-section">
+        <div class="split-copy reveal">
+          <div class="eyebrow"><span></span> Workbench philosophy</div>
+          <h2>从“查一下数据”<br />到“今天练什么”。</h2>
+          <p>
+            OJFlow 把比赛日程、账号数据和训练计划放在同一个上下文里。打开应用时，你看到的不是表单，
+            而是下一步行动。
+          </p>
+          <ul class="check-list">
+            <li>本地 SQLite 持久化查询快照，重启后仍然有上下文</li>
+            <li>比赛、Rating、解题数与题目检索共用缓存边界</li>
+            <li>托盘常驻、开机自启、自定义关闭行为</li>
+            <li>无边框窗口与完整键盘快捷键</li>
+          </ul>
+        </div>
+        <div class="timeline reveal">
+          <div class="timeline-item">
+            <span>01</span>
+            <div>
+              <b>扫描今天</b>
+              <p>打开工作台，快速查看下一场比赛和训练安排。</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <span>02</span>
+            <div>
+              <b>定位弱项</b>
+              <p>从算法主题树和解题分布中挑选今天的主攻方向。</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <span>03</span>
+            <div>
+              <b>开始训练</b>
+              <p>跨平台题库筛选，或一键进入比赛页面。</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <span>04</span>
+            <div>
+              <b>沉淀下来</b>
+              <p>账号数据、日程和查询快照在本地持续保存。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="appearance" class="section appearance-section">
+        <div class="appearance-copy reveal">
+          <div class="eyebrow"><span></span> Make it yours</div>
+          <h2>七种颜色，<br />四种触感。</h2>
+          <p>用颜色表达你的训练风格，用质感定义界面的呼吸方式。</p>
+          <div class="theme-switcher" aria-label="预览配色">
+            <button data-scheme="ocean" class="active" aria-label="海盐青"></button>
+            <button data-scheme="ember" aria-label="琥珀橙"></button>
+            <button data-scheme="forest" aria-label="苔原绿"></button>
+            <button data-scheme="berry" aria-label="莓果红"></button>
+            <button data-scheme="sky" aria-label="晴空蓝"></button>
+            <button data-scheme="sand" aria-label="暖沙金"></button>
+            <button data-scheme="ink" aria-label="墨影灰"></button>
+          </div>
+          <div class="surface-switcher" aria-label="预览质感">
+            <button data-surface="glass" class="active">玻璃</button>
+            <button data-surface="flat">平铺</button>
+            <button data-surface="cloud">云雾</button>
+            <button data-surface="clay">粘土</button>
+          </div>
+        </div>
+        <div class="theme-preview reveal" id="theme-preview">
+          <div class="preview-top">
+            <span>Task overview</span>
+            <i></i>
+          </div>
+          <div class="preview-card">
+            <span class="preview-dot"></span>
+            <div><small>Today</small><b>3 sessions planned</b></div>
+          </div>
+          <div class="preview-chart"><span></span><span></span><span></span><span></span></div>
+          <div class="preview-bottom">
+            <span><b>2,418</b> solved</span>
+            <span><b>1836</b> rating</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="download" class="download-section reveal">
+        <div>
+          <div class="eyebrow"><span></span> Ready to flow</div>
+          <h2>下一道题，<br />已经有一个位置了。</h2>
+          <p>下载 OJFlow，把训练节奏收回来。</p>
+        </div>
+        <div class="download-panel">
+          <a href="https://github.com/Siborne/OJFlow/releases/latest">
+            <span>最新版本</span><b>Windows</b><i>下载 .exe ↗</i>
+          </a>
+          <a href="https://github.com/Siborne/OJFlow/releases/latest">
+            <span>Apple Silicon / Intel</span><b>macOS</b><i>下载 .dmg ↗</i>
+          </a>
+          <a href="https://github.com/Siborne/OJFlow/releases/latest">
+            <span>AppImage / deb</span><b>Linux</b><i>下载 ↗</i>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-brand">
+        <img src="./assets/logo.png" alt="" />
+        <div><strong>OJFlow</strong><span>Stay in the zone, skip the clutter.</span></div>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/Siborne/OJFlow">GitHub</a>
+        <a href="https://github.com/Siborne/OJFlow/releases">Releases</a>
+        <a href="https://github.com/Siborne/OJFlow/blob/main/README.md">Documentation</a>
+        <span>© <span id="year"></span> OJFlow · GPL-3.0</span>
+      </div>
+    </footer>
+    <script src="./app.js"></script>
+  </body>
+</html>

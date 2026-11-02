@@ -1,4 +1,4 @@
-import type { Rating, RatingFetchResponse } from '../../shared/types';
+import type { RatingFetchResponse } from '../../shared/types';
 import { getAdapter } from './adapters';
 import { validateRating } from './validators';
 import { dedup } from './request-dedup';
@@ -19,13 +19,14 @@ const platformIdMap: Record<string, string> = {
 export async function fetchRating(
   platform: string,
   handle: string,
+  adapterOverride?: NonNullable<ReturnType<typeof getAdapter>>,
 ): Promise<RatingFetchResponse> {
   const adapterId = platformIdMap[platform];
   if (!adapterId) {
     throw new Error(`Unsupported rating platform: ${platform}`);
   }
 
-  const adapter = getAdapter(adapterId);
+  const adapter = adapterOverride ?? getAdapter(adapterId);
   if (!adapter?.fetchRating) {
     throw new Error(`Adapter ${adapterId} does not support rating queries`);
   }
@@ -50,11 +51,6 @@ export async function fetchRating(
 }
 
 /** Deduplicated version */
-export function fetchRatingDedup(
-  platform: string,
-  handle: string,
-): Promise<RatingFetchResponse> {
-  return dedup(`rating:${platform}:${handle}`, () =>
-    fetchRating(platform, handle),
-  );
+export function fetchRatingDedup(platform: string, handle: string): Promise<RatingFetchResponse> {
+  return dedup(`rating:${platform}:${handle}`, () => fetchRating(platform, handle));
 }

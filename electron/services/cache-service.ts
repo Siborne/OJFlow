@@ -6,11 +6,10 @@ import type {
   ContestFetchResponse,
   RatingFetchResponse,
   SolvedFetchResponse,
-  PlatformFetchStatus,
 } from '../../shared/types';
 
 /** TTL constants in milliseconds */
-const TTL = {
+export const CACHE_TTL = {
   contests: 2 * 60 * 60 * 1000, // 2 hours
   ratings: 6 * 60 * 60 * 1000, // 6 hours
   solved: 12 * 60 * 60 * 1000, // 12 hours
@@ -23,12 +22,10 @@ function isExpired(fetchedAt: number, ttlMs: number): boolean {
 // ─── Contest Cache ──────────────────────────────────────────
 
 export function getCachedContests(): ContestFetchResponse | null {
-  const cached = store.get('cache.contests') as
-    | { data: unknown[]; fetchedAt: number }
-    | undefined;
+  const cached = store.get('cache.contests') as { data: unknown[]; fetchedAt: number } | undefined;
 
   if (!cached?.data || !cached.fetchedAt) return null;
-  if (isExpired(cached.fetchedAt, TTL.contests)) return null;
+  if (isExpired(cached.fetchedAt, CACHE_TTL.contests)) return null;
 
   return {
     contests: cached.data as RawContest[],
@@ -52,17 +49,14 @@ function ratingKey(platform: string, handle: string): string {
   return `${platform}:${handle}`;
 }
 
-export function getCachedRating(
-  platform: string,
-  handle: string,
-): RatingFetchResponse | null {
+export function getCachedRating(platform: string, handle: string): RatingFetchResponse | null {
   const key = ratingKey(platform, handle);
   const cached = store.get(`cache.ratings.${key}`) as
     | { data: unknown; fetchedAt: number }
     | undefined;
 
   if (!cached?.data || !cached.fetchedAt) return null;
-  if (isExpired(cached.fetchedAt, TTL.ratings)) return null;
+  if (isExpired(cached.fetchedAt, CACHE_TTL.ratings)) return null;
 
   return {
     rating: cached.data as Rating,
@@ -89,17 +83,14 @@ function solvedKey(platform: string, handle: string): string {
   return `${platform}:${handle}`;
 }
 
-export function getCachedSolved(
-  platform: string,
-  handle: string,
-): SolvedFetchResponse | null {
+export function getCachedSolved(platform: string, handle: string): SolvedFetchResponse | null {
   const key = solvedKey(platform, handle);
   const cached = store.get(`cache.solvedNums.${key}`) as
     | { data: unknown; fetchedAt: number }
     | undefined;
 
   if (!cached?.data || !cached.fetchedAt) return null;
-  if (isExpired(cached.fetchedAt, TTL.solved)) return null;
+  if (isExpired(cached.fetchedAt, CACHE_TTL.solved)) return null;
 
   return {
     solved: cached.data as SolvedNum,
@@ -123,15 +114,15 @@ export function setCachedSolved(
 // ─── Cache Invalidation ─────────────────────────────────────
 
 export function clearContestCache(): void {
-  store.delete('cache.contests' as any);
+  store.delete('cache.contests' as Parameters<typeof store.delete>[0]);
 }
 
 export function clearRatingCache(): void {
-  store.delete('cache.ratings' as any);
+  store.delete('cache.ratings' as Parameters<typeof store.delete>[0]);
 }
 
 export function clearSolvedCache(): void {
-  store.delete('cache.solvedNums' as any);
+  store.delete('cache.solvedNums' as Parameters<typeof store.delete>[0]);
 }
 
 export function clearAllCache(): void {

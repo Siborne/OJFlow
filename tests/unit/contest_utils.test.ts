@@ -6,15 +6,15 @@ describe('ContestUtils', () => {
     // 2024-06-29 21:00:00 UTC+8 -> 1719666000
     const startTimeSeconds = 1719666000;
     const durationSeconds = 7200; // 2 hours
-    
+
     const contest = ContestUtils.createContest(
       'Test Contest',
       startTimeSeconds,
       durationSeconds,
       'Codeforces',
-      'http://test.com'
+      'http://test.com',
     );
-    
+
     expect(contest.name).toBe('Test Contest');
     expect(contest.platform).toBe('Codeforces');
     // Note: formatting depends on local timezone. Assuming machine is in consistent timezone or mocking Date.
@@ -27,7 +27,7 @@ describe('ContestUtils', () => {
     // We can just check if it returns a string with "今天" for index 0.
     const day0 = ContestUtils.getDayName(0);
     expect(day0).toContain('今天');
-    
+
     const day1 = ContestUtils.getDayName(1);
     expect(day1).toContain('明天');
   });

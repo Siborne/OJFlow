@@ -23,8 +23,12 @@ jspm_packages
 # Build outputs
 dist
 dist-ssr
+electron-dist
 release
 coverage
+test-results
+.vite
+.tmp-*
 
 # System files
 .DS_Store
@@ -33,6 +37,10 @@ Thumbs.db
 # Editor directories and files
 .idea
 .vscode
+.claude
+.sisyphus
+.superpowers
+.qoder
 *.suo
 *.ntvs*
 *.njsproj

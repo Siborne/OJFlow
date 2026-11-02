@@ -35,6 +35,9 @@ export class VJudgeAdapter extends BaseAdapter {
       }
     }
 
-    return { name: handle, solvedNum: isNaN(num) ? 0 : num };
+    if (!found && isNaN(num)) {
+      throw new Error(`VJudge solved count not found: ${handle}`);
+    }
+    return { name: handle, solvedNum: num };
   }
 }

@@ -1,6 +1,12 @@
 export type UpdateState = 'up-to-date' | 'update-available' | 'error';
 
-export type UpdateErrorType = 'offline' | 'timeout' | 'network' | 'server' | 'invalid-manifest' | 'unknown';
+export type UpdateErrorType =
+  | 'offline'
+  | 'timeout'
+  | 'network'
+  | 'server'
+  | 'invalid-manifest'
+  | 'unknown';
 
 export type UpdateInfo = {
   state: UpdateState;
@@ -30,7 +36,10 @@ function normalizeVersion(raw: string): string {
 
 function parseSemver(v: string): [number, number, number] {
   const normalized = normalizeVersion(v).slice(1);
-  const [major, minor, patch] = normalized.split('.').map(part => Number(part ?? 0));
+  const [major, minor, patch] = normalized
+    .split('-')[0]
+    .split('.')
+    .map(part => Number(part ?? 0));
   return [
     Number.isFinite(major) ? major : 0,
     Number.isFinite(minor) ? minor : 0,
@@ -47,20 +56,29 @@ function compareVersions(a: string, b: string): number {
   return 0;
 }
 
-function detectManifest(payload: any): UpdateManifest | null {
-  if (!payload || typeof payload !== 'object') return null;
+function toRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
+}
 
-  if (typeof payload.version === 'string') {
-    return payload as UpdateManifest;
+function detectManifest(payload: unknown): UpdateManifest | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const object = payload as Record<string, unknown>;
+
+  if (typeof object.version === 'string') {
+    return object as unknown as UpdateManifest;
   }
 
-  if (typeof payload.tag_name === 'string') {
-    const assets = Array.isArray(payload.assets) ? payload.assets : [];
-    const packageUrl = assets.find((a: any) => typeof a?.browser_download_url === 'string')?.browser_download_url;
+  if (typeof object.tag_name === 'string') {
+    const assets = Array.isArray(object.assets) ? object.assets : [];
+    const packageAsset = assets.find(asset => {
+      const item = toRecord(asset);
+      return typeof item?.browser_download_url === 'string';
+    });
+    const packageUrl = toRecord(packageAsset)?.browser_download_url as string | undefined;
     return {
-      version: payload.tag_name,
-      notes: typeof payload.body === 'string' ? payload.body : undefined,
-      homepageUrl: typeof payload.html_url === 'string' ? payload.html_url : undefined,
+      version: object.tag_name,
+      notes: typeof object.body === 'string' ? object.body : undefined,
+      homepageUrl: typeof object.html_url === 'string' ? object.html_url : undefined,
       packageUrl,
     };
   }
@@ -73,7 +91,9 @@ function pickPackageUrl(manifest: UpdateManifest): string | undefined {
   return byPlatform ?? manifest.packageUrl;
 }
 
-export function getUpdateDialogSpec(info: UpdateInfo):
+export function getUpdateDialogSpec(
+  info: UpdateInfo,
+):
   | { kind: 'update'; title: string; content: string; positiveText: string; negativeText: string }
   | { kind: 'no-update'; title: string; content: string; positiveText: string }
   | { kind: 'error'; title: string; content: string; positiveText: string; negativeText: string } {
@@ -91,7 +111,11 @@ export function getUpdateDialogSpec(info: UpdateInfo):
   if (info.state === 'error') {
     const isNetwork =
       info.errorType === 'offline' || info.errorType === 'timeout' || info.errorType === 'network';
-    const title = isNetwork ? '网络错误' : info.errorType === 'server' ? '服务端错误' : '检查更新失败';
+    const title = isNetwork
+      ? '网络错误'
+      : info.errorType === 'server'
+        ? '服务端错误'
+        : '检查更新失败';
     const extra =
       info.errorType === 'network'
         ? '\n\n可能原因：离线、CORS 限制、证书校验失败或网络波动'
@@ -120,17 +144,20 @@ export function getUpdateDialogSpec(info: UpdateInfo):
 }
 
 function getNumberEnv(name: string, fallback: number): number {
+  const processEnv = typeof process !== 'undefined' ? process.env : undefined;
+  const viteEnv = (
+    import.meta as ImportMeta & {
+      env?: Record<string, string | boolean | undefined>;
+    }
+  ).env;
   const raw =
-    (typeof process !== 'undefined' ? (process.env as any)?.[name] : undefined) ??
-    ((import.meta as any).env?.[name] as string | undefined);
+    processEnv?.[name] ?? (typeof viteEnv?.[name] === 'string' ? viteEnv[name] : undefined);
   const n = Number(raw);
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
 function isOffline(): boolean {
-  const nav = (typeof navigator !== 'undefined' ? (navigator as any) : undefined) as any;
-  if (!nav || typeof nav.onLine !== 'boolean') return false;
-  return nav.onLine === false;
+  return typeof navigator !== 'undefined' && navigator.onLine === false;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -152,6 +179,7 @@ async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Respons
       try {
         controller?.abort();
       } catch {
+        // Ignore abort failures and still surface the timeout.
       }
       reject(new TimeoutError(`请求超时: ${timeoutMs}ms`));
     }, timeoutMs);
@@ -173,7 +201,7 @@ async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Respons
 function classifyFetchError(e: unknown): { type: UpdateErrorType; message: string } {
   const message = e instanceof Error ? e.message : typeof e === 'string' ? e : '未知错误';
   if (e instanceof TimeoutError) return { type: 'timeout', message };
-  if (e && typeof e === 'object' && (e as any).name === 'AbortError') {
+  if (toRecord(e)?.name === 'AbortError') {
     return { type: 'timeout', message: '请求超时' };
   }
   if (typeof message === 'string' && /Failed to fetch/i.test(message)) {
@@ -183,12 +211,20 @@ function classifyFetchError(e: unknown): { type: UpdateErrorType; message: strin
 }
 
 export async function checkUpdate(): Promise<UpdateInfo> {
+  const processEnv = typeof process !== 'undefined' ? process.env : undefined;
+  const viteEnv = (
+    import.meta as ImportMeta & {
+      env?: Record<string, string | boolean | undefined>;
+    }
+  ).env;
   const manifestUrl =
-    (typeof process !== 'undefined' ? process.env?.VITE_UPDATE_MANIFEST_URL : undefined) ??
-    ((import.meta as any).env?.VITE_UPDATE_MANIFEST_URL as string | undefined);
+    processEnv?.VITE_UPDATE_MANIFEST_URL ??
+    (typeof viteEnv?.VITE_UPDATE_MANIFEST_URL === 'string'
+      ? viteEnv.VITE_UPDATE_MANIFEST_URL
+      : undefined);
   const rawCurrent =
-    (typeof process !== 'undefined' ? process.env?.VITE_APP_VERSION : undefined) ??
-    ((import.meta as any).env?.VITE_APP_VERSION as string | undefined);
+    processEnv?.VITE_APP_VERSION ??
+    (typeof viteEnv?.VITE_APP_VERSION === 'string' ? viteEnv.VITE_APP_VERSION : undefined);
   const currentVersion = normalizeVersion(rawCurrent ?? '0.0.0');
 
   if (!manifestUrl) {
@@ -253,7 +289,12 @@ export async function checkUpdate(): Promise<UpdateInfo> {
         const packageUrl = pickPackageUrl(manifest);
 
         if (compareVersions(latestVersion, currentVersion) <= 0) {
-          return { state: 'up-to-date', currentVersion, latestVersion, homepageUrl: manifest.homepageUrl };
+          return {
+            state: 'up-to-date',
+            currentVersion,
+            latestVersion,
+            homepageUrl: manifest.homepageUrl,
+          };
         }
 
         return {
@@ -274,7 +315,8 @@ export async function checkUpdate(): Promise<UpdateInfo> {
           errorMessage: classified.message,
         });
 
-        const canRetry = (classified.type === 'timeout' || classified.type === 'network') && attempt < retryCount;
+        const canRetry =
+          (classified.type === 'timeout' || classified.type === 'network') && attempt < retryCount;
         if (canRetry) {
           await sleep(backoffBaseMs * attempt);
           continue;
@@ -299,12 +341,13 @@ export async function checkUpdate(): Promise<UpdateInfo> {
       errorType: 'unknown',
       errorMessage: '检查更新失败',
     };
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
     return {
       state: 'error',
       currentVersion,
       errorType: 'unknown',
-      errorMessage: e?.message ? String(e.message) : '检查更新时发生异常',
+      errorMessage: message || '检查更新时发生异常',
     };
   }
 }

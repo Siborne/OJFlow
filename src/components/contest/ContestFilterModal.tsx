@@ -1,5 +1,7 @@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { useI18n } from '@/i18n';
+import { getPlatformLabel } from '@/utils/platform-labels';
 
 interface ContestFilterModalProps {
   show: boolean;
@@ -20,6 +22,7 @@ export function ContestFilterModal({
   onToggleShowEmptyDay,
   onTogglePlatform,
 }: ContestFilterModalProps) {
+  const { t, locale } = useI18n();
   if (!show) return null;
 
   return (
@@ -28,8 +31,10 @@ export function ContestFilterModal({
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       {/* Dialog */}
-      <div className="relative z-10 w-full max-w-sm rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-xl">
-        <h3 className="mb-4 text-lg font-semibold text-[var(--color-text)]">筛选平台</h3>
+      <div className="glass-panel relative z-10 w-full max-w-sm rounded-[var(--radius-xl)] p-6">
+        <h3 className="mb-4 text-lg font-semibold text-[var(--color-text)]">
+          {t('contest.filterPlatforms')}
+        </h3>
 
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center gap-2">
@@ -38,31 +43,36 @@ export function ContestFilterModal({
               onCheckedChange={onToggleShowEmptyDay}
               id="show-empty-day"
             />
-            <Label htmlFor="show-empty-day" className="text-sm text-[var(--color-text)] cursor-pointer">
-              显示无赛程日
+            <Label
+              htmlFor="show-empty-day"
+              className="text-sm text-[var(--color-text)] cursor-pointer"
+            >
+              {t('contest.showEmptyDays')}
             </Label>
           </div>
 
           <div className="h-px bg-[var(--color-border)]" />
 
-          {platforms.map((platform) => (
+          {platforms.map(platform => (
             <label key={platform} className="flex cursor-pointer items-center gap-2">
               <input
                 type="checkbox"
                 checked={selectedPlatforms[platform] ?? true}
-                onChange={(e) => onTogglePlatform(platform, e.target.checked)}
+                onChange={e => onTogglePlatform(platform, e.target.checked)}
                 className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-primary)] accent-[var(--color-primary)]"
               />
-              <span className="text-sm text-[var(--color-text)]">{platform}</span>
+              <span className="text-sm text-[var(--color-text)]">
+                {getPlatformLabel(platform, locale)}
+              </span>
             </label>
           ))}
         </div>
 
         <button
           onClick={onClose}
-          className="mt-4 w-full rounded-[var(--radius-sm)] bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+          className="mt-4 w-full rounded-[var(--radius-sm)] bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-[var(--color-primary-foreground)] hover:opacity-90"
         >
-          关闭
+          {t('common.close')}
         </button>
       </div>
     </div>

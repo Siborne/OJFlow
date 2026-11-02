@@ -2,16 +2,23 @@ name: CI
 
 on:
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  check:
+  quality:
+    name: Typecheck, lint and unit tests
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Bun
@@ -19,17 +26,48 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Type Check
+      - name: Type check
         run: bun run type-check
 
       - name: Lint
         run: bun run lint
 
-      - name: Unit Tests
+      - name: Format check
+        run: bun run format:check
+
+      - name: Official site check
+        run: bun run site:check
+
+      - name: Unit and component tests
         run: bun run test:unit
 
-      - name: Build
+      - name: Production build
         run: bun run build
+
+  electron-e2e:
+    name: Real Electron E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Electron runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgtk-3-0t64 libnss3 libasound2t64 ||
+            sudo apt-get install -y xvfb libgtk-3-0 libnss3 libasound2
+
+      - name: Run Electron E2E
+        run: xvfb-run -a bun run test:e2e

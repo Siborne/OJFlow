@@ -1,24 +1,14 @@
 import type { BrowserWindow } from 'electron';
-import type {
-  RawContest,
-  PlatformFetchStatus,
-  ContestFetchResponse,
-} from '../../shared/types';
+import type { RawContest, PlatformFetchStatus, ContestFetchResponse } from '../../shared/types';
 import type { FetchResult } from './adapters/types';
 import { getContestAdapters } from './adapters';
 import { validateContest } from './validators';
 import { IPC_CHANNELS } from '../../shared/ipc-channels';
 import { dedup } from './request-dedup';
-
-interface AppConfig {
-  crawl: { defaultDays: number; minDays: number; maxDays: number };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const appConfig: AppConfig = require('../app.config.json');
+import appConfig from '../app.config.json';
 
 /** Filter contests by time window: returns true if the contest should be included */
-function isInTimeWindow(
+export function isInTimeWindow(
   startTime: number,
   duration: number,
   queryEndSeconds: number,
@@ -43,31 +33,27 @@ function isInTimeWindow(
 export async function fetchAllContests(
   day: number,
   win?: BrowserWindow | null,
+  adapters = getContestAdapters(),
 ): Promise<ContestFetchResponse> {
   const fallback = appConfig?.crawl?.defaultDays ?? 7;
   const min = appConfig?.crawl?.minDays ?? 1;
   const max = appConfig?.crawl?.maxDays ?? 30;
   const n = Number(day);
-  const d = Number.isFinite(n)
-    ? Math.max(min, Math.min(max, Math.floor(n)))
-    : fallback;
+  const d = Number.isFinite(n) ? Math.max(min, Math.min(max, Math.floor(n))) : fallback;
 
   const queryEndSeconds = d * 24 * 60 * 60;
-  const adapters = getContestAdapters();
   const totalStart = Date.now();
 
   // Fire all adapter fetches concurrently
   const results = await Promise.allSettled(
-    adapters.map(async (adapter) => {
+    adapters.map(async adapter => {
       if (!adapter.fetchContests) return null;
 
       const start = Date.now();
       try {
         const contests = await adapter.fetchContests(d);
         const valid = contests.filter(
-          (c) =>
-            validateContest(c) &&
-            isInTimeWindow(c.startTime, c.duration, queryEndSeconds),
+          c => validateContest(c) && isInTimeWindow(c.startTime, c.duration, queryEndSeconds),
         );
 
         const result: FetchResult<RawContest[]> = {
@@ -80,6 +66,7 @@ export async function fetchAllContests(
         // Stream partial result to renderer
         if (win && !win.isDestroyed()) {
           win.webContents.send(IPC_CHANNELS.CONTESTS_PARTIAL, {
+            day: d,
             platform: adapter.displayName,
             contests: valid,
           });
@@ -88,8 +75,7 @@ export async function fetchAllContests(
         return result;
       } catch (error) {
         const elapsed = Date.now() - start;
-        const msg =
-          error instanceof Error ? error.message : 'Unknown error';
+        const msg = error instanceof Error ? error.message : 'Unknown error';
         console.warn(`[contest-aggregator] ${adapter.id} failed:`, msg);
 
         return {

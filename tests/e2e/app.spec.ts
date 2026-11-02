@@ -1,189 +1,138 @@
-import { test, expect, _electron as electron } from '@playwright/test';
+import {
+  _electron as electron,
+  expect,
+  test,
+  type ElectronApplication,
+  type Page,
+} from '@playwright/test';
 
-async function getAppWindow(electronApp: any) {
-  const deadline = Date.now() + 10_000;
-  while (Date.now() < deadline) {
-    const windows = electronApp.windows();
-    for (const w of windows) {
-      const url = w.url();
-      if (!url.startsWith('devtools://')) return w;
-    }
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  return electronApp.firstWindow();
+async function launchApp(): Promise<{ app: ElectronApplication; page: Page }> {
+  const app = await electron.launch({
+    args: ['electron-dist/electron/main.js'],
+    env: {
+      ...process.env,
+      NODE_ENV: 'test',
+      VITE_UPDATE_MANIFEST_URL: '',
+    },
+  });
+  const page = await app.firstWindow();
+  await page.waitForSelector('.app-bar');
+  return { app, page };
 }
 
-test('App should launch', async () => {
-  const electronApp = await electron.launch({
-    args: ['electron-dist/electron/main.js'],
-  });
-
-  const window = await getAppWindow(electronApp);
-  
-  // Check if main content is loaded
-  await window.waitForSelector('.app-bar');
-  const title = await window.textContent('.app-bar h2');
-  expect(title).toBe('近期比赛');
-
-  await electronApp.close();
+test('应用启动并显示数据工作台', async () => {
+  const { app, page } = await launchApp();
+  await expect(page.locator('.app-bar h2')).toHaveText('数据工作台');
+  await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '最小化' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '关闭' })).toBeVisible();
+  await page.getByRole('button', { name: '最大化' }).click();
+  await expect(page.getByRole('button', { name: '还原窗口' })).toBeVisible();
+  await page.getByRole('button', { name: '还原窗口' }).click();
+  await expect(page.getByText('我的日程')).toBeVisible();
+  await app.close();
 });
 
-test('设置页 hover/focus 时右侧 icon 应显示', async () => {
-  test.setTimeout(60_000);
-  const electronApp = await electron.launch({
-    args: ['electron-dist/electron/main.js'],
-  });
+test('设置页可以切换完整模式、暗色与强调色', async () => {
+  const { app, page } = await launchApp();
+  await page.locator('[data-nav-key="settings"]').click();
+  await expect(page.locator('[data-nav-key="settings"]')).toHaveAttribute('aria-current', 'page');
+  await expect(
+    page.locator('#settings-section-appearance').getByText('外观与布局', { exact: true }),
+  ).toBeVisible();
 
-  const window = await getAppWindow(electronApp);
-  await window.setViewportSize({ width: 390, height: 844 });
-  await window.waitForSelector('.app-bar');
+  await page.getByRole('button', { name: '完整模式' }).click();
+  await page.getByRole('button', { name: '暗色' }).click();
+  await page.getByRole('button', { name: '琥珀橙' }).click();
+  await page.getByRole('button', { name: '晴空蓝' }).click();
+  await page.getByRole('button', { name: '粘土' }).click();
+  await page.getByRole('button', { name: '启动与窗口', exact: true }).click();
+  await expect(page.getByText('开机自动启动')).toBeVisible();
+  await expect(page.getByText('关闭按钮行为')).toBeVisible();
+  await page.getByRole('button', { name: '外观与布局', exact: true }).click();
+  await page.getByTestId('settings-language').getByRole('button', { name: '跟随系统' }).click();
 
-  await window.locator('.nav-item', { hasText: '设置' }).click();
-  await window.waitForSelector('.settings-page');
-
-  const aboutRow = window.locator('[aria-label="关于 OJ Flow"]');
-  const affordance = aboutRow.locator('.settings-row-affordance');
-
-  await expect(affordance).toHaveCSS('opacity', '0');
-  await aboutRow.hover();
-  await expect(affordance).toHaveCSS('opacity', '1');
-
-  await window.mouse.move(0, 0);
-  await expect(affordance).toHaveCSS('opacity', '0');
-
-  await aboutRow.focus();
-  await expect(affordance).toHaveCSS('opacity', '1');
-
-  await electronApp.close();
+  await expect(page.locator('html')).toHaveAttribute('data-mode', 'full');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('html')).toHaveAttribute('data-scheme', 'sky');
+  await expect(page.locator('html')).toHaveAttribute('data-surface', 'clay');
+  await expect(page.locator('html')).toHaveAttribute('data-locale', 'system');
+  await app.close();
 });
 
-test('收藏编辑模式应支持全选、底部栏与快捷键（200 条）', async () => {
-  test.setTimeout(60_000);
-  const electronApp = await electron.launch({
-    args: ['electron-dist/electron/main.js'],
-  });
+test('收藏页可以添加并删除手动比赛', async () => {
+  const { app, page } = await launchApp();
+  await page.getByRole('button', { name: '收藏' }).click();
+  await page.getByRole('button', { name: '添加手动比赛' }).click();
 
-  const window = await getAppWindow(electronApp);
-  await window.setViewportSize({ width: 390, height: 844 });
+  await page.getByPlaceholder('比赛名称').fill('E2E Manual Round');
+  await page.locator('input[type="datetime-local"]').fill('2026-12-01T20:00');
+  await page.getByRole('button', { name: '保存' }).click();
 
-  await window.waitForSelector('.app-bar');
-
-  await window.evaluate(() => {
-    const createContest = (name: string, idx: number) => ({
-      name,
-      startTime: '2026-01-01 00:00',
-      endTime: '2026-01-01 01:00',
-      duration: '1 小时 0 分钟',
-      platform: 'Codeforces',
-      link: `https://example.com/${encodeURIComponent(name)}`,
-      startHourMinute: '00:00',
-      endHourMinute: '01:00',
-      startTimeSeconds: idx,
-      durationSeconds: 3600,
-      formattedStartTime: '2026-01-01 00:00',
-      formattedEndTime: '2026-01-01 01:00',
-      formattedDuration: '1 小时 0 分钟',
-    });
-
-    const list = Array.from({ length: 200 }, (_, i) => createContest(`Fav${i}`, i));
-    localStorage.setItem('favourite_contests_list', JSON.stringify(list));
-    location.reload();
-  });
-
-  await window.waitForSelector('.app-bar');
-
-  await window.locator('.nav-item', { hasText: '收藏' }).click();
-  await window.waitForSelector('[data-testid="favorite-batch-toggle"]');
-
-  await window.locator('[data-testid="favorite-batch-toggle"]').click();
-  await window.waitForSelector('[data-testid="favorite-select-all"]');
-
-  await window.keyboard.down('Control');
-  await window.keyboard.press('KeyA');
-  await window.keyboard.up('Control');
-
-  await window.waitForSelector('[data-testid="favorite-selected-count"]');
-  await expect(window.locator('[data-testid="favorite-selected-count"]')).toHaveText(/200/);
-
-  const bar = window.locator('.batch-bar');
-  await expect(bar).toBeVisible();
-  await expect(bar).toHaveCSS('height', '56px');
-
-  await window.keyboard.press('Delete');
-  await window.locator('.n-dialog button:has-text("删除")').click();
-
-  await window.waitForTimeout(300);
-
-  const remaining = await window.evaluate(() => {
-    const raw = localStorage.getItem('favourite_contests_list') || '[]';
-    const list = JSON.parse(raw) as Array<{ name: string }>;
-    return list.length;
-  });
-  expect(remaining).toBe(0);
-
-  await electronApp.close();
+  await expect(page.getByText('E2E Manual Round')).toBeVisible();
+  await page.getByRole('button', { name: '批量管理' }).click();
+  await page.getByTestId('favorite-checkbox-E2E Manual Round').check();
+  await page.getByTestId('favorite-delete-selected').click();
+  await page.getByRole('button', { name: '删除', exact: true }).click();
+  await expect(page.getByText('E2E Manual Round')).toHaveCount(0);
+  await app.close();
 });
 
-test('收藏页面应支持跨页多选并批量删除', async () => {
-  test.setTimeout(60_000);
-  const electronApp = await electron.launch({
-    args: ['electron-dist/electron/main.js'],
-  });
+test('简洁模式仅显示图标，完整模式显示分组功能', async () => {
+  const { app, page } = await launchApp();
+  await page.locator('[data-nav-key="settings"]').click();
+  await page.getByRole('button', { name: '简洁模式' }).click();
 
-  const window = await getAppWindow(electronApp);
-  await window.setViewportSize({ width: 390, height: 844 });
+  const contestButton = page.getByRole('button', { name: '比赛', exact: true });
+  await expect(contestButton).toHaveText('');
 
-  await window.waitForSelector('.app-bar');
+  await page.getByRole('button', { name: '完整模式' }).click();
+  await expect(contestButton).toContainText('比赛');
+  await expect(page.getByText('探索', { exact: true })).toBeVisible();
+  await expect(page.getByText('数据', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'CF 报告' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '解题数' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'OIerDB' })).toBeVisible();
+  await app.close();
+});
 
-  await window.evaluate(() => {
-    const createContest = (name: string, idx: number) => ({
-      name,
-      startTime: '2026-01-01 00:00',
-      endTime: '2026-01-01 01:00',
-      duration: '1 小时 0 分钟',
-      platform: 'Codeforces',
-      link: `https://example.com/${encodeURIComponent(name)}`,
-      startHourMinute: '00:00',
-      endHourMinute: '01:00',
-      startTimeSeconds: idx,
-      durationSeconds: 3600,
-      formattedStartTime: '2026-01-01 00:00',
-      formattedEndTime: '2026-01-01 01:00',
-      formattedDuration: '1 小时 0 分钟',
-    });
+test('题目页支持多平台、扩展标签和英文标签', async () => {
+  const { app, page } = await launchApp();
+  await page.locator('[data-nav-key="settings"]').click();
+  await page.getByRole('button', { name: 'English' }).click();
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  await expect(
+    page.locator('#settings-section-appearance').getByText('Appearance & Layout', { exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Contests', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Upcoming Contests' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Today', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Problems', exact: true }).click();
 
-    const list = Array.from({ length: 25 }, (_, i) => createContest(`Fav${i}`, i));
-    localStorage.setItem('favourite_contests_list', JSON.stringify(list));
-    location.reload();
-  });
+  await expect(page.getByRole('heading', { name: 'Problem Atlas' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'All Platforms' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'LeetCode', exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Luogu', exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Nowcoder', exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'QOJ', exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Dynamic Programming' })).toBeVisible();
+  await page.getByRole('button', { name: 'Show more topics' }).click();
+  await expect(page.getByRole('button', { name: 'Fenwick Tree' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Apply' })).toBeVisible();
+  await app.close();
+});
 
-  await window.waitForSelector('.app-bar');
+test('工作台可以创建并持久化日程', async () => {
+  const { app, page } = await launchApp();
+  await page.getByRole('button', { name: '添加日程' }).click();
+  await page.getByPlaceholder('日程标题').fill('E2E DP plan');
+  await page.getByRole('button', { name: '保存' }).click();
+  await expect(page.getByText('E2E DP plan')).toBeVisible();
 
-  await window.locator('.nav-item', { hasText: '收藏' }).click();
-  await window.waitForSelector('[data-testid="favorite-batch-toggle"]');
-
-  await window.locator('[data-testid="favorite-batch-toggle"]').click();
-
-  await window.locator('[data-testid="favorite-checkbox-Fav0"]').click();
-
-  await window.locator('[data-testid="favorite-pagination"] >> text=2').first().click();
-  await window.waitForSelector('[data-testid="favorite-checkbox-Fav20"]');
-  await window.locator('[data-testid="favorite-checkbox-Fav20"]').click();
-
-  await window.locator('[data-testid="favorite-delete-selected"]').click();
-  await window.locator('.n-dialog button:has-text("删除")').click();
-
-  await window.waitForTimeout(300);
-
-  const remainingNames = await window.evaluate(() => {
-    const raw = localStorage.getItem('favourite_contests_list') || '[]';
-    const list = JSON.parse(raw) as Array<{ name: string }>;
-    return list.map(x => x.name);
-  });
-
-  expect(remainingNames.includes('Fav0')).toBe(false);
-  expect(remainingNames.includes('Fav20')).toBe(false);
-  expect(remainingNames.length).toBe(23);
-
-  await electronApp.close();
+  await page.reload();
+  await page.waitForSelector('.app-bar');
+  await expect(page.getByText('E2E DP plan')).toBeVisible();
+  await page.getByRole('button', { name: '标记完成' }).click();
+  await expect(page.getByRole('button', { name: '恢复待办' })).toBeVisible();
+  await app.close();
 });

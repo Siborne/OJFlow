@@ -5,8 +5,7 @@ export class LuoguAdapter extends BaseAdapter {
   readonly id = 'luogu';
   readonly displayName = '\u6d1b\u8c37';
 
-  private readonly contestUrl =
-    'https://www.luogu.com.cn/contest/list?page=1&_contentOnly=1';
+  private readonly contestUrl = 'https://www.luogu.com.cn/contest/list?page=1&_contentOnly=1';
   private readonly searchUrl = 'https://www.luogu.com.cn/api/user/search';
 
   constructor() {
@@ -80,27 +79,28 @@ export class LuoguAdapter extends BaseAdapter {
     }
 
     const userId = searchRes.data.users[0].uid;
-    const userPageRes = await this.http.get(
-      `https://www.luogu.com.cn/user/${userId}`,
-      { maxRedirects: 3, timeout: 8000 },
+    const ratingRes = await this.http.get(
+      `https://www.luogu.com.cn/api/rating/elo?user=${userId}&page=1&limit=100`,
+      { headers: { 'X-Requested-With': 'XMLHttpRequest' } },
     );
-
-    const html =
-      typeof userPageRes.data === 'string'
-        ? userPageRes.data
-        : JSON.stringify(userPageRes.data);
-
-    const $ = this.parseHtml(html);
-    const jsonScript = $('script[type="application/json"]').first().html();
-    if (jsonScript) {
-      const parsed = JSON.parse(jsonScript);
-      const ratingData = parsed?.data?.user?.rating;
-      if (typeof ratingData === 'number') {
-        return { name: handle, curRating: ratingData, maxRating: ratingData };
+    const records = ratingRes.data?.records?.result;
+    if (Array.isArray(records) && records.length > 0) {
+      const ratings = records
+        .map((record: { rating?: unknown }) => record.rating)
+        .filter(
+          (rating: unknown): rating is number =>
+            typeof rating === 'number' && Number.isFinite(rating),
+        );
+      if (ratings.length > 0) {
+        return {
+          name: handle,
+          curRating: ratings[0],
+          maxRating: Math.max(...ratings),
+        };
       }
     }
 
-    return { name: handle, curRating: 0, maxRating: 0 };
+    throw new Error(`Luogu rating not found: ${handle}`);
   }
 
   async fetchSolvedCount(handle: string): Promise<SolvedNum> {
@@ -114,15 +114,12 @@ export class LuoguAdapter extends BaseAdapter {
     }
 
     const userId = searchRes.data.users[0].uid;
-    const userRes = await this.http.get(
-      `https://www.luogu.com.cn/user/${userId}`,
-      { maxRedirects: 3, timeout: 8000 },
-    );
+    const userRes = await this.http.get(`https://www.luogu.com.cn/user/${userId}`, {
+      maxRedirects: 3,
+      timeout: 8000,
+    });
 
-    const html =
-      typeof userRes.data === 'string'
-        ? userRes.data
-        : JSON.stringify(userRes.data);
+    const html = typeof userRes.data === 'string' ? userRes.data : JSON.stringify(userRes.data);
 
     const $ = this.parseHtml(html);
     const jsonScript = $('script[type="application/json"]').first().html();

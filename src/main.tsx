@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import './styles/globals.css';
 import { migrateFromLocalStorage } from './utils/migrate-storage';
+import { useUiStore } from './stores/ui';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,15 +16,17 @@ const queryClient = new QueryClient({
 });
 
 const root = createRoot(document.getElementById('app')!);
-root.render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
-  </React.StrictMode>,
-);
 
-// Post-mount initialization
-(async () => {
+async function bootstrap() {
   await migrateFromLocalStorage();
-})();
+  useUiStore.getState().applyToDom();
+  root.render(
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </React.StrictMode>,
+  );
+}
+
+void bootstrap();

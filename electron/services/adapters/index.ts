@@ -25,9 +25,7 @@ const adapters: PlatformAdapter[] = [
 ];
 
 /** Map for O(1) lookup by adapter id */
-const adapterMap = new Map<string, PlatformAdapter>(
-  adapters.map((a) => [a.id, a]),
-);
+const adapterMap = new Map<string, PlatformAdapter>(adapters.map(a => [a.id, a]));
 
 /** Get all registered adapters */
 export function getAllAdapters(): PlatformAdapter[] {
@@ -41,17 +39,17 @@ export function getAdapter(id: string): PlatformAdapter | undefined {
 
 /** Get adapters that support contest fetching */
 export function getContestAdapters(): PlatformAdapter[] {
-  return adapters.filter((a) => typeof a.fetchContests === 'function');
+  return adapters.filter(a => typeof a.fetchContests === 'function');
 }
 
 /** Get adapters that support rating queries */
 export function getRatingAdapters(): PlatformAdapter[] {
-  return adapters.filter((a) => typeof a.fetchRating === 'function');
+  return adapters.filter(a => typeof a.fetchRating === 'function');
 }
 
 /** Get adapters that support solved count queries */
 export function getSolvedAdapters(): PlatformAdapter[] {
-  return adapters.filter((a) => typeof a.fetchSolvedCount === 'function');
+  return adapters.filter(a => typeof a.fetchSolvedCount === 'function');
 }
 
 export {

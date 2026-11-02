@@ -11,9 +11,11 @@ export async function migrateFromLocalStorage(): Promise<void> {
     const themeScheme = localStorage.getItem('theme_scheme');
     const colorMode = localStorage.getItem('color_mode');
     const locale = localStorage.getItem('locale');
+    const surfaceStyle = localStorage.getItem('surface_style');
     if (themeScheme) await eStore.set('ui.themeScheme', themeScheme);
     if (colorMode) await eStore.set('ui.colorMode', colorMode);
     if (locale) await eStore.set('ui.locale', locale);
+    if (surfaceStyle) await eStore.set('ui.surfaceStyle', surfaceStyle);
 
     // Migrate contest settings
     const maxDays = localStorage.getItem('max_crawl_days');

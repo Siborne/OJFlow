@@ -1,12 +1,15 @@
 import { create } from 'zustand';
 import type { Contest } from '../types';
-import type { PlatformFetchStatus } from '../../shared/types';
+import type { ContestsPartialPayload, PlatformFetchStatus } from '../../shared/types';
 import { ContestService } from '../services/contest';
+import { ContestUtils } from '../utils/contest_utils';
 import appConfig from '../../electron/app.config.json';
+import { useScheduleStore } from './schedule';
 
 const PLATFORMS = ['Codeforces', 'AtCoder', '洛谷', '蓝桥云课', '力扣', '牛客'];
 const MAX_CRAWL_DAYS_KEY = 'max_crawl_days';
 const HIDE_DATE_KEY = 'hide_date';
+const SHOW_EMPTY_DAY_KEY = 'show_empty_day';
 const DEFAULT_DAYS = appConfig?.crawl?.defaultDays ?? 7;
 const MIN_DAYS = appConfig?.crawl?.minDays ?? 1;
 const MAX_DAYS = appConfig?.crawl?.maxDays ?? 30;
@@ -32,7 +35,8 @@ function readLocalStorageDays(): number {
 
 function readLocalStorageFavorites(): Contest[] {
   try {
-    return JSON.parse(localStorage.getItem('favourite_contests_list') || '[]');
+    const parsed: unknown = JSON.parse(localStorage.getItem('favourite_contests_list') || '[]');
+    return Array.isArray(parsed) ? (parsed as Contest[]) : [];
   } catch {
     return [];
   }
@@ -41,6 +45,14 @@ function readLocalStorageFavorites(): Contest[] {
 function readLocalStorageHideDate(): boolean {
   try {
     return localStorage.getItem(HIDE_DATE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function readLocalStorageShowEmptyDay(): boolean {
+  try {
+    return localStorage.getItem(SHOW_EMPTY_DAY_KEY) === '1';
   } catch {
     return false;
   }
@@ -78,9 +90,12 @@ interface ContestState {
   fromCache: boolean;
   cachedAt: number | null;
   totalElapsed: number;
+  error: string | null;
+  lastUpdatedAt: number | null;
 
   init: () => Promise<void>;
   fetchContests: () => Promise<void>;
+  applyContestsPartial: (payload: ContestsPartialPayload) => void;
   setMaxCrawlDays: (nextDay: number) => Promise<void>;
   togglePlatform: (platform: string, value: boolean) => void;
   toggleShowEmptyDay: (value: boolean) => void;
@@ -146,11 +161,22 @@ function persistHideDate(nextHide: boolean, prevHide: boolean) {
   }
 }
 
+function persistShowEmptyDay(nextValue: boolean) {
+  try {
+    localStorage.setItem(SHOW_EMPTY_DAY_KEY, nextValue ? '1' : '0');
+  } catch {
+    // Keep the in-memory preference when localStorage is unavailable.
+  }
+  getElectronStore()
+    ?.set('contest.showEmptyDay', nextValue)
+    .catch(() => {});
+}
+
 export const useContestStore = create<ContestState>((set, get) => ({
   contests: [],
   loading: false,
   day: readLocalStorageDays(),
-  showEmptyDay: true,
+  showEmptyDay: readLocalStorageShowEmptyDay(),
   selectedPlatforms: PLATFORMS.reduce(
     (acc, p) => ({ ...acc, [p]: true }),
     {} as Record<string, boolean>,
@@ -162,6 +188,8 @@ export const useContestStore = create<ContestState>((set, get) => ({
   fromCache: false,
   cachedAt: null,
   totalElapsed: 0,
+  error: null,
+  lastUpdatedAt: null,
 
   init: async () => {
     if (get().initialized) return;
@@ -174,6 +202,7 @@ export const useContestStore = create<ContestState>((set, get) => ({
             | {
                 maxCrawlDays?: number;
                 hideDate?: boolean;
+                showEmptyDay?: boolean;
                 selectedPlatforms?: Record<string, boolean>;
               }
             | undefined
@@ -188,6 +217,9 @@ export const useContestStore = create<ContestState>((set, get) => ({
           }
           if (typeof contestConfig.hideDate === 'boolean') {
             patch.hideDate = contestConfig.hideDate;
+          }
+          if (typeof contestConfig.showEmptyDay === 'boolean') {
+            patch.showEmptyDay = contestConfig.showEmptyDay;
           }
           if (contestConfig.selectedPlatforms) {
             patch.selectedPlatforms = {
@@ -209,7 +241,7 @@ export const useContestStore = create<ContestState>((set, get) => ({
   },
 
   fetchContests: async () => {
-    set({ loading: true });
+    set({ loading: true, error: null });
     try {
       const result = await ContestService.getRecentContests(get().day);
       set({
@@ -218,13 +250,36 @@ export const useContestStore = create<ContestState>((set, get) => ({
         fromCache: result.fromCache,
         cachedAt: result.cachedAt,
         totalElapsed: result.totalElapsed,
+        error: null,
+        lastUpdatedAt: Date.now(),
       });
     } catch (error) {
       console.error(error);
+      set({ error: error instanceof Error ? error.message : '比赛数据加载失败' });
       throw error;
     } finally {
       set({ loading: false });
     }
+  },
+
+  applyContestsPartial: (payload: ContestsPartialPayload) => {
+    if (payload.day !== get().day || !Array.isArray(payload.contests)) return;
+    const incoming = payload.contests
+      .map(contest =>
+        ContestUtils.createContest(
+          contest.name,
+          contest.startTime,
+          contest.duration,
+          contest.platform,
+          contest.link,
+        ),
+      )
+      .sort((a, b) => a.startTimeSeconds - b.startTimeSeconds);
+    const remaining = get().contests.filter(c => c.platform !== payload.platform);
+    set({
+      contests: [...remaining, ...incoming].sort((a, b) => a.startTimeSeconds - b.startTimeSeconds),
+      lastUpdatedAt: Date.now(),
+    });
   },
 
   setMaxCrawlDays: async (nextDay: number) => {
@@ -264,6 +319,7 @@ export const useContestStore = create<ContestState>((set, get) => ({
 
   toggleShowEmptyDay: (value: boolean) => {
     set({ showEmptyDay: value });
+    persistShowEmptyDay(value);
   },
 
   toggleHideDate: (value: boolean) => {
@@ -294,6 +350,7 @@ export const useContestStore = create<ContestState>((set, get) => ({
       set({ favorites: prevFavorites });
       throw error;
     }
+    useScheduleStore.getState().syncFavoriteContest(contest, index === -1);
   },
 
   removeFavorite: (contestName: string) => {
@@ -322,6 +379,7 @@ export const useContestStore = create<ContestState>((set, get) => ({
 
     const deletedSet = new Set(deleted);
     const nextFavorites = prevFavorites.filter(c => !deletedSet.has(c.name));
+    const removedContests = prevFavorites.filter(c => deletedSet.has(c.name));
 
     set({ favorites: nextFavorites });
     try {
@@ -329,6 +387,9 @@ export const useContestStore = create<ContestState>((set, get) => ({
     } catch (error) {
       set({ favorites: prevFavorites });
       throw error;
+    }
+    for (const contest of removedContests) {
+      useScheduleStore.getState().syncFavoriteContest(contest, false);
     }
 
     return { deleted, notFound };
@@ -358,6 +419,7 @@ export const useContestStore = create<ContestState>((set, get) => ({
       set({ favorites: prevFavorites });
       throw error;
     }
+    useScheduleStore.getState().syncFavoriteContest(contest, true);
   },
 
   getTimeContests: (): Contest[][] => {

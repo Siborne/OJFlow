@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { checkUpdate, getUpdateDialogSpec } from '../../src/updater/checkUpdate';
 
 const originalFetch = globalThis.fetch;
-const originalNavigator = (globalThis as any).navigator;
+const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
 
 describe('Updater', () => {
   beforeEach(() => {
@@ -15,7 +15,9 @@ describe('Updater', () => {
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
-    (globalThis as any).navigator = originalNavigator;
+    if (originalNavigator) {
+      Object.defineProperty(globalThis, 'navigator', originalNavigator);
+    }
     delete process.env.VITE_UPDATE_MANIFEST_URL;
     delete process.env.VITE_APP_VERSION;
     delete process.env.VITE_UPDATE_RETRY_COUNT;
@@ -25,7 +27,9 @@ describe('Updater', () => {
 
   it('远端版本更低时应提示已是最新版本', async () => {
     globalThis.fetch = (async () =>
-      new Response(JSON.stringify({ version: 'v1.0.0', notes: 'old' }), { status: 200 })) as any;
+      new Response(JSON.stringify({ version: 'v1.0.0', notes: 'old' }), {
+        status: 200,
+      })) as unknown as typeof fetch;
 
     const info = await checkUpdate();
     expect(info.state).toBe('up-to-date');
@@ -42,8 +46,8 @@ describe('Updater', () => {
           homepageUrl: 'https://example.com',
           packages: { win32: { url: 'https://example.com/win.exe' } },
         }),
-        { status: 200 }
-      )) as any;
+        { status: 200 },
+      )) as unknown as typeof fetch;
 
     const info = await checkUpdate();
     expect(info.state).toBe('update-available');
@@ -57,8 +61,11 @@ describe('Updater', () => {
   });
 
   it('离线时应返回网络错误并可重试', async () => {
-    (globalThis as any).navigator = { onLine: false };
-    globalThis.fetch = (async () => new Response('{}', { status: 200 })) as any;
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: { onLine: false },
+    });
+    globalThis.fetch = (async () => new Response('{}', { status: 200 })) as unknown as typeof fetch;
 
     const info = await checkUpdate();
     expect(info.state).toBe('error');
@@ -73,7 +80,8 @@ describe('Updater', () => {
   });
 
   it('服务端 502 时应返回服务端错误并包含状态码', async () => {
-    globalThis.fetch = (async () => new Response('bad', { status: 502 })) as any;
+    globalThis.fetch = (async () =>
+      new Response('bad', { status: 502 })) as unknown as typeof fetch;
 
     const info = await checkUpdate();
     expect(info.state).toBe('error');
@@ -92,7 +100,7 @@ describe('Updater', () => {
       callCount++;
       if (callCount < 3) throw new TypeError('Failed to fetch');
       return new Response(JSON.stringify({ version: 'v1.0.2' }), { status: 200 });
-    }) as any;
+    }) as unknown as typeof fetch;
 
     const info = await checkUpdate();
     expect(callCount).toBe(3);
@@ -100,7 +108,7 @@ describe('Updater', () => {
   });
 
   it('超时应返回网络错误类型并可重试', async () => {
-    globalThis.fetch = (() => new Promise(() => {})) as any;
+    globalThis.fetch = (() => new Promise(() => {})) as unknown as typeof fetch;
 
     const info = await checkUpdate();
     expect(info.state).toBe('error');
@@ -115,7 +123,7 @@ describe('Updater', () => {
   it('未知异常应归类为检查更新失败', async () => {
     globalThis.fetch = (async () => {
       throw new Error('boom');
-    }) as any;
+    }) as unknown as typeof fetch;
 
     const info = await checkUpdate();
     expect(info.state).toBe('error');
@@ -128,7 +136,10 @@ describe('Updater', () => {
   });
 
   it('版本文件格式错误应返回服务端错误类型并生成错误对话框规格', async () => {
-    globalThis.fetch = (async () => new Response(JSON.stringify({ hello: 'world' }), { status: 200 })) as any;
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ hello: 'world' }), {
+        status: 200,
+      })) as unknown as typeof fetch;
 
     const info = await checkUpdate();
     expect(info.state).toBe('error');
