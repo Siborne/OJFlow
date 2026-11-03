@@ -138,8 +138,8 @@ bun run test:e2e
 
 - [`ci.yml`](./.github/workflows/ci.yml)：每次 push 和 PR 执行类型、Lint、格式、官网、
   单测、构建和真实 Electron E2E。
-- [`release.yml`](./.github/workflows/release.yml)：推送 `v*` tag 或手动触发时，
-  在 Windows、macOS、Linux 三平台构建安装包并上传 Release Assets。
+- [`release.yml`](./.github/workflows/release.yml)：主分支每次推送自动构建三平台安装包并保留
+  14 天 Artifact；推送 `v*` tag 或手动触发时上传 Release Assets。
 - [`pages.yml`](./.github/workflows/pages.yml)：主分支更新 `site/` 后自动部署 GitHub Pages。
 
 ## 数据与持久化

@@ -38,20 +38,21 @@ describe('Updater', () => {
   });
 
   it('远端版本更高时应返回可更新并生成对话框规格', async () => {
+    const packageUrl = 'https://example.com/package';
     globalThis.fetch = (async () =>
       new Response(
         JSON.stringify({
           version: 'v1.0.2',
           notes: 'fix',
           homepageUrl: 'https://example.com',
-          packages: { win32: { url: 'https://example.com/win.exe' } },
+          packages: { [process.platform]: { url: packageUrl } },
         }),
         { status: 200 },
       )) as unknown as typeof fetch;
 
     const info = await checkUpdate();
     expect(info.state).toBe('update-available');
-    expect(info.packageUrl).toBe('https://example.com/win.exe');
+    expect(info.packageUrl).toBe(packageUrl);
     const spec = getUpdateDialogSpec(info);
     expect(spec.kind).toBe('update');
     if (spec.kind === 'update') {
