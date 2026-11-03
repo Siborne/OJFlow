@@ -5,7 +5,7 @@
   <p>面向算法竞赛选手的多平台数据工作台</p>
 
   <p>
-    <a href="https://siborne.github.io/OJFlow/"><strong>官网</strong></a>
+    <a href="https://siborne.top/OJFlow/"><strong>官网</strong></a>
     ·
     <a href="https://github.com/Siborne/OJFlow/releases/latest"><strong>下载</strong></a>
     ·
@@ -13,12 +13,12 @@
   </p>
 
   <a href="https://github.com/Siborne/OJFlow/actions/workflows/ci.yml"><img src="https://github.com/Siborne/OJFlow/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
-  <a href="https://siborne.github.io/OJFlow/"><img src="https://github.com/Siborne/OJFlow/actions/workflows/pages.yml/badge.svg?branch=main" alt="Official Site" /></a>
+  <a href="https://siborne.top/OJFlow/"><img src="https://github.com/Siborne/OJFlow/actions/workflows/pages.yml/badge.svg?branch=main" alt="Official Site" /></a>
   <a href="https://github.com/Siborne/OJFlow/actions/workflows/release.yml"><img src="https://github.com/Siborne/OJFlow/actions/workflows/release.yml/badge.svg" alt="Release Builds" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/github/license/Siborne/OJFlow" alt="License" /></a>
 </div>
 
-> 产品官网：[**https://siborne.github.io/OJFlow/**](https://siborne.github.io/OJFlow/)
+> 产品官网：[**https://siborne.top/OJFlow/**](https://siborne.top/OJFlow/)
 
 OJFlow 把 Codeforces、AtCoder、LeetCode、洛谷、牛客、蓝桥云课、VJudge、HDU、POJ 和
 QOJ 的比赛、Rating、解题数据、题目检索与训练日程集中到一个桌面工作台。
@@ -61,7 +61,7 @@ QOJ 的比赛、Rating、解题数据、题目检索与训练日程集中到一�
 
 官网包含完整产品介绍、交互式配色/质感预览和下载入口：
 
-**[https://siborne.github.io/OJFlow/](https://siborne.github.io/OJFlow/)**
+**[https://siborne.top/OJFlow/](https://siborne.top/OJFlow/)**
 
 官网源码位于 [`site/`](./site)，通过 GitHub Pages 自动部署。
 
