@@ -139,6 +139,7 @@ const zh = {
   'rating.selectPlatform': '选择平台',
   'rating.usernamePlaceholder': '输入用户名...',
   'rating.note': '查询结果会缓存在本机，用户名按平台分别记住。',
+  'rating.noPublicRating': '该账号暂无公开 Rating',
   'rating.maxRating': '历史最高',
   'rating.queryFailed': '查询失败，请检查用户名和网络',
 
@@ -572,6 +573,7 @@ const en: Record<MessageKey, string> = {
   'rating.selectPlatform': 'Select platform',
   'rating.usernamePlaceholder': 'Enter username...',
   'rating.note': 'Results are cached locally and usernames are saved per platform.',
+  'rating.noPublicRating': 'No public rating is available for this account',
   'rating.maxRating': 'Peak rating',
   'rating.queryFailed': 'Lookup failed. Check the username and network.',
   'solved.title': 'Solved Dashboard',

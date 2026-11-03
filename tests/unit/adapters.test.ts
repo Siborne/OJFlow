@@ -307,10 +307,10 @@ describe('LuoguAdapter', () => {
         if (url.includes('/api/user/search')) {
           return { status: 200, data: { users: [{ uid: 123 }] } };
         }
-        if (url.includes('/api/rating/elo')) {
+        if (url.includes('/user/123')) {
           return {
             status: 200,
-            data: { records: { result: [{ rating: 1200 }, { rating: 1700 }, { rating: 1400 }] } },
+            data: `<script id="lentille-context" type="application/json">{"data":{"elo":[{"rating":1200,"time":1},{"rating":1500,"time":3},{"rating":1400,"time":2}],"user":{"passedProblemCount":456}}}</script>`,
           };
         }
         return {
@@ -324,10 +324,30 @@ describe('LuoguAdapter', () => {
     expect(contests[0].name).toBe('Rated');
     await expect(adapter.fetchRating('u')).resolves.toEqual({
       name: 'u',
-      curRating: 1200,
-      maxRating: 1700,
+      curRating: 1500,
+      maxRating: 1500,
     });
     await expect(adapter.fetchSolvedCount('u')).resolves.toEqual({ name: 'u', solvedNum: 456 });
+  });
+
+  test('returns a zero rating when no public Elo exists', async () => {
+    const adapter = new LuoguAdapter();
+    injectHttp(adapter, {
+      get: async url => {
+        if (url.includes('/api/user/search')) {
+          return { status: 200, data: { users: [{ uid: 123 }] } };
+        }
+        return {
+          status: 200,
+          data: `<script id="lentille-context" type="application/json">{"data":{"elo":[],"user":{}}}</script>`,
+        };
+      },
+    });
+    await expect(adapter.fetchRating('u')).resolves.toEqual({
+      name: 'u',
+      curRating: 0,
+      maxRating: 0,
+    });
   });
 });
 
@@ -393,6 +413,18 @@ describe('NowcoderAdapter', () => {
       maxRating: 1650,
     });
     await expect(adapter.fetchSolvedCount('u')).resolves.toEqual({ name: 'u', solvedNum: 77 });
+  });
+
+  test('returns a zero rating when no rating history exists', async () => {
+    const adapter = new NowcoderAdapter();
+    injectHttp(adapter, {
+      get: async () => ({ status: 200, data: { data: [] } }),
+    });
+    await expect(adapter.fetchRating('u')).resolves.toEqual({
+      name: 'u',
+      curRating: 0,
+      maxRating: 0,
+    });
   });
 });
 

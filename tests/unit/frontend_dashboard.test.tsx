@@ -136,4 +136,53 @@ describe('Dashboard page', () => {
     ).not.toBe(lightSrc);
     await view.unmount();
   });
+
+  test('renders a fresh snapshot immediately without repeating requests', async () => {
+    let calls = 0;
+    installWindowApi({
+      getRating: async (_platform, name) => {
+        calls++;
+        return { name, curRating: 2000, maxRating: 2100 };
+      },
+      getSolvedNum: async (_platform, name) => {
+        calls++;
+        return { name, solvedNum: 200 };
+      },
+      getCodeforcesReport: async handle => {
+        calls++;
+        return {
+          handle,
+          totalSolved: 200,
+          ratingStats: [],
+          tagStats: [{ tag: 'dp', count: 20 }],
+        };
+      },
+    });
+    localStorage.setItem(
+      'ojflow_dashboard_snapshot',
+      JSON.stringify({
+        ratings: [{ platform: 'Codeforces', name: 'tourist', rating: 1900, maxRating: 2000 }],
+        solved: [{ platform: 'Codeforces', solved: 150 }],
+        report: {
+          handle: 'tourist',
+          totalSolved: 150,
+          ratingStats: [],
+          tagStats: [{ tag: 'dp', count: 12 }],
+        },
+        totalSolved: 150,
+        updatedAt: Date.now(),
+      }),
+    );
+    const router = createMemoryRouter([{ path: '/dashboard', element: <DashboardPage /> }], {
+      initialEntries: ['/dashboard'],
+    });
+    const view = await render(<RouterProvider router={router} />);
+    expect(view.container.textContent).toContain('150');
+    expect(view.container.textContent).toContain('1900');
+    await act(async () => {
+      await flushPromises();
+    });
+    expect(calls).toBe(0);
+    await view.unmount();
+  });
 });

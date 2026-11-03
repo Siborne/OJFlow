@@ -64,7 +64,7 @@ function normalizeText(value: unknown): string {
     .toLowerCase();
 }
 
-function getContestFavoriteKey(contest: Partial<Contest>): string {
+export function getContestFavoriteKey(contest: Partial<Contest>): string {
   const platform = normalizeText(contest.platform);
   const start = Number(contest.startTimeSeconds ?? 0);
   const link = normalizeText(contest.link);

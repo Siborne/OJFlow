@@ -65,7 +65,7 @@ export class NowcoderAdapter extends BaseAdapter {
 
     const rateHistory = response.data?.data;
     if (!rateHistory || rateHistory.length === 0) {
-      throw new Error(`Nowcoder rating not found: ${handle}`);
+      return { name: handle, curRating: 0, maxRating: 0 };
     }
 
     const curRating: number = rateHistory[rateHistory.length - 1].rating;

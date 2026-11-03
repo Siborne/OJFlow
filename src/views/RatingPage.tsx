@@ -244,7 +244,9 @@ export default function RatingPage() {
                     {result.rating}
                   </div>
                   <div className="mt-1 text-sm font-medium text-[var(--color-text)]">
-                    {getRatingTierName(result.rating)}
+                    {result.rating > 0
+                      ? getRatingTierName(result.rating)
+                      : t('rating.noPublicRating')}
                   </div>
                 </div>
                 <div className="rounded-[var(--radius-md)] bg-[var(--color-surface-muted)] px-4 py-3 text-right">

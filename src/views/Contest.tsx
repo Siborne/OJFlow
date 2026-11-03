@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { CalendarDays, Filter, RefreshCw, Sparkles } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
-import { useContestStore } from '@/stores/contest';
+import { getContestFavoriteKey, useContestStore } from '@/stores/contest';
 import { ContestService } from '@/services/contest';
 import type { Contest as ContestType } from '@/types';
 import { ContestDateTabs } from '@/components/contest/ContestDateTabs';
@@ -62,10 +62,10 @@ export default function Contest() {
   const fromCache = useContestStore(s => s.fromCache);
   const error = useContestStore(s => s.error);
   const favorites = useContestStore(s => s.favorites);
-  const favoriteLookup = useContestStore(s => s.isFavorite);
+  const favoriteKeys = useMemo(() => new Set(favorites.map(getContestFavoriteKey)), [favorites]);
   const isFavorite = useMemo(
-    () => (contest: ContestType | string) => favoriteLookup(contest),
-    [favoriteLookup, favorites],
+    () => (contest: ContestType) => favoriteKeys.has(getContestFavoriteKey(contest)),
+    [favoriteKeys],
   );
   const toggleFavorite = useContestStore(s => s.toggleFavorite);
   const fetchContests = useContestStore(s => s.fetchContests);

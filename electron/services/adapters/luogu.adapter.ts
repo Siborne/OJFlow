@@ -79,28 +79,36 @@ export class LuoguAdapter extends BaseAdapter {
     }
 
     const userId = searchRes.data.users[0].uid;
-    const ratingRes = await this.http.get(
-      `https://www.luogu.com.cn/api/rating/elo?user=${userId}&page=1&limit=100`,
-      { headers: { 'X-Requested-With': 'XMLHttpRequest' } },
-    );
-    const records = ratingRes.data?.records?.result;
-    if (Array.isArray(records) && records.length > 0) {
-      const ratings = records
-        .map((record: { rating?: unknown }) => record.rating)
+    const userRes = await this.http.get(`https://www.luogu.com.cn/user/${userId}?_contentOnly=1`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    });
+    const html = typeof userRes.data === 'string' ? userRes.data : JSON.stringify(userRes.data);
+    const $ = this.parseHtml(html);
+    const jsonScript = $('script#lentille-context, script[type="application/json"]').first().html();
+    if (jsonScript) {
+      const parsed = JSON.parse(jsonScript);
+      const records: Array<{ rating?: unknown; time?: unknown }> = Array.isArray(parsed?.data?.elo)
+        ? parsed.data.elo
+        : [];
+      const validRecords = records
         .filter(
-          (rating: unknown): rating is number =>
-            typeof rating === 'number' && Number.isFinite(rating),
-        );
-      if (ratings.length > 0) {
+          (record): record is { rating: number; time?: number } =>
+            typeof record.rating === 'number' &&
+            Number.isFinite(record.rating) &&
+            record.rating > 0,
+        )
+        .sort((a, b) => Number(b.time ?? 0) - Number(a.time ?? 0));
+      const current = validRecords[0]?.rating;
+      if (typeof current === 'number') {
         return {
           name: handle,
-          curRating: ratings[0],
-          maxRating: Math.max(...ratings),
+          curRating: current,
+          maxRating: Math.max(...validRecords.map(record => record.rating)),
         };
       }
     }
 
-    throw new Error(`Luogu rating not found: ${handle}`);
+    return { name: handle, curRating: 0, maxRating: 0 };
   }
 
   async fetchSolvedCount(handle: string): Promise<SolvedNum> {

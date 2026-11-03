@@ -366,7 +366,13 @@ const isTest = process.env.NODE_ENV === 'test';
 const isPreview = process.env.NODE_ENV === 'preview' || process.env.OJFLOW_PREVIEW_DIST === '1';
 const isDev = !isTest && !isPreview && (process.env.NODE_ENV === 'development' || !app.isPackaged);
 if (isTest) {
-  app.setPath('userData', path.join(app.getPath('temp'), `ojflow-e2e-${process.pid}`));
+  app.setPath(
+    'userData',
+    path.join(
+      app.getPath('temp'),
+      `ojflow-e2e-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    ),
+  );
 }
 let isQuitting = false;
 let companionServer: CompanionServerHandle | null = null;
