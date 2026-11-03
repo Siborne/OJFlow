@@ -61,7 +61,12 @@ export default function Contest() {
   const platformStatus = useContestStore(s => s.platformStatus);
   const fromCache = useContestStore(s => s.fromCache);
   const error = useContestStore(s => s.error);
-  const isFavorite = useContestStore(s => s.isFavorite);
+  const favorites = useContestStore(s => s.favorites);
+  const favoriteLookup = useContestStore(s => s.isFavorite);
+  const isFavorite = useMemo(
+    () => (contest: ContestType | string) => favoriteLookup(contest),
+    [favoriteLookup, favorites],
+  );
   const toggleFavorite = useContestStore(s => s.toggleFavorite);
   const fetchContests = useContestStore(s => s.fetchContests);
   const togglePlatform = useContestStore(s => s.togglePlatform);

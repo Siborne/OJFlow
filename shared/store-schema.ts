@@ -1,9 +1,11 @@
 import type {
   AppFeatures,
   AppMode,
+  AutoRefreshSettings,
   LocalePreference,
   PracticeProblem,
   ScheduleItem,
+  SharePosterSettings,
   SurfaceStyle,
   ThemeScheme,
   WindowCloseBehavior,
@@ -19,6 +21,9 @@ export interface UserConfig {
     startAtLogin: boolean;
     closeBehavior: WindowCloseBehavior;
     appMode: AppMode;
+    autoRefresh: AutoRefreshSettings;
+    autoCheckUpdates: boolean;
+    sharePoster: SharePosterSettings;
     features: AppFeatures;
   };
 

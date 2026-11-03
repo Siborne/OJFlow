@@ -32,6 +32,18 @@ function resetUiStore(): void {
     effectiveLocale: 'zh-CN',
     surfaceStyle: 'glass',
     appMode: 'simple',
+    autoRefresh: {
+      enabled: true,
+      intervalMinutes: 15,
+      modules: { dashboard: true, rating: true, solved: true, report: true },
+    },
+    autoCheckUpdates: true,
+    sharePoster: {
+      showRating: true,
+      showPlatforms: true,
+      showTopics: true,
+      showSchedule: true,
+    },
     features: defaultFeatures,
     initialized: false,
   });
@@ -69,6 +81,13 @@ describe('ui store', () => {
           colorMode: 'dark',
           surfaceStyle: 'clay',
           appMode: 'full',
+          autoRefresh: {
+            enabled: false,
+            intervalMinutes: 30,
+            modules: { dashboard: false, rating: true },
+          },
+          autoCheckUpdates: false,
+          sharePoster: { showRating: false, showTopics: false },
           features: { enableCfReport: false, reduceMotion: true },
         }) as unknown,
       set: async () => {},
@@ -80,6 +99,13 @@ describe('ui store', () => {
     expect(state.colorMode).toBe('dark');
     expect(state.surfaceStyle).toBe('clay');
     expect(state.appMode).toBe('full');
+    expect(state.autoRefresh).toMatchObject({
+      enabled: false,
+      intervalMinutes: 30,
+      modules: { dashboard: false, solved: true },
+    });
+    expect(state.autoCheckUpdates).toBe(false);
+    expect(state.sharePoster).toMatchObject({ showRating: false, showTopics: false });
     expect(state.features.enableCfReport).toBe(false);
     expect(state.features.reduceMotion).toBe(true);
     expect(state.initialized).toBe(true);
@@ -186,6 +212,36 @@ describe('ui store', () => {
       enableProblemSearch: false,
     });
     expect(writes.some(item => Array.isArray(item) && item[0] === 'ui.features')).toBe(true);
+  });
+
+  test('persists automatic refresh, update and poster preferences', async () => {
+    const writes: Array<[string, unknown]> = [];
+    setStoreApi({
+      get: async () => undefined,
+      set: async (key, value) => {
+        writes.push([key, value]);
+      },
+      getAll: async () => ({}),
+    });
+    await useUiStore.getState().setAutoRefreshEnabled(false);
+    await useUiStore.getState().setAutoRefreshInterval(30);
+    await useUiStore.getState().setAutoRefreshModule('dashboard', false);
+    await useUiStore.getState().setAutoCheckUpdates(false);
+    await useUiStore.getState().setSharePosterSection('showTopics', false);
+
+    expect(useUiStore.getState().autoRefresh).toMatchObject({
+      enabled: false,
+      intervalMinutes: 30,
+      modules: { dashboard: false },
+    });
+    expect(useUiStore.getState().autoCheckUpdates).toBe(false);
+    expect(useUiStore.getState().sharePoster.showTopics).toBe(false);
+    expect(localStorage.getItem('auto_refresh_settings')).toContain('"intervalMinutes":30');
+    expect(localStorage.getItem('auto_check_updates')).toBe('false');
+    expect(localStorage.getItem('share_poster_settings')).toContain('"showTopics":false');
+    expect(writes.some(([key]) => key === 'ui.autoRefresh')).toBe(true);
+    expect(writes).toContainEqual(['ui.autoCheckUpdates', false]);
+    expect(writes.some(([key]) => key === 'ui.sharePoster')).toBe(true);
   });
 
   test('keeps defaults when persistence fails', async () => {

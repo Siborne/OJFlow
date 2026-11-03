@@ -3,6 +3,7 @@ import type { CodeforcesReport } from '../../shared/types';
 import { RatingService } from '@/services/rating';
 import { ReportService } from '@/services/report';
 import { SolvedNumService } from '@/services/solved';
+import { useModuleAutoRefresh } from '@/hooks/useAutoRefresh';
 
 const RATING_PLATFORMS = ['Codeforces', 'AtCoder', '力扣', '洛谷', '牛客'] as const;
 const SOLVED_PLATFORMS = [
@@ -78,8 +79,13 @@ export function useDashboardData(): DashboardData {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const refresh = useCallback(() => setRefreshKey(key => key + 1), []);
+  const autoRefreshEnabled = useModuleAutoRefresh('dashboard', refresh);
 
   useEffect(() => {
+    if (refreshKey === 0 && !autoRefreshEnabled) {
+      setLoading(false);
+      return;
+    }
     let active = true;
     const solvedUsers = readSolvedUsernames();
 
@@ -149,7 +155,7 @@ export function useDashboardData(): DashboardData {
     return () => {
       active = false;
     };
-  }, [refreshKey]);
+  }, [autoRefreshEnabled, refreshKey]);
 
   const totalSolved = useMemo(() => solved.reduce((sum, item) => sum + item.solved, 0), [solved]);
 

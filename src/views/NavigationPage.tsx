@@ -192,7 +192,7 @@ export default function NavigationPage() {
         data-nav-key={item.key}
       >
         {isActive && !mobile && (
-          <span className="absolute -left-1.5 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full bg-[var(--color-primary)] shadow-[0_0_14px_var(--color-primary)]" />
+          <span className="absolute -left-1.5 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full bg-[image:var(--gradient-primary)] shadow-[0_0_16px_var(--glow-primary)]" />
         )}
         <span
           className={cn(
@@ -288,7 +288,7 @@ export default function NavigationPage() {
                 </div>
               ) : (
                 <div
-                  className="mx-auto mt-3 h-2 w-2 rounded-full bg-[var(--color-primary)] shadow-[0_0_10px_var(--color-primary)]"
+                  className="mx-auto mt-3 h-2 w-2 rounded-full bg-[image:var(--gradient-primary)] shadow-[0_0_12px_var(--glow-primary)]"
                   title={t('nav.simpleMode')}
                 />
               )}

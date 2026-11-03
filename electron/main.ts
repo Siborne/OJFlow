@@ -778,7 +778,7 @@ app.whenReady().then(() => {
   scheduleContestReminders();
 
   setTimeout(() => {
-    if (!win.isDestroyed()) {
+    if (!win.isDestroyed() && store.get('ui.autoCheckUpdates') !== false) {
       checkForUpdatesOnStartup(win);
     }
   }, 5000);

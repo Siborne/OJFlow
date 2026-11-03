@@ -11,8 +11,10 @@ import {
   Flame,
   Gauge,
   ListTodo,
+  LoaderCircle,
   Plus,
   RefreshCw,
+  Share2,
   Sparkles,
   Target,
   Trash2,
@@ -23,13 +25,22 @@ import { PageHeader } from '@/components/PageHeader';
 import { DataDonut } from '@/components/dashboard/DataDonut';
 import { Button } from '@/components/ui/button';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { useModuleAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useI18n } from '@/i18n';
 import { useContestStore } from '@/stores/contest';
 import { useScheduleStore } from '@/stores/schedule';
+import { useUiStore } from '@/stores/ui';
+import { ContestService } from '@/services/contest';
 import { getPlatformLabel } from '@/utils/platform-labels';
-import { getRatingColor } from '@/utils/rating-colors';
+import { getRatingColor, getRatingColorHex, getRatingTierName } from '@/utils/rating-colors';
+import {
+  createSharePosterDataUrl,
+  downloadSharePosterPng,
+  type SharePosterData,
+  type SharePosterStyle,
+} from '@/utils/share-poster';
 import { getProblemTagLabel } from '../../shared/problem-tags';
-import type { ScheduleItem } from '../../shared/types';
+import type { Contest, ScheduleItem } from '../../shared/types';
 import { cn } from '@/lib/utils';
 
 const appLogo = new URL('../assets/icon.png', import.meta.url).href;
@@ -46,6 +57,30 @@ const PLATFORM_COLORS: Record<string, string> = {
   蓝桥云课: '#06b6d4',
   QOJ: '#ec4899',
 };
+
+const PLATFORM_LOGOS: Record<string, string> = {
+  Codeforces: new URL('../assets/platforms/Codeforces.jpg', import.meta.url).href,
+  AtCoder: new URL('../assets/platforms/AtCoder.jpg', import.meta.url).href,
+  力扣: new URL('../assets/platforms/LeetCode.jpg', import.meta.url).href,
+  洛谷: new URL('../assets/platforms/Luogu.jpg', import.meta.url).href,
+  牛客: new URL('../assets/platforms/Nowcoder.jpg', import.meta.url).href,
+  VJudge: new URL('../assets/platforms/VJudge.jpg', import.meta.url).href,
+  HDU: new URL('../assets/platforms/hdu.jpg', import.meta.url).href,
+  POJ: new URL('../assets/platforms/poj.jpg', import.meta.url).href,
+  蓝桥云课: new URL('../assets/platforms/Lanqiao.jpg', import.meta.url).href,
+  QOJ: new URL('../assets/platforms/qoj.jpg', import.meta.url).href,
+};
+
+function resolveSchedulePlatform(item: ScheduleItem, contests: Contest[]): string | undefined {
+  if (item.platform) return item.platform;
+  if (item.note && PLATFORM_LOGOS[item.note]) return item.note;
+  return contests.find(contest => contest.name === item.title)?.platform;
+}
+
+function resolveScheduleUrl(item: ScheduleItem, contests: Contest[]): string | undefined {
+  if (item.url) return item.url;
+  return contests.find(contest => contest.name === item.title)?.link;
+}
 
 function toDateTimeLocal(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0');
@@ -89,7 +124,14 @@ export default function DashboardPage() {
   const toggleSchedule = useScheduleStore(state => state.toggleCompleted);
   const deleteSchedule = useScheduleStore(state => state.removeItem);
   const dashboard = useDashboardData();
+  const sharePoster = useUiStore(state => state.sharePoster);
+  const contestAutoRefreshEnabled = useModuleAutoRefresh('dashboard', () => {
+    void fetchContests();
+  });
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [shareExporting, setShareExporting] = useState(false);
+  const [shareStyle, setShareStyle] = useState<SharePosterStyle>('paper');
   const [scheduleNotice, setScheduleNotice] = useState('');
   const [scheduleForm, setScheduleForm] = useState({
     title: '',
@@ -101,12 +143,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     void scheduleInit();
-    if (contests.length === 0) {
+    if (contests.length === 0 && contestAutoRefreshEnabled) {
       void fetchContests().catch(() => {
         // The contest page owns the full error state.
       });
     }
-  }, [contests.length, fetchContests, scheduleInit]);
+  }, [contestAutoRefreshEnabled, contests.length, fetchContests, scheduleInit]);
 
   useEffect(() => {
     if (!scheduleNotice) return;
@@ -136,6 +178,46 @@ export default function DashboardPage() {
   const currentRatingProgress = topRating
     ? Math.min(100, Math.max(0, (topRating.rating / Math.max(3000, topRating.maxRating)) * 100))
     : 0;
+  const topRatingTier = topRating ? getRatingTierName(topRating.rating) : '';
+
+  const shareData = useMemo<SharePosterData | null>(() => {
+    if (!topRating && dashboard.solved.length === 0) return null;
+    return {
+      locale,
+      handle: topRating?.name ?? t('dashboard.shareAnonymous'),
+      platform: topRating ? getPlatformLabel(topRating.platform, locale) : 'OJFlow',
+      rating: topRating?.rating ?? 0,
+      maxRating: topRating?.maxRating ?? 0,
+      tier: topRatingTier || t('dashboard.noRating'),
+      ratingColor: getRatingColorHex(topRating?.rating ?? 0),
+      totalSolved,
+      solved: dashboard.solved.slice(0, 5).map(item => ({
+        label: getPlatformLabel(item.platform, locale),
+        value: item.solved,
+        color: PLATFORM_COLORS[item.platform] ?? '#2dd4bf',
+      })),
+      topics: (dashboard.report?.tagStats ?? []).slice(0, 6).map(topic => ({
+        label: getProblemTagLabel(topic.tag, locale),
+        value: topic.count,
+        color: '#2dd4bf',
+      })),
+      completedSchedule: scheduleItems.filter(item => item.completed).length,
+      generatedAt: Date.now(),
+    };
+  }, [
+    dashboard.report,
+    dashboard.solved,
+    locale,
+    scheduleItems,
+    t,
+    topRating,
+    topRatingTier,
+    totalSolved,
+  ]);
+  const shareDataUrl = useMemo(
+    () => (shareData ? createSharePosterDataUrl(shareData, shareStyle, sharePoster) : ''),
+    [shareData, sharePoster, shareStyle],
+  );
 
   const submitSchedule = (event: FormEvent) => {
     event.preventDefault();
@@ -156,6 +238,19 @@ export default function DashboardPage() {
       kind: 'practice',
       note: '',
     });
+  };
+
+  const exportSharePoster = async () => {
+    if (!shareData) return;
+    setShareExporting(true);
+    try {
+      await downloadSharePosterPng(shareData, shareStyle, sharePoster);
+      setScheduleNotice(t('dashboard.shareExported'));
+    } catch {
+      setScheduleNotice(t('dashboard.shareExportFailed'));
+    } finally {
+      setShareExporting(false);
+    }
   };
 
   const formatScheduleTime = (value: string) =>
@@ -185,6 +280,16 @@ export default function DashboardPage() {
             <Button
               variant="ghost"
               size="icon"
+              aria-label={t('dashboard.share')}
+              title={t('dashboard.share')}
+              disabled={!shareData}
+              onClick={() => setShowShare(true)}
+            >
+              <Share2 size={18} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               aria-label={t('dashboard.refresh')}
               title={t('dashboard.refresh')}
               onClick={() => {
@@ -204,7 +309,7 @@ export default function DashboardPage() {
             <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-[var(--orb-primary)] blur-3xl" />
             <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center">
               <div className="relative shrink-0">
-                <div className="absolute inset-0 rounded-[26px] bg-[var(--color-primary)] opacity-20 blur-2xl" />
+                <div className="absolute inset-0 rounded-[26px] bg-[image:var(--gradient-primary)] opacity-30 blur-2xl" />
                 <img
                   src={appLogo}
                   alt="OJFlow"
@@ -314,6 +419,14 @@ export default function DashboardPage() {
                 <div className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">
                   {topRating?.name ?? t('dashboard.noRating')}
                 </div>
+                {topRating && (
+                  <div
+                    className="mt-1 text-[11px] font-bold"
+                    style={{ color: getRatingColor(topRating.rating) }}
+                  >
+                    {topRatingTier}
+                  </div>
+                )}
               </div>
               <Gauge size={18} className="text-[var(--color-primary)]" />
             </div>
@@ -477,9 +590,15 @@ export default function DashboardPage() {
             </div>
             {topicStats.length > 0 ? (
               <div className="topic-tree relative flex flex-wrap items-center gap-2 rounded-[20px] bg-[var(--color-surface-muted)]/45 p-4">
-                <div className="relative z-10 mr-2 flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-full bg-[var(--color-text)] text-center text-white shadow-[var(--clay-shadow-sm)]">
-                  <span className="text-lg font-black">CF</span>
-                  <span className="text-[9px] opacity-65">
+                <div className="relative z-10 mr-2 flex shrink-0 flex-col items-center gap-1.5">
+                  <div className="h-16 w-16 overflow-hidden rounded-full border border-[var(--color-border)] bg-white p-1 shadow-[0_0_24px_var(--glow-primary)]">
+                    <img
+                      src={PLATFORM_LOGOS.Codeforces}
+                      alt="Codeforces"
+                      className="h-full w-full rounded-full object-cover"
+                    />
+                  </div>
+                  <span className="rounded-full bg-[var(--color-primary-weak)] px-2 py-0.5 text-[9px] font-bold text-[var(--color-primary)]">
                     {dashboard.report?.totalSolved ?? 0} AC
                   </span>
                 </div>
@@ -534,72 +653,113 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-2">
               {visibleSchedule.length > 0 ? (
-                visibleSchedule.map(item => (
-                  <div
-                    key={item.id}
-                    className={cn(
-                      'group flex items-center gap-2 rounded-[15px] border border-[var(--glass-border)] bg-[var(--glass-highlight)] p-2.5 shadow-[var(--clay-inset)]',
-                      item.completed && 'opacity-55',
-                    )}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => toggleSchedule(item.id)}
-                      aria-label={
-                        item.completed
-                          ? t('dashboard.scheduleReopen')
-                          : t('dashboard.scheduleComplete')
-                      }
+                visibleSchedule.map(item => {
+                  const platform = resolveSchedulePlatform(item, contests);
+                  const platformLogo = platform ? PLATFORM_LOGOS[platform] : undefined;
+                  const scheduleUrl = resolveScheduleUrl(item, contests);
+                  return (
+                    <div
+                      key={item.id}
                       className={cn(
-                        'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition',
-                        item.completed
-                          ? 'border-[var(--color-success)] bg-[var(--color-success)] text-white'
-                          : 'border-[var(--color-border)] text-transparent hover:border-[var(--color-primary)]',
+                        'group flex items-center gap-2 rounded-[15px] border border-[var(--glass-border)] bg-[var(--glass-highlight)] p-2.5 shadow-[var(--clay-inset)]',
+                        item.completed && 'opacity-60',
                       )}
                     >
-                      <Check size={14} />
-                    </button>
-                    <div className="min-w-0 flex-1">
-                      <div
+                      <button
+                        type="button"
+                        onClick={() => toggleSchedule(item.id)}
+                        aria-label={
+                          item.completed
+                            ? t('dashboard.scheduleReopen')
+                            : t('dashboard.scheduleComplete')
+                        }
                         className={cn(
-                          'truncate text-xs font-semibold text-[var(--color-text)]',
-                          item.completed && 'line-through',
+                          'relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-[12px] border bg-[var(--color-surface)] transition',
+                          item.completed
+                            ? 'border-[var(--color-success)]'
+                            : 'border-[var(--color-border)] hover:border-[var(--color-primary)]',
                         )}
                       >
-                        {item.title}
-                      </div>
-                      <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[var(--color-text-muted)]">
-                        <Clock3 size={11} />
-                        {formatScheduleTime(item.startsAt)}
-                        <span
-                          className={cn(
-                            'rounded-full px-1.5 py-0.5 font-semibold',
-                            scheduleBadge(item.kind),
-                          )}
-                        >
-                          {t(kindKey(item.kind))}
-                        </span>
-                        {item.autoCreated && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-primary-weak)] px-1.5 py-0.5 font-semibold text-[var(--color-primary)]">
-                            <CalendarDays size={10} />
-                            {t('dashboard.favoriteLinked')}
+                        {platformLogo ? (
+                          <img
+                            src={platformLogo}
+                            alt={platform}
+                            className={cn(
+                              'h-full w-full object-cover transition',
+                              item.completed && 'opacity-35 grayscale',
+                            )}
+                          />
+                        ) : (
+                          <CalendarDays size={16} className="text-[var(--color-text-muted)]" />
+                        )}
+                        {item.completed && (
+                          <span className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-success)] text-white shadow-sm">
+                            <Check size={10} strokeWidth={3} />
                           </span>
                         )}
-                      </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (scheduleUrl) void ContestService.openUrl(scheduleUrl);
+                          else navigate('/contest');
+                        }}
+                        className="min-w-0 flex-1 text-left"
+                        title={
+                          scheduleUrl ? t('dashboard.openSchedule') : t('dashboard.quickContest')
+                        }
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={cn(
+                              'min-w-0 truncate text-xs font-semibold text-[var(--color-text)]',
+                              item.completed && 'line-through',
+                            )}
+                          >
+                            {item.title}
+                          </span>
+                          {scheduleUrl && (
+                            <ArrowUpRight
+                              size={12}
+                              className="shrink-0 text-[var(--color-primary)]"
+                            />
+                          )}
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[10px] text-[var(--color-text-muted)]">
+                          <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
+                            <Clock3 size={11} />
+                            {formatScheduleTime(item.startsAt)}
+                          </span>
+                          <span
+                            className={cn(
+                              'shrink-0 whitespace-nowrap rounded-full px-1.5 py-0.5 font-semibold',
+                              scheduleBadge(item.kind),
+                            )}
+                          >
+                            {t(kindKey(item.kind))}
+                          </span>
+                          {item.autoCreated && (
+                            <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[var(--color-primary-weak)] px-1.5 py-0.5 font-semibold text-[var(--color-primary)]">
+                              <CalendarDays size={10} />
+                              {t('dashboard.favoriteLinked')}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          deleteSchedule(item.id);
+                          setScheduleNotice(t('dashboard.scheduleDeleted'));
+                        }}
+                        aria-label={t('dashboard.scheduleDelete')}
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] opacity-0 transition hover:bg-[var(--color-error-weak)] hover:text-[var(--color-error)] group-hover:opacity-100"
+                      >
+                        <Trash2 size={13} />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        deleteSchedule(item.id);
-                        setScheduleNotice(t('dashboard.scheduleDeleted'));
-                      }}
-                      aria-label={t('dashboard.scheduleDelete')}
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] opacity-0 transition hover:bg-[var(--color-error-weak)] hover:text-[var(--color-error)] group-hover:opacity-100"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <button
                   type="button"
@@ -614,6 +774,84 @@ export default function DashboardPage() {
           </section>
         </div>
       </div>
+
+      {showShare && shareData && (
+        <div className="fixed inset-0 z-[78] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+            onClick={() => setShowShare(false)}
+          />
+          <div className="glass-panel relative z-10 flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-[var(--radius-xl)]">
+            <div className="flex items-start justify-between gap-4 border-b border-[var(--glass-border)] p-5">
+              <div>
+                <h3 className="text-xl font-[740] tracking-[-0.035em]">
+                  {t('dashboard.shareTitle')}
+                </h3>
+                <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                  {t('dashboard.shareDesc')}
+                </p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowShare(false)}>
+                <X size={18} />
+              </Button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto bg-[#08151e] p-4">
+              <div className="mx-auto mb-4 flex max-w-xl flex-wrap justify-center gap-2">
+                {(
+                  [
+                    ['paper', 'dashboard.shareStylePaper'],
+                    ['midnight', 'dashboard.shareStyleMidnight'],
+                    ['aurora', 'dashboard.shareStyleAurora'],
+                  ] as const
+                ).map(([style, label]) => (
+                  <button
+                    key={style}
+                    type="button"
+                    aria-pressed={shareStyle === style}
+                    onClick={() => setShareStyle(style)}
+                    className={cn(
+                      'rounded-full border px-4 py-2 text-xs font-semibold transition',
+                      shareStyle === style
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
+                        : 'border-white/15 bg-white/5 text-white/70 hover:border-white/35 hover:text-white',
+                    )}
+                  >
+                    {t(label)}
+                  </button>
+                ))}
+              </div>
+              <img
+                src={shareDataUrl}
+                alt={t('dashboard.sharePreview')}
+                data-testid="share-poster-preview"
+                className="mx-auto h-auto max-h-[62vh] w-auto max-w-full rounded-[18px] shadow-2xl"
+              />
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--glass-border)] p-4">
+              <span className="text-xs text-[var(--color-text-muted)]">
+                {t('dashboard.shareFormat')}
+              </span>
+              <div className="flex gap-2">
+                <Button variant="ghost" onClick={() => setShowShare(false)}>
+                  {t('common.close')}
+                </Button>
+                <Button
+                  className="gap-2"
+                  disabled={shareExporting}
+                  onClick={() => void exportSharePoster()}
+                >
+                  {shareExporting ? (
+                    <LoaderCircle size={16} className="animate-spin" />
+                  ) : (
+                    <ArrowUpRight size={16} />
+                  )}
+                  {shareExporting ? t('dashboard.exporting') : t('dashboard.exportPng')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {scheduleNotice && (
         <div className="fixed bottom-5 left-1/2 z-[80] -translate-x-1/2 rounded-full bg-[var(--color-text)] px-4 py-2 text-xs font-semibold text-[var(--color-surface)] shadow-lg">

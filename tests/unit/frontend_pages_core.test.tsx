@@ -71,6 +71,12 @@ describe('Contest page', () => {
     expect(view.container.textContent).toContain('近期比赛');
     expect(view.container.textContent).toContain('Round');
 
+    await click(view.container.querySelector('[aria-label="收藏比赛"]'));
+    expect(useContestStore.getState().favorites).toHaveLength(1);
+    const starred = view.container.querySelector('[aria-label="取消收藏"]');
+    expect(starred?.getAttribute('aria-pressed')).toBe('true');
+    expect(starred?.querySelector('svg')?.getAttribute('class')).toContain('fill-');
+
     await click(view.container.querySelector('[aria-label="筛选比赛"]'));
     expect(view.container.textContent).toContain('筛选平台');
     await click(findButton(view.container, '关闭'));
@@ -185,6 +191,14 @@ describe('Settings page', () => {
     expect(view.container.querySelector('[data-testid="settings-accent"]')?.textContent).toContain(
       '墨影灰',
     );
+    const accentSection = view.container.querySelector('[data-testid="settings-accent"]');
+    const gradientSwatches = Array.from(accentSection?.querySelectorAll('span') ?? []).filter(
+      element => element.getAttribute('style')?.includes('linear-gradient'),
+    );
+    expect(gradientSwatches).toHaveLength(7);
+    expect(view.container.querySelector('nav[aria-label="设置中心"]')?.className).not.toContain(
+      'overflow-x-auto',
+    );
 
     await click(findButton(view.container, '完整模式'));
     await click(findButton(view.container, '暗色'));
@@ -217,6 +231,22 @@ describe('Settings page', () => {
     expect(useContestStore.getState().day).toBe(15);
 
     await click(findButton(view.container, '提醒与数据'));
+    await click(view.container.querySelector('[aria-label="自动刷新"]'));
+    expect(useUiStore.getState().autoRefresh.enabled).toBe(false);
+    await click(view.container.querySelector('[aria-label="自动刷新"]'));
+    const intervalSelect = view.container.querySelector(
+      'select[aria-label="自动刷新间隔"]',
+    ) as HTMLSelectElement;
+    await act(async () => {
+      intervalSelect.value = '30';
+      intervalSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(useUiStore.getState().autoRefresh.intervalMinutes).toBe(30);
+    await click(view.container.querySelector('[data-testid="settings-auto-refresh-dashboard"]'));
+    expect(useUiStore.getState().autoRefresh.modules.dashboard).toBe(false);
+    await click(view.container.querySelector('[data-testid="settings-share-poster-showTopics"]'));
+    expect(useUiStore.getState().sharePoster.showTopics).toBe(false);
+
     await click(findButton(view.container, '清除本地缓存'));
     await act(async () => {
       await flushPromises();
@@ -225,8 +255,10 @@ describe('Settings page', () => {
 
     await click(findButton(view.container, '启动与窗口'));
     await click(view.container.querySelector('[aria-label="开机自动启动"]'));
+    await click(view.container.querySelector('[aria-label="自动检查更新"]'));
     await click(findButton(view.container, '直接退出'));
     expect(autoLaunch).toBe(true);
+    expect(useUiStore.getState().autoCheckUpdates).toBe(false);
     expect(storeWrites).toContainEqual(['ui.closeBehavior', 'quit']);
     await view.unmount();
   });

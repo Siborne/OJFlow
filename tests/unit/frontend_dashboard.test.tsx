@@ -76,4 +76,64 @@ describe('Dashboard page', () => {
     expect(view.container.textContent).toContain('DP practice');
     await view.unmount();
   });
+
+  test('shows schedule platform logos, opens contests, and previews a share poster', async () => {
+    const openedUrls: string[] = [];
+    installWindowApi({
+      getRating: async (_platform, name) => ({
+        name,
+        curRating: 1234,
+        maxRating: 1600,
+      }),
+      getSolvedNum: async (_platform, name) => ({ name, solvedNum: 100 }),
+      getCodeforcesReport: async handle => ({
+        handle,
+        totalSolved: 100,
+        ratingStats: [{ rating: 1200, count: 20 }],
+        tagStats: [{ tag: 'dp', count: 18 }],
+      }),
+      openUrl: async url => {
+        openedUrls.push(url);
+      },
+    });
+    useScheduleStore.setState({
+      items: [
+        {
+          id: 'linked',
+          title: 'Linked CF Round',
+          startsAt: new Date(Date.now() + 3600_000).toISOString(),
+          durationMinutes: 120,
+          kind: 'contest',
+          completed: false,
+          createdAt: 1,
+          autoCreated: true,
+          platform: 'Codeforces',
+          url: 'https://codeforces.com/contest/1',
+        },
+      ],
+      initialized: true,
+    });
+    const router = createMemoryRouter([{ path: '/dashboard', element: <DashboardPage /> }], {
+      initialEntries: ['/dashboard'],
+    });
+    const view = await render(<RouterProvider router={router} />);
+    await waitFor(() => view.container.textContent?.includes('1234') ?? false);
+
+    expect(view.container.querySelector('img[alt="Codeforces"]')).not.toBeNull();
+    await click(view.container.querySelector('[aria-label="标记完成"]'));
+    expect(useScheduleStore.getState().items[0].completed).toBe(true);
+    await click(findButton(view.container, 'Linked CF Round'));
+    expect(openedUrls).toContain('https://codeforces.com/contest/1');
+
+    await click(findButton(view.container, '分享训练成果'));
+    const preview = view.container.querySelector('[data-testid="share-poster-preview"]');
+    const lightSrc = preview?.getAttribute('src');
+    expect(lightSrc?.startsWith('data:image/svg+xml')).toBe(true);
+    expect(decodeURIComponent(lightSrc?.split(',')[1] ?? '')).toContain('#f7f1e6');
+    await click(findButton(view.container, '深色数据'));
+    expect(
+      view.container.querySelector('[data-testid="share-poster-preview"]')?.getAttribute('src'),
+    ).not.toBe(lightSrc);
+    await view.unmount();
+  });
 });

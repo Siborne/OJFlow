@@ -38,7 +38,7 @@ test('设置页可以切换完整模式、暗色与强调色', async () => {
   await page.locator('[data-nav-key="settings"]').click();
   await expect(page.locator('[data-nav-key="settings"]')).toHaveAttribute('aria-current', 'page');
   await expect(
-    page.locator('#settings-section-appearance').getByText('外观与布局', { exact: true }),
+    page.locator('#settings-section-appearance').getByText('界面模式', { exact: true }),
   ).toBeVisible();
 
   await page.getByRole('button', { name: '完整模式' }).click();
@@ -105,7 +105,7 @@ test('题目页支持多平台、扩展标签和英文标签', async () => {
   await page.getByRole('button', { name: 'English' }).click();
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
   await expect(
-    page.locator('#settings-section-appearance').getByText('Appearance & Layout', { exact: true }),
+    page.locator('#settings-section-appearance').getByText('Interface mode', { exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Contests', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Upcoming Contests' })).toBeVisible();

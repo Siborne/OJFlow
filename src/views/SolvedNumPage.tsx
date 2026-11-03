@@ -18,6 +18,7 @@ import { useI18n, type MessageKey } from '@/i18n';
 import { ContestService } from '@/services/contest';
 import { SolvedNumService } from '@/services/solved';
 import { getPlatformLabel } from '@/utils/platform-labels';
+import { useModuleAutoRefresh } from '@/hooks/useAutoRefresh';
 
 interface PlatformConfig {
   name: string;
@@ -239,6 +240,9 @@ function PlatformCard({
     },
     [config.name, t, username],
   );
+  const autoRefreshEnabled = useModuleAutoRefresh('solved', () => {
+    void query();
+  });
 
   useEffect(() => {
     const handler = (event: CustomEvent) => {
@@ -249,10 +253,11 @@ function PlatformCard({
   }, [config.name, query]);
 
   useEffect(() => {
+    if (!autoRefreshEnabled) return;
     if (autoQueryStarted.current) return;
     autoQueryStarted.current = true;
     if (username.trim()) void query();
-  }, [query, username]);
+  }, [autoRefreshEnabled, query, username]);
 
   const hasSpecialHelp =
     config.name === '牛客' || config.name === '蓝桥云课' || config.name === '力扣';

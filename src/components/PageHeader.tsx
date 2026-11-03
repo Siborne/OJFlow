@@ -13,7 +13,7 @@ export function PageHeader({ title, actions }: PageHeaderProps) {
           className="flex h-8 w-8 items-center justify-center rounded-[11px] bg-[var(--color-primary-weak)] shadow-[var(--clay-inset)]"
           aria-hidden="true"
         >
-          <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-primary)] shadow-[0_0_10px_var(--color-primary)]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[image:var(--gradient-primary)] shadow-[0_0_14px_var(--glow-primary)]" />
         </span>
         <div>
           <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-primary)]">

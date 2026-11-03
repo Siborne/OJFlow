@@ -3,7 +3,10 @@ import type {
   AppFeatures,
   AppLocale,
   AppMode,
+  AutoRefreshModule,
+  AutoRefreshSettings,
   LocalePreference,
+  SharePosterSettings,
   SurfaceStyle,
   ThemeScheme,
 } from '../../shared/types';
@@ -22,6 +25,29 @@ const DEFAULT_FEATURES: AppFeatures = {
   confirmExternalLinks: true,
   reduceMotion: false,
 };
+
+const DEFAULT_AUTO_REFRESH: AutoRefreshSettings = {
+  enabled: true,
+  intervalMinutes: 15,
+  modules: {
+    dashboard: true,
+    rating: true,
+    solved: true,
+    report: true,
+  },
+};
+
+const AUTO_REFRESH_KEY = 'auto_refresh_settings';
+const AUTO_CHECK_UPDATES_KEY = 'auto_check_updates';
+
+const DEFAULT_SHARE_POSTER: SharePosterSettings = {
+  showRating: true,
+  showPlatforms: true,
+  showTopics: true,
+  showSchedule: true,
+};
+
+const SHARE_POSTER_KEY = 'share_poster_settings';
 
 const FEATURE_KEYS = Object.keys(DEFAULT_FEATURES) as (keyof AppFeatures)[];
 
@@ -83,6 +109,77 @@ function normalizeFeatures(value: unknown): Partial<AppFeatures> {
   }, {});
 }
 
+function normalizeAutoRefresh(value: unknown): AutoRefreshSettings {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return DEFAULT_AUTO_REFRESH;
+  }
+  const source = value as Record<string, unknown>;
+  const rawModules =
+    source.modules && typeof source.modules === 'object' && !Array.isArray(source.modules)
+      ? (source.modules as Record<string, unknown>)
+      : {};
+  const interval = Number(source.intervalMinutes);
+  return {
+    enabled: typeof source.enabled === 'boolean' ? source.enabled : DEFAULT_AUTO_REFRESH.enabled,
+    intervalMinutes: [5, 15, 30, 60].includes(interval) ? interval : 15,
+    modules: {
+      dashboard:
+        typeof rawModules.dashboard === 'boolean'
+          ? rawModules.dashboard
+          : DEFAULT_AUTO_REFRESH.modules.dashboard,
+      rating:
+        typeof rawModules.rating === 'boolean'
+          ? rawModules.rating
+          : DEFAULT_AUTO_REFRESH.modules.rating,
+      solved:
+        typeof rawModules.solved === 'boolean'
+          ? rawModules.solved
+          : DEFAULT_AUTO_REFRESH.modules.solved,
+      report:
+        typeof rawModules.report === 'boolean'
+          ? rawModules.report
+          : DEFAULT_AUTO_REFRESH.modules.report,
+    },
+  };
+}
+
+function persistAutoRefresh(settings: AutoRefreshSettings): void {
+  try {
+    localStorage.setItem(AUTO_REFRESH_KEY, JSON.stringify(settings));
+  } catch {
+    // Ignore storage quota errors.
+  }
+}
+
+function normalizeSharePoster(value: unknown): SharePosterSettings {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return DEFAULT_SHARE_POSTER;
+  }
+  const source = value as Record<string, unknown>;
+  return {
+    showRating:
+      typeof source.showRating === 'boolean' ? source.showRating : DEFAULT_SHARE_POSTER.showRating,
+    showPlatforms:
+      typeof source.showPlatforms === 'boolean'
+        ? source.showPlatforms
+        : DEFAULT_SHARE_POSTER.showPlatforms,
+    showTopics:
+      typeof source.showTopics === 'boolean' ? source.showTopics : DEFAULT_SHARE_POSTER.showTopics,
+    showSchedule:
+      typeof source.showSchedule === 'boolean'
+        ? source.showSchedule
+        : DEFAULT_SHARE_POSTER.showSchedule,
+  };
+}
+
+function persistSharePoster(settings: SharePosterSettings): void {
+  try {
+    localStorage.setItem(SHARE_POSTER_KEY, JSON.stringify(settings));
+  } catch {
+    // Ignore storage quota errors.
+  }
+}
+
 function readLocalStorage(): Partial<UiState> {
   if (typeof localStorage === 'undefined') return {};
   const patch: Partial<UiState> = {};
@@ -93,12 +190,24 @@ function readLocalStorage(): Partial<UiState> {
     const surfaceStyle = localStorage.getItem('surface_style');
     const appMode = localStorage.getItem('app_mode');
     const rawFeatures = localStorage.getItem('feature_flags');
+    const rawAutoRefresh = localStorage.getItem(AUTO_REFRESH_KEY);
+    const rawAutoCheckUpdates = localStorage.getItem(AUTO_CHECK_UPDATES_KEY);
+    const rawSharePoster = localStorage.getItem(SHARE_POSTER_KEY);
 
     if (scheme) patch.themeScheme = scheme;
     if (isColorMode(mode)) patch.colorMode = mode;
     if (isLocalePreference(locale)) patch.locale = locale;
     if (isSurfaceStyle(surfaceStyle)) patch.surfaceStyle = surfaceStyle;
     if (isAppMode(appMode)) patch.appMode = appMode;
+    if (rawAutoRefresh) {
+      patch.autoRefresh = normalizeAutoRefresh(JSON.parse(rawAutoRefresh));
+    }
+    if (rawAutoCheckUpdates === 'true' || rawAutoCheckUpdates === 'false') {
+      patch.autoCheckUpdates = rawAutoCheckUpdates === 'true';
+    }
+    if (rawSharePoster) {
+      patch.sharePoster = normalizeSharePoster(JSON.parse(rawSharePoster));
+    }
     if (rawFeatures) {
       patch.features = {
         ...DEFAULT_FEATURES,
@@ -122,6 +231,9 @@ interface UiState {
   effectiveLocale: AppLocale;
   surfaceStyle: SurfaceStyle;
   appMode: AppMode;
+  autoRefresh: AutoRefreshSettings;
+  autoCheckUpdates: boolean;
+  sharePoster: SharePosterSettings;
   features: AppFeatures;
   initialized: boolean;
   init: () => Promise<void>;
@@ -131,6 +243,11 @@ interface UiState {
   setLocale: (locale: LocalePreference) => Promise<void>;
   setSurfaceStyle: (style: SurfaceStyle) => Promise<void>;
   setAppMode: (mode: AppMode) => Promise<void>;
+  setAutoRefreshEnabled: (enabled: boolean) => Promise<void>;
+  setAutoRefreshInterval: (minutes: number) => Promise<void>;
+  setAutoRefreshModule: (module: AutoRefreshModule, enabled: boolean) => Promise<void>;
+  setAutoCheckUpdates: (enabled: boolean) => Promise<void>;
+  setSharePosterSection: (key: keyof SharePosterSettings, enabled: boolean) => Promise<void>;
   setFeature: (key: keyof AppFeatures, enabled: boolean) => Promise<void>;
 }
 
@@ -153,6 +270,9 @@ export const useUiStore = create<UiState>((set, get) => ({
       ? appConfig.theme.defaultSurface
       : 'glass',
   appMode: localDefaults.appMode ?? 'simple',
+  autoRefresh: localDefaults.autoRefresh ?? DEFAULT_AUTO_REFRESH,
+  autoCheckUpdates: localDefaults.autoCheckUpdates ?? true,
+  sharePoster: localDefaults.sharePoster ?? DEFAULT_SHARE_POSTER,
   features: { ...DEFAULT_FEATURES, ...localDefaults.features },
   initialized: false,
 
@@ -169,6 +289,9 @@ export const useUiStore = create<UiState>((set, get) => ({
               locale?: unknown;
               surfaceStyle?: unknown;
               appMode?: unknown;
+              autoRefresh?: unknown;
+              autoCheckUpdates?: unknown;
+              sharePoster?: unknown;
               features?: unknown;
             }
           | undefined;
@@ -180,6 +303,15 @@ export const useUiStore = create<UiState>((set, get) => ({
           if (isLocalePreference(ui.locale)) patch.locale = ui.locale;
           if (isSurfaceStyle(ui.surfaceStyle)) patch.surfaceStyle = ui.surfaceStyle;
           if (isAppMode(ui.appMode)) patch.appMode = ui.appMode;
+          if (ui.autoRefresh !== undefined) {
+            patch.autoRefresh = normalizeAutoRefresh(ui.autoRefresh);
+          }
+          if (typeof ui.autoCheckUpdates === 'boolean') {
+            patch.autoCheckUpdates = ui.autoCheckUpdates;
+          }
+          if (ui.sharePoster !== undefined) {
+            patch.sharePoster = normalizeSharePoster(ui.sharePoster);
+          }
           const features = normalizeFeatures(ui.features);
           if (Object.keys(features).length > 0) {
             patch.features = { ...get().features, ...features };
@@ -286,6 +418,68 @@ export const useUiStore = create<UiState>((set, get) => ({
       localStorage.setItem('app_mode', mode);
     } catch {
       // Ignore storage quota errors.
+    }
+  },
+
+  setAutoRefreshEnabled: async (enabled: boolean) => {
+    const autoRefresh = { ...get().autoRefresh, enabled };
+    set({ autoRefresh });
+    persistAutoRefresh(autoRefresh);
+    try {
+      await getElectronStore()?.set('ui.autoRefresh', autoRefresh);
+    } catch {
+      // Keep the active preference even if persistence is unavailable.
+    }
+  },
+
+  setAutoRefreshInterval: async (minutes: number) => {
+    const intervalMinutes = [5, 15, 30, 60].includes(minutes) ? minutes : 15;
+    const autoRefresh = { ...get().autoRefresh, intervalMinutes };
+    set({ autoRefresh });
+    persistAutoRefresh(autoRefresh);
+    try {
+      await getElectronStore()?.set('ui.autoRefresh', autoRefresh);
+    } catch {
+      // Keep the active preference even if persistence is unavailable.
+    }
+  },
+
+  setAutoRefreshModule: async (module: AutoRefreshModule, enabled: boolean) => {
+    const autoRefresh = {
+      ...get().autoRefresh,
+      modules: { ...get().autoRefresh.modules, [module]: enabled },
+    };
+    set({ autoRefresh });
+    persistAutoRefresh(autoRefresh);
+    try {
+      await getElectronStore()?.set('ui.autoRefresh', autoRefresh);
+    } catch {
+      // Keep the active preference even if persistence is unavailable.
+    }
+  },
+
+  setAutoCheckUpdates: async (enabled: boolean) => {
+    set({ autoCheckUpdates: enabled });
+    try {
+      await getElectronStore()?.set('ui.autoCheckUpdates', enabled);
+    } catch {
+      // Keep the active preference even if persistence is unavailable.
+    }
+    try {
+      localStorage.setItem(AUTO_CHECK_UPDATES_KEY, String(enabled));
+    } catch {
+      // Ignore storage quota errors.
+    }
+  },
+
+  setSharePosterSection: async (key: keyof SharePosterSettings, enabled: boolean) => {
+    const sharePoster = { ...get().sharePoster, [key]: enabled };
+    set({ sharePoster });
+    persistSharePoster(sharePoster);
+    try {
+      await getElectronStore()?.set('ui.sharePoster', sharePoster);
+    } catch {
+      // Keep the active preference even if persistence is unavailable.
     }
   },
 

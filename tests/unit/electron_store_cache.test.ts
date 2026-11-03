@@ -75,6 +75,12 @@ describe('electron store schema defaults', () => {
     expect(store.get('notification.reminderMinutes')).toBe(15);
     expect(store.get('schedule')).toEqual([]);
     expect(store.get('practice.problems')).toEqual([]);
+    expect(store.get('ui.autoRefresh')).toMatchObject({
+      enabled: true,
+      intervalMinutes: 15,
+    });
+    expect(store.get('ui.autoCheckUpdates')).toBe(true);
+    expect(store.get('ui.sharePoster')).toMatchObject({ showTopics: true });
     expect(FakeElectronStore.last).toBeDefined();
   });
 });

@@ -6,6 +6,7 @@ import { ReportService } from '@/services/report';
 import type { ProblemStats, TagStats } from '../../shared/types';
 import { useI18n } from '@/i18n';
 import { getProblemTagLabel } from '../../shared/problem-tags';
+import { useModuleAutoRefresh } from '@/hooks/useAutoRefresh';
 
 const STORAGE_KEY = 'cf_report_state';
 
@@ -114,14 +115,18 @@ export default function CfpReportPage() {
     },
     [handle, locale, t],
   );
+  const autoRefreshEnabled = useModuleAutoRefresh('report', () => {
+    void fetchReport();
+  });
 
   useEffect(() => {
+    if (!autoRefreshEnabled) return;
     if (autoQueryStarted.current) return;
     autoQueryStarted.current = true;
     if (initialReport?.handle.trim()) {
       void fetchReport(initialReport.handle);
     }
-  }, [fetchReport, initialReport]);
+  }, [autoRefreshEnabled, fetchReport, initialReport]);
 
   const saveHandleDraft = useCallback((next: string) => {
     const current = loadSavedReport();

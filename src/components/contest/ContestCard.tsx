@@ -106,7 +106,10 @@ export function ContestCard({
           {t('contest.join')}
         </Button>
         <button
+          type="button"
           onClick={() => onToggleFavorite(contest)}
+          aria-label={isFavorite ? t('contest.unfavorite') : t('contest.favorite')}
+          aria-pressed={isFavorite}
           className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-[var(--color-surface-muted)]"
         >
           <Star

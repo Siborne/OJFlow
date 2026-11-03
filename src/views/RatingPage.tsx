@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { getRatingColor, getRatingTierName } from '@/utils/rating-colors';
 import { useI18n } from '@/i18n';
 import { getPlatformLabel } from '@/utils/platform-labels';
+import { useModuleAutoRefresh } from '@/hooks/useAutoRefresh';
 
 const PLATFORMS = ['Codeforces', 'AtCoder', '力扣', '洛谷', '牛客'] as const;
 const STORAGE_PREFIX = 'rating_username_';
@@ -141,14 +142,18 @@ export default function RatingPage() {
     },
     [locale, platform, t, username],
   );
+  const autoRefreshEnabled = useModuleAutoRefresh('rating', () => {
+    void handleSearch();
+  });
 
   useEffect(() => {
+    if (!autoRefreshEnabled) return;
     if (autoQueryStarted.current) return;
     autoQueryStarted.current = true;
     if (initialUsername.current.trim()) {
       void handleSearch(initialPlatform.current, initialUsername.current);
     }
-  }, [handleSearch]);
+  }, [autoRefreshEnabled, handleSearch]);
 
   const ratingProgress = useMemo(
     () => (result ? Math.min(100, Math.max(3, (result.rating / 3000) * 100)) : 0),

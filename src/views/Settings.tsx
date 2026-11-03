@@ -5,9 +5,11 @@ import {
   CalendarDays,
   Check,
   ChevronRight,
+  Clock3,
   Cloud,
   Database,
   Info,
+  Images,
   Keyboard,
   Languages,
   Link2,
@@ -31,17 +33,30 @@ import { useI18n, type MessageKey } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type {
   AppFeatures,
-  AppMode,
+  AutoRefreshModule,
   LocalePreference,
   SurfaceStyle,
+  SharePosterSettings,
   ThemeScheme,
   WindowCloseBehavior,
 } from '../../shared/types';
-import packageJson from '../../package.json';
 
 type ToastState = { type: 'success' | 'error' | 'warning'; text: string } | null;
 
 const PERIOD_OPTIONS = [7, 15, 30];
+const AUTO_REFRESH_INTERVALS = [5, 15, 30, 60];
+const AUTO_REFRESH_MODULES: Array<{ key: AutoRefreshModule; labelKey: MessageKey }> = [
+  { key: 'dashboard', labelKey: 'settings.autoRefreshDashboard' },
+  { key: 'rating', labelKey: 'settings.autoRefreshRating' },
+  { key: 'solved', labelKey: 'settings.autoRefreshSolved' },
+  { key: 'report', labelKey: 'settings.autoRefreshReport' },
+];
+const SHARE_POSTER_SECTIONS: Array<{ key: keyof SharePosterSettings; labelKey: MessageKey }> = [
+  { key: 'showRating', labelKey: 'settings.sharePosterRating' },
+  { key: 'showPlatforms', labelKey: 'settings.sharePosterPlatforms' },
+  { key: 'showTopics', labelKey: 'settings.sharePosterTopics' },
+  { key: 'showSchedule', labelKey: 'settings.sharePosterSchedule' },
+];
 
 const colorModeKeys: Array<{ value: ColorMode; labelKey: MessageKey; icon: React.ElementType }> = [
   { value: 'auto', labelKey: 'common.system', icon: MonitorCog },
@@ -54,13 +69,41 @@ const schemes: Array<{
   labelKey: MessageKey;
   swatch: string;
 }> = [
-  { value: 'ocean', labelKey: 'settings.schemeOcean', swatch: '#0e7490' },
-  { value: 'ember', labelKey: 'settings.schemeEmber', swatch: '#d05a2d' },
-  { value: 'forest', labelKey: 'settings.schemeForest', swatch: '#3f7a42' },
-  { value: 'berry', labelKey: 'settings.schemeBerry', swatch: '#b5385d' },
-  { value: 'sky', labelKey: 'settings.schemeSky', swatch: '#2563eb' },
-  { value: 'sand', labelKey: 'settings.schemeSand', swatch: '#b7791f' },
-  { value: 'ink', labelKey: 'settings.schemeInk', swatch: '#475569' },
+  {
+    value: 'ocean',
+    labelKey: 'settings.schemeOcean',
+    swatch: 'linear-gradient(135deg, #075d68 0%, #0e8f99 48%, #72d7d1 100%)',
+  },
+  {
+    value: 'ember',
+    labelKey: 'settings.schemeEmber',
+    swatch: 'linear-gradient(135deg, #9b3d1c 0%, #cf6337 48%, #f7c17d 100%)',
+  },
+  {
+    value: 'forest',
+    labelKey: 'settings.schemeForest',
+    swatch: 'linear-gradient(135deg, #2f6f45 0%, #7aaa63 52%, #c4d86d 100%)',
+  },
+  {
+    value: 'berry',
+    labelKey: 'settings.schemeBerry',
+    swatch: 'linear-gradient(135deg, #a72f62 0%, #d85278 48%, #f2a27f 100%)',
+  },
+  {
+    value: 'sky',
+    labelKey: 'settings.schemeSky',
+    swatch: 'linear-gradient(135deg, #1d4ed8 0%, #2f8df5 50%, #67e8f9 100%)',
+  },
+  {
+    value: 'sand',
+    labelKey: 'settings.schemeSand',
+    swatch: 'linear-gradient(135deg, #8f5a15 0%, #c68a32 55%, #f0d391 100%)',
+  },
+  {
+    value: 'ink',
+    labelKey: 'settings.schemeInk',
+    swatch: 'linear-gradient(135deg, #1e293b 0%, #475569 48%, #0e7490 100%)',
+  },
 ];
 
 const surfaces: Array<{ value: SurfaceStyle; labelKey: MessageKey; icon: React.ElementType }> = [
@@ -224,12 +267,20 @@ export default function Settings() {
   const surfaceStyle = useUiStore(state => state.surfaceStyle);
   const themeScheme = useUiStore(state => state.themeScheme);
   const features = useUiStore(state => state.features);
+  const autoRefresh = useUiStore(state => state.autoRefresh);
+  const autoCheckUpdates = useUiStore(state => state.autoCheckUpdates);
+  const sharePoster = useUiStore(state => state.sharePoster);
   const setAppMode = useUiStore(state => state.setAppMode);
   const setColorMode = useUiStore(state => state.setColorMode);
   const setLocale = useUiStore(state => state.setLocale);
   const setSurfaceStyle = useUiStore(state => state.setSurfaceStyle);
   const setThemeScheme = useUiStore(state => state.setThemeScheme);
   const setFeature = useUiStore(state => state.setFeature);
+  const setAutoRefreshEnabled = useUiStore(state => state.setAutoRefreshEnabled);
+  const setAutoRefreshInterval = useUiStore(state => state.setAutoRefreshInterval);
+  const setAutoRefreshModule = useUiStore(state => state.setAutoRefreshModule);
+  const setAutoCheckUpdates = useUiStore(state => state.setAutoCheckUpdates);
+  const setSharePosterSection = useUiStore(state => state.setSharePosterSection);
 
   const [isUpdatingDays, setIsUpdatingDays] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
@@ -420,14 +471,6 @@ export default function Settings() {
     [showToast, t],
   );
 
-  const modeLabel = (mode: AppMode) =>
-    mode === 'simple' ? t('settings.simpleMode') : t('settings.fullMode');
-  const colorModeLabel = (mode: ColorMode) =>
-    mode === 'auto' ? t('common.system') : mode === 'dark' ? t('common.dark') : t('common.light');
-  const schemeLabel = (scheme: ThemeScheme) =>
-    t(schemes.find(item => item.value === scheme)?.labelKey ?? 'settings.schemeOcean');
-  const surfaceLabel = (surface: SurfaceStyle) =>
-    t(surfaces.find(item => item.value === surface)?.labelKey ?? 'settings.surfaceGlass');
   const periods = PERIOD_OPTIONS.includes(day) ? PERIOD_OPTIONS : [...PERIOD_OPTIONS, day];
 
   const localeOptions: Array<{ value: LocalePreference; label: string; icon: React.ElementType }> =
@@ -458,7 +501,7 @@ export default function Settings() {
 
         <div className="mx-auto max-w-4xl space-y-4">
           <nav
-            className="glass-panel sticky top-0 z-30 flex gap-1 overflow-x-auto rounded-[var(--radius-lg)] p-1.5"
+            className="glass-panel sticky top-0 z-30 grid grid-cols-3 gap-1 rounded-[var(--radius-lg)] p-1.5 md:grid-cols-6"
             aria-label={t('settings.title')}
           >
             {settingsSections.map(section => {
@@ -468,7 +511,7 @@ export default function Settings() {
                   key={section.id}
                   type="button"
                   onClick={() => setActiveSection(section.id)}
-                  className={`flex min-w-max items-center gap-1.5 rounded-[var(--radius-md)] px-3 py-2 text-xs font-semibold transition ${
+                  className={`flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-[var(--radius-md)] px-1.5 py-2 text-[11px] font-semibold transition xl:text-xs ${
                     activeSection === section.id
                       ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)] shadow-[var(--clay-shadow-sm)]'
                       : 'text-[var(--color-text-muted)] hover:bg-[var(--color-primary-weak)] hover:text-[var(--color-primary)]'
@@ -482,50 +525,6 @@ export default function Settings() {
             })}
           </nav>
 
-          <section className="glass-panel relative overflow-hidden rounded-[var(--radius-xl)] p-5">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,var(--color-primary-weak),transparent_52%)]" />
-            <div className="relative z-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-              <div>
-                <div className="flex items-center gap-2 text-sm font-semibold text-[var(--color-primary)]">
-                  <Sparkles size={16} />
-                  {t('settings.workbench')}
-                </div>
-                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--color-text)]">
-                  v{packageJson.version}
-                </h1>
-                <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-                  {modeLabel(appMode)} · {schemeLabel(themeScheme)} · {surfaceLabel(surfaceStyle)} ·{' '}
-                  {colorModeLabel(colorMode)} ·{' '}
-                  {locale === 'zh-CN' ? t('settings.chinese') : t('settings.english')}
-                </p>
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-[var(--radius-md)] bg-[var(--color-surface-muted)] px-3 py-2">
-                  <div className="text-lg font-semibold text-[var(--color-text)]">{day}</div>
-                  <div className="text-[10px] text-[var(--color-text-muted)]">
-                    {t('settings.queryDays')}
-                  </div>
-                </div>
-                <div className="rounded-[var(--radius-md)] bg-[var(--color-surface-muted)] px-3 py-2">
-                  <div className="text-lg font-semibold text-[var(--color-text)]">
-                    {Object.values(features).filter(Boolean).length}
-                  </div>
-                  <div className="text-[10px] text-[var(--color-text-muted)]">
-                    {t('settings.enabledFeatures')}
-                  </div>
-                </div>
-                <div className="rounded-[var(--radius-md)] bg-[var(--color-surface-muted)] px-3 py-2">
-                  <div className="text-lg font-semibold text-[var(--color-text)]">
-                    {notificationsEnabled ? t('settings.on') : t('settings.off')}
-                  </div>
-                  <div className="text-[10px] text-[var(--color-text-muted)]">
-                    {t('settings.contestReminder')}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
           <section
             id="settings-section-appearance"
             className={cn(
@@ -533,9 +532,6 @@ export default function Settings() {
               activeSection !== 'appearance' && 'hidden',
             )}
           >
-            <div className="border-b border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
-              {t('settings.appearance')}
-            </div>
             <SettingRow
               icon={SlidersHorizontal}
               title={t('settings.appMode')}
@@ -573,28 +569,33 @@ export default function Settings() {
               testId="settings-accent"
               wide
             >
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-7">
                 {schemes.map(scheme => (
                   <button
                     key={scheme.value}
                     type="button"
                     onClick={() => void setThemeScheme(scheme.value)}
-                    className={`flex items-center gap-2 rounded-[var(--radius-md)] border px-3 py-2 text-left transition ${
+                    className={`relative flex min-w-0 flex-col items-center gap-2 rounded-[var(--radius-md)] border p-2 text-center transition ${
                       themeScheme === scheme.value
-                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-weak)]'
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-weak)] shadow-[var(--clay-inset)]'
                         : 'border-[var(--color-border)] hover:border-[var(--color-primary)]'
                     }`}
                     aria-pressed={themeScheme === scheme.value}
                   >
                     <span
-                      className="h-4 w-4 rounded-full"
-                      style={{ backgroundColor: scheme.swatch }}
-                    />
-                    <span className="text-xs font-medium text-[var(--color-text)]">
+                      className="relative h-11 w-full overflow-hidden rounded-[9px] border border-white/60 shadow-[0_6px_14px_rgba(0,0,0,0.16)]"
+                      style={{ backgroundImage: scheme.swatch }}
+                    >
+                      <span className="absolute inset-x-1 top-1 h-2 rounded-full bg-white/30 blur-[2px]" />
+                    </span>
+                    <span className="w-full truncate text-[11px] font-semibold text-[var(--color-text)]">
                       {t(scheme.labelKey)}
                     </span>
                     {themeScheme === scheme.value && (
-                      <Check size={13} className="text-[var(--color-primary)]" />
+                      <Check
+                        size={13}
+                        className="absolute right-1.5 top-1.5 rounded-full bg-white/90 p-0.5 text-[var(--color-primary)] shadow-sm"
+                      />
                     )}
                   </button>
                 ))}
@@ -638,9 +639,6 @@ export default function Settings() {
               activeSection !== 'features' && 'hidden',
             )}
           >
-            <div className="border-b border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
-              {t('settings.features')}
-            </div>
             {featureRows.map(row => (
               <SettingRow
                 key={row.key}
@@ -664,9 +662,6 @@ export default function Settings() {
               activeSection !== 'contest' && 'hidden',
             )}
           >
-            <div className="border-b border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
-              {t('settings.contestPreferences')}
-            </div>
             <SettingRow
               icon={RefreshCw}
               title={t('settings.queryPeriod')}
@@ -725,9 +720,94 @@ export default function Settings() {
               activeSection !== 'reminders' && 'hidden',
             )}
           >
-            <div className="border-b border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
-              {t('settings.remindersData')}
-            </div>
+            <SettingRow
+              icon={RefreshCw}
+              title={t('settings.autoRefresh')}
+              desc={t('settings.autoRefreshDesc')}
+              testId="settings-auto-refresh"
+            >
+              <Switch
+                checked={autoRefresh.enabled}
+                onCheckedChange={enabled => void setAutoRefreshEnabled(enabled)}
+                aria-label={t('settings.autoRefresh')}
+              />
+            </SettingRow>
+            <SettingRow
+              icon={Clock3}
+              title={t('settings.autoRefreshInterval')}
+              desc={t('settings.autoRefreshIntervalDesc')}
+            >
+              <select
+                value={autoRefresh.intervalMinutes}
+                disabled={!autoRefresh.enabled}
+                onChange={event => void setAutoRefreshInterval(Number(event.target.value))}
+                className="h-9 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm text-[var(--color-text)] outline-none disabled:opacity-50"
+                aria-label={t('settings.autoRefreshInterval')}
+              >
+                {AUTO_REFRESH_INTERVALS.map(minutes => (
+                  <option key={minutes} value={minutes}>
+                    {t('settings.minutes', { count: minutes })}
+                  </option>
+                ))}
+              </select>
+            </SettingRow>
+            <SettingRow
+              icon={SlidersHorizontal}
+              title={t('settings.autoRefreshModules')}
+              desc={t('settings.autoRefreshModulesDesc')}
+              wide
+            >
+              <div className="flex flex-wrap gap-2">
+                {AUTO_REFRESH_MODULES.map(module => (
+                  <button
+                    key={module.key}
+                    type="button"
+                    data-testid={`settings-auto-refresh-${module.key}`}
+                    disabled={!autoRefresh.enabled}
+                    onClick={() =>
+                      void setAutoRefreshModule(module.key, !autoRefresh.modules[module.key])
+                    }
+                    aria-pressed={autoRefresh.modules[module.key]}
+                    className={cn(
+                      'rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-45',
+                      autoRefresh.modules[module.key]
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-weak)] text-[var(--color-primary)]'
+                        : 'border-[var(--color-border)] text-[var(--color-text-muted)]',
+                    )}
+                  >
+                    {t(module.labelKey)}
+                  </button>
+                ))}
+              </div>
+            </SettingRow>
+            <SettingRow
+              icon={Images}
+              title={t('settings.sharePosterContent')}
+              desc={t('settings.sharePosterContentDesc')}
+              wide
+            >
+              <div className="flex flex-wrap gap-2">
+                {SHARE_POSTER_SECTIONS.map(section => (
+                  <button
+                    key={section.key}
+                    type="button"
+                    data-testid={`settings-share-poster-${section.key}`}
+                    onClick={() =>
+                      void setSharePosterSection(section.key, !sharePoster[section.key])
+                    }
+                    aria-pressed={sharePoster[section.key]}
+                    className={cn(
+                      'rounded-full border px-3 py-1.5 text-xs font-semibold transition',
+                      sharePoster[section.key]
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-weak)] text-[var(--color-primary)]'
+                        : 'border-[var(--color-border)] text-[var(--color-text-muted)]',
+                    )}
+                  >
+                    {t(section.labelKey)}
+                  </button>
+                ))}
+              </div>
+            </SettingRow>
             <SettingRow
               icon={Bell}
               title={t('settings.contestStartReminder')}
@@ -788,9 +868,6 @@ export default function Settings() {
               activeSection !== 'system' && 'hidden',
             )}
           >
-            <div className="border-b border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
-              {t('settings.systemSection')}
-            </div>
             <SettingRow
               icon={MonitorCog}
               title={t('settings.startAtLogin')}
@@ -801,6 +878,18 @@ export default function Settings() {
                 checked={startAtLogin}
                 onCheckedChange={enabled => void updateAutoLaunch(enabled)}
                 aria-label={t('settings.startAtLogin')}
+              />
+            </SettingRow>
+            <SettingRow
+              icon={RefreshCw}
+              title={t('settings.autoCheckUpdates')}
+              desc={t('settings.autoCheckUpdatesDesc')}
+              testId="settings-auto-updates"
+            >
+              <Switch
+                checked={autoCheckUpdates}
+                onCheckedChange={enabled => void setAutoCheckUpdates(enabled)}
+                aria-label={t('settings.autoCheckUpdates')}
               />
             </SettingRow>
             <SettingRow

@@ -149,7 +149,7 @@ describe('Rating page', () => {
       await flushPromises();
     });
     expect(view.container.textContent).toContain('2000');
-    expect(view.container.textContent).toContain('Expert');
+    expect(view.container.textContent).toContain('Candidate Master');
     expect(localStorage.getItem('rating_username_Codeforces')).toBe('tourist');
     expect(localStorage.getItem('rating_result_Codeforces')).toContain('2000');
     await view.unmount();
@@ -177,6 +177,29 @@ describe('Rating page', () => {
     await waitFor(() => calls >= 1);
     await waitFor(() => view.container.textContent?.includes('2100') ?? false);
     expect(view.container.querySelector('input')?.value).toBe('tourist');
+    await view.unmount();
+  });
+
+  test('does not auto refresh when its module is disabled', async () => {
+    localStorage.setItem('rating_username_Codeforces', 'tourist');
+    let calls = 0;
+    installWindowApi({
+      getRating: async () => {
+        calls++;
+        return { name: 'tourist', curRating: 2100, maxRating: 2200 };
+      },
+    });
+    useUiStore.setState(state => ({
+      autoRefresh: {
+        ...state.autoRefresh,
+        modules: { ...state.autoRefresh.modules, rating: false },
+      },
+    }));
+    const view = await render(<RatingPage />);
+    await act(async () => {
+      await flushPromises();
+    });
+    expect(calls).toBe(0);
     await view.unmount();
   });
 

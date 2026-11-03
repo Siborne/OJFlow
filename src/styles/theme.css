@@ -13,6 +13,14 @@
   --color-primary-foreground: #ffffff;
   --color-accent: #e2754b;
   --color-accent-weak: rgba(226, 117, 75, 0.13);
+  --gradient-primary: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary) 78%, #000) 0%,
+    var(--color-primary) 46%,
+    color-mix(in srgb, var(--color-primary) 52%, #fff) 100%
+  );
+  --glow-primary: color-mix(in srgb, var(--color-primary) 38%, transparent);
+  --glow-secondary: color-mix(in srgb, var(--color-accent) 30%, transparent);
   --color-success: #15803d;
   --color-success-weak: rgba(21, 128, 61, 0.11);
   --color-success-foreground: #ffffff;
@@ -29,8 +37,8 @@
   --body-gradient-start: #f8fdfd;
   --body-gradient-end: #e8f2f4;
   --dot-color: rgba(11, 79, 93, 0.07);
-  --orb-primary: rgba(18, 169, 173, 0.2);
-  --orb-secondary: rgba(255, 151, 112, 0.19);
+  --orb-primary: var(--glow-primary);
+  --orb-secondary: var(--glow-secondary);
 
   --card-bg: rgba(255, 255, 255, 0.55);
   --card-bg-elevated: rgba(255, 255, 255, 0.78);
@@ -120,8 +128,12 @@
   --rating-pupil: #15803d;
   --rating-specialist: #0891b2;
   --rating-expert: #2563eb;
-  --rating-master: #9333ea;
+  --rating-candidate-master: #7c3aed;
+  --rating-master: #f59e0b;
+  --rating-international-master: #ea580c;
   --rating-grandmaster: #dc2626;
+  --rating-international-grandmaster: #dc2626;
+  --rating-legendary-grandmaster: #b91c1c;
 
   --background: var(--color-bg);
   --foreground: var(--color-text);
@@ -155,8 +167,8 @@
   --body-gradient-start: #fffaf6;
   --body-gradient-end: #f7eee7;
   --nav-active-bg: rgba(198, 83, 44, 0.15);
-  --orb-primary: rgba(255, 145, 104, 0.24);
-  --orb-secondary: rgba(255, 202, 126, 0.2);
+  --orb-primary: var(--glow-primary);
+  --orb-secondary: var(--glow-secondary);
   --chart-1: #c6532c;
   --chart-2: #168a91;
 }
@@ -171,8 +183,8 @@
   --body-gradient-start: #f8fcf3;
   --body-gradient-end: #eaf2e3;
   --nav-active-bg: rgba(63, 122, 66, 0.15);
-  --orb-primary: rgba(115, 174, 105, 0.22);
-  --orb-secondary: rgba(220, 222, 105, 0.19);
+  --orb-primary: var(--glow-primary);
+  --orb-secondary: var(--glow-secondary);
   --chart-1: #3f7a42;
   --chart-2: #9a6a20;
 }
@@ -187,8 +199,8 @@
   --body-gradient-start: #fff8fa;
   --body-gradient-end: #f5e9ed;
   --nav-active-bg: rgba(181, 56, 93, 0.15);
-  --orb-primary: rgba(229, 92, 135, 0.22);
-  --orb-secondary: rgba(255, 169, 134, 0.2);
+  --orb-primary: var(--glow-primary);
+  --orb-secondary: var(--glow-secondary);
   --chart-1: #b5385d;
   --chart-2: #cb6a57;
 }
@@ -203,8 +215,8 @@
   --body-gradient-start: #f7faff;
   --body-gradient-end: #e9f3ff;
   --nav-active-bg: rgba(37, 99, 235, 0.15);
-  --orb-primary: rgba(83, 142, 255, 0.22);
-  --orb-secondary: rgba(103, 232, 249, 0.2);
+  --orb-primary: var(--glow-primary);
+  --orb-secondary: var(--glow-secondary);
 }
 
 :root[data-scheme='sand'] {
@@ -217,8 +229,8 @@
   --body-gradient-start: #fffaf0;
   --body-gradient-end: #f5ecda;
   --nav-active-bg: rgba(169, 102, 24, 0.15);
-  --orb-primary: rgba(222, 164, 76, 0.22);
-  --orb-secondary: rgba(15, 118, 110, 0.14);
+  --orb-primary: var(--glow-primary);
+  --orb-secondary: var(--glow-secondary);
 }
 
 :root[data-scheme='ink'] {
@@ -231,8 +243,8 @@
   --body-gradient-start: #f7f9fb;
   --body-gradient-end: #e9eef3;
   --nav-active-bg: rgba(71, 85, 105, 0.14);
-  --orb-primary: rgba(100, 116, 139, 0.2);
-  --orb-secondary: rgba(34, 211, 238, 0.14);
+  --orb-primary: var(--glow-primary);
+  --orb-secondary: var(--glow-secondary);
 }
 
 :root[data-theme='dark'] {

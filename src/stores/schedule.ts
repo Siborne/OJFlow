@@ -9,6 +9,8 @@ interface NewScheduleItem {
   durationMinutes: number;
   kind: ScheduleItem['kind'];
   note?: string;
+  platform?: string;
+  url?: string;
 }
 
 interface ScheduleState {
@@ -34,7 +36,9 @@ function isScheduleItem(value: unknown): value is ScheduleItem {
       item.kind === 'review' ||
       item.kind === 'custom') &&
     typeof item.completed === 'boolean' &&
-    typeof item.createdAt === 'number'
+    typeof item.createdAt === 'number' &&
+    (item.platform === undefined || typeof item.platform === 'string') &&
+    (item.url === undefined || typeof item.url === 'string')
   );
 }
 
@@ -105,6 +109,8 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       completed: false,
       createdAt: Date.now(),
       autoCreated: false,
+      platform: item.platform?.trim() || undefined,
+      url: item.url?.trim() || undefined,
     };
     const items = sortItems([...get().items, nextItem]);
     set({ items });
@@ -152,6 +158,8 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       createdAt: Date.now(),
       contestKey: key,
       autoCreated: true,
+      platform: contest.platform,
+      url: contest.link,
     };
     const items = sortItems([...current, item]);
     set({ items });

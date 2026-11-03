@@ -12,6 +12,23 @@ const defaults: UserConfig = {
     startAtLogin: false,
     closeBehavior: 'tray',
     appMode: 'simple',
+    autoRefresh: {
+      enabled: true,
+      intervalMinutes: 15,
+      modules: {
+        dashboard: true,
+        rating: true,
+        solved: true,
+        report: true,
+      },
+    },
+    autoCheckUpdates: true,
+    sharePoster: {
+      showRating: true,
+      showPlatforms: true,
+      showTopics: true,
+      showSchedule: true,
+    },
     features: {
       liveContestUpdates: true,
       showQuickStats: true,

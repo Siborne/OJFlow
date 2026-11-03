@@ -170,6 +170,20 @@ export type LocalePreference = AppLocale | 'system';
 export type ThemeScheme = 'ocean' | 'ember' | 'forest' | 'berry' | 'sky' | 'sand' | 'ink';
 export type SurfaceStyle = 'glass' | 'flat' | 'cloud' | 'clay';
 export type WindowCloseBehavior = 'tray' | 'quit';
+export type AutoRefreshModule = 'dashboard' | 'rating' | 'solved' | 'report';
+
+export interface AutoRefreshSettings {
+  enabled: boolean;
+  intervalMinutes: number;
+  modules: Record<AutoRefreshModule, boolean>;
+}
+
+export interface SharePosterSettings {
+  showRating: boolean;
+  showPlatforms: boolean;
+  showTopics: boolean;
+  showSchedule: boolean;
+}
 
 export interface ScheduleItem {
   id: string;
@@ -182,6 +196,8 @@ export interface ScheduleItem {
   createdAt: number;
   contestKey?: string;
   autoCreated?: boolean;
+  platform?: string;
+  url?: string;
 }
 
 export type PracticeStatus = 'inbox' | 'practicing' | 'review' | 'solved';

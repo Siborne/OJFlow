@@ -103,6 +103,8 @@ describe('schedule store', () => {
       title: 'Linked Round',
       kind: 'contest',
       autoCreated: true,
+      platform: contest.platform,
+      url: contest.link,
     });
 
     useScheduleStore.getState().syncFavoriteContest(contest, true);
