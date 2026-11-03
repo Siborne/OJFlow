@@ -69,10 +69,10 @@ jobs:
       - name: Install Electron runtime libraries
         run: |
           sudo npx playwright install-deps chromium
-          sudo apt-get install -y xvfb
+          sudo apt-get install -y xvfb openbox
 
       - name: Verify Electron runtime
         run: xvfb-run -a node_modules/electron/dist/electron --no-sandbox --version
 
       - name: Run Electron E2E
-        run: xvfb-run -a bun run test:e2e
+        run: xvfb-run -a sh -c 'openbox >/tmp/openbox.log 2>&1 & bun run test:e2e'

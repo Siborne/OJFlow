@@ -102,6 +102,23 @@ describe('Contest page', () => {
     expect(view.container.textContent).not.toContain('历史记录');
     await view.unmount();
   });
+
+  test('keeps date tabs available while refreshing contests', async () => {
+    useContestStore.setState({
+      contests: [createContest('Loaded', Math.floor(Date.now() / 1000) + 3600)],
+      loading: true,
+    });
+    const view = await render(
+      <TooltipProvider>
+        <Contest />
+      </TooltipProvider>,
+    );
+
+    const tabs = view.container.querySelector('[data-testid="contest-date-tabs"]');
+    expect(tabs).toBeTruthy();
+    expect(tabs?.querySelectorAll('button')).toHaveLength(4);
+    await view.unmount();
+  });
 });
 
 describe('Favorite page', () => {

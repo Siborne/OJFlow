@@ -272,6 +272,12 @@ export default function Contest() {
     setConfirmDialog({ show: false, contest: null });
   };
 
+  const dateTabs = (
+    <div className="mb-4" data-testid="contest-date-tabs">
+      <ContestDateTabs value={activeTab} onChange={setActiveTab} />
+    </div>
+  );
+
   return (
     <div className="flex h-full flex-col bg-transparent">
       <PageHeader
@@ -318,6 +324,7 @@ export default function Contest() {
 
       {loading ? (
         <div className="flex-1 overflow-y-auto p-3">
+          {dateTabs}
           <div className="flex flex-col gap-3 pt-4">
             <SkeletonCard rows={3} />
             <SkeletonCard rows={2} />
@@ -342,8 +349,8 @@ export default function Contest() {
               })}
             </div>
           )}
+          {dateTabs}
           <div className="mb-4">
-            <ContestDateTabs value={activeTab} onChange={setActiveTab} />
             {showQuickStats && appMode === 'full' && (
               <ContestSummaryGrid
                 visibleCount={filteredContestsByTab.length}
