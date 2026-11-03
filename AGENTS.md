@@ -1,91 +1,109 @@
 # PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-05-23
-**Commit:** f4ac762
-**Branch:** main
+**Stack:** Electron 30 + React 18 + TypeScript strict + Zustand + Tailwind CSS 4
+**Package manager:** Bun
+**Desktop target:** Windows, macOS, Linux
 
 ## OVERVIEW
 
-OJFlow is an Electron desktop app for competitive programmers. It aggregates contests, ratings, and solved-problem statistics from 10 Online Judge platforms (Codeforces, AtCoder, LeetCode, Luogu, Nowcoder, HDU, POJ, VJudge, QOJ, Lanqiao) into a single dashboard. Built with Electron 30 + Vue 3 + TypeScript (strict mode) + Naive UI.
+OJFlow aggregates upcoming contests, ratings, solved counts, Codeforces problem
+search and Codeforces reports from multiple online judge platforms.
+
+The renderer is a React application. Vue, Pinia, Naive UI and Vue Router were
+removed during the migration tracked in `migration-report.md`. Do not add new
+Vue files or use Vue-era commands from old documents.
 
 ## STRUCTURE
 
-```
-OJFlow/
-├── src/                  # Vue 3 renderer process (views, components, stores, services)
-├── electron/             # Electron main process (IPC handlers, platform adapters, caching)
-├── shared/               # Types + IPC channel definitions shared between processes
-├── tests/                # Unit (Bun test) + E2E (Playwright) tests
-├── docs/                 # PRD, design docs, release guide
-├── reference/            # Reference implementations (oj_helper, OJFlow)
-├── .github/workflows/    # CI/CD (release.yml - build matrix for Win/Mac/Linux)
-├── index.html            # Vite entry HTML
-├── vite.config.ts        # Vite config (base: './', echarts chunking)
-├── tsconfig.json         # Renderer TypeScript (ESNext, strict)
-├── tsconfig.electron.json # Main process TypeScript (ES2022, CommonJS)
-└── eslint.config.js      # Flat config: TypeScript-ESLint + Vue + Prettier
+```text
+src/                  React renderer
+electron/             Electron main process, preload and platform adapters
+shared/               IPC contracts, domain types and persistent-store schema
+tests/unit/           Bun unit and interaction tests
+tests/e2e/            Playwright Electron tests
+scripts/              Developer and test-runner scripts
+docs/                 Product, design and release documentation
+reference/oj_helper/  Original Flutter reference implementation
 ```
 
-## WHERE TO LOOK
+## IMPORTANT FILES
 
-| Task | Location | Notes |
-|------|----------|-------|
-| Add new OJ platform | `electron/services/adapters/` | Implement `PlatformAdapter` interface, register in `index.ts` |
-| Add IPC channel | `shared/ipc-channels.ts` | Add to `IPC_CHANNELS` + `IpcHandlerMap`, then handler in `electron/main.ts` |
-| Add Vue page | `src/views/` + `src/router/index.ts` | Create component, add route |
-| Add Pinia store | `src/stores/` | Use `defineStore` with Composition API |
-| Modify contest logic | `src/utils/contest_utils.ts` | Date formatting, filtering |
-| Change platform icons | `src/utils/platform-icons.ts` | Map platform name to icon component |
-| Update rating colors | `src/utils/rating-colors.ts` | Color thresholds for rating display |
-| Modify cache TTL | `electron/services/cache-service.ts` | Currently: contests 2h, ratings 6h, solved 12h |
-| Change build config | `package.json` → `"build"` | electron-builder settings |
+| Task | Location |
+|------|----------|
+| Add an OJ adapter | `electron/services/adapters/`, register in `index.ts` |
+| Add an IPC channel | `shared/ipc-channels.ts`, `electron/preload.ts`, `electron/main.ts` |
+| Change typed renderer API | `electron/preload.ts`, `src/types/global.d.ts` |
+| Change contest state | `src/stores/contest.ts` |
+| Change UI mode/theme/features | `src/stores/ui.ts`, `src/views/Settings.tsx` |
+| Change design tokens | `src/styles/theme.css` |
+| Change Codeforces APIs | `electron/services/codeforces-service.ts` |
+| Change cache TTL | `electron/services/cache-service.ts` |
+| Change routes | `src/router.tsx` |
+| Change window/tray/update behavior | `electron/main.ts`, `electron/services/tray.ts` |
 
-## ANTI-PATTERNS (THIS PROJECT)
+## ARCHITECTURE RULES
 
-- **NEVER** expose `ipcRenderer` directly to renderer — always use typed `window.api.*` via `preload.ts`
-- **NEVER** use `console.log` in production — only `console.warn` and `console.error` allowed (ESLint enforced)
-- **NEVER** use `as any` or `@ts-ignore` — TypeScript strict mode is enforced
-- **NEVER** commit build artifacts (`dist/`, `electron-dist/`, `release/`) — they should be gitignored
-- **ALWAYS** use `<script setup>` in Vue components — no Options API
-- **ALWAYS** stub Naive UI components in unit tests — keep tests focused on logic
+- Keep `nodeIntegration: false` and `contextIsolation: true`.
+- Never expose `ipcRenderer`; expose focused methods through `electron/preload.ts`.
+- Keep all network access and HTML parsing in the Electron main process.
+- Use HTTP(S) validation before opening external URLs or downloads.
+- Cache-first contest loading must stream fresh platform results to the renderer.
+- UI preferences are persisted in `electron-store` with localStorage fallback.
+- `appMode` is `simple` or `full`; themes are `ocean` or `ember`; color mode is
+  `auto`, `light` or `dark`.
+- Feature flags live in `UserConfig.ui.features` and must have a working Settings
+  control.
 
-## CONVENTIONS
+## TEST REQUIREMENTS
 
-- **Formatter**: Prettier — `singleQuote`, `trailingComma: all`, `printWidth: 100`, `tabWidth: 2`, `endOfLine: lf`
-- **Linter**: ESLint flat config — TypeScript-ESLint + Vue plugin + Prettier integration
-- **TypeScript**: Strict mode in both renderer and electron tsconfigs
-- **Vue**: Composition API with `<script setup>` exclusively
-- **Package Manager**: Bun (preferred) — `bun.lock` present
-- **Tests**: Bun test runner (`bun:test`) for unit, Playwright for E2E
+Every module and user-visible function must have a test. Do not consider work
+complete until all of these pass:
+
+```bash
+bun run type-check
+bun run lint
+bun run format:check
+bun run test:unit
+bun run test:e2e
+bun run build
+```
+
+`test:unit` runs each unit file in an isolated Bun process. This is deliberate:
+Bun module mocks leak across files in a shared process. Add new unit tests under
+`tests/unit/`; do not point Bun at the repository root because `reference/`
+contains unrelated tests.
+
+E2E runs against `dist/` with `NODE_ENV=test`. `test:e2e` compiles the main
+process to `electron-dist/` before launching Playwright; both `dist/` and
+`electron-dist/` are generated outputs and must not be committed.
+
+## CODE STYLE
+
+- Prettier: single quotes, trailing commas, width 100, 2 spaces, LF.
+- TypeScript strict mode is mandatory.
+- Do not use `as any` or `@ts-ignore`.
+- Production logs may use `console.warn` and `console.error`; do not add
+  `console.log`.
+- React components use function components and hooks. No Options API patterns.
+- Prefer shared contracts over local casts.
 
 ## COMMANDS
 
 ```bash
-# Development
-bun run dev                    # Build electron TS + start Vite + launch Electron
-
-# Build
-bun run build                  # Vite frontend build
-bun run build:electron         # TypeScript compile electron/ to electron-dist/
-bun run dist                   # Full production build (electron TS + vite + electron-builder)
-
-# Quality
-bun run lint                   # ESLint check
-bun run lint:fix               # ESLint auto-fix
-bun run format                 # Prettier format
-bun run type-check             # vue-tsc + tsc for both configs
-
-# Tests
-bun run test:unit              # Bun test (tests/unit/)
-bun run test:e2e               # Playwright (tests/e2e/)
+bun run dev
+bun run build
+bun run build:electron
+bun run dist
+bun run type-check
+bun run lint
+bun run format
+bun run format:check
+bun run test:unit
+bun run test:e2e
 ```
 
 ## NOTES
 
-- `electron-dist/` is committed to repo (unusual) — contains compiled main.js for E2E tests
-- `package_old.json` is a leftover file — can be removed
-- `vue-router` uses v5.x (newer than typical Vue 3 v4.x)
-- `release/` directory contains packaged binaries — should be gitignored
-- `.qoder/repowiki/` contains internal documentation wiki content
-- Cache-first strategy: return cached data immediately, refresh in background
-- Streaming contests: partial results sent to renderer via `CONTESTS_PARTIAL` IPC channel
+- The runtime ECharts vendor chunk is intentionally split from the app chunk.
+- `reference/` is ignored by Git and must not be treated as application code.
+- Old docs may mention Vue; use this file and current source as the source of truth.

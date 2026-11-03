@@ -1,72 +1,44 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Project
 
-## Project Overview
+OJFlow is an Electron 30 desktop client for competitive programmers. The current
+renderer is React 18 + TypeScript + Zustand + Tailwind CSS 4. Vue/Pinia/Naive UI
+are legacy and must not be reintroduced.
 
-OJFlow is a cross-platform Electron desktop app for competitive programmers. It aggregates contests, ratings, and solved-problem statistics from 10 Online Judge platforms (Codeforces, AtCoder, LeetCode, Luogu, Nowcoder, HDU, POJ, VJudge, QOJ, Lanqiao) into a single dashboard. Built with Electron 30 + Vue 3 + TypeScript (strict mode) + Naive UI.
+## Commands
 
-## Common Commands
-
-**Development**: `bun run dev` (builds electron TS + starts Vite dev server on port 5173 + launches Electron)
-
-**Build**:
-- `bun run build` — Vite frontend build to `dist/`
-- `bun run build:electron` — TypeScript compile `electron/` to `electron-dist/`
-- `bun run dist` — Full production build (electron TS + vite + electron-builder)
-- `bun run dist:win` / `dist:mac` / `dist:linux` — Platform-specific builds
-
-**Testing**:
-- `bun run test:unit` — Unit tests via `bun test tests/unit`
-- `bun run test:e2e` — E2E tests via Playwright
-- Single test file: `bun test tests/unit/contest_utils.test.ts` (pass any test file path)
-
-**Linting/Formatting**:
-- `bun run lint` / `bun run lint:fix` — ESLint on src/, electron/, shared/, tests/
-- `bun run format` — Prettier
-- `bun run type-check` — vue-tsc + tsc for both renderer and electron configs
-
-Package manager: Bun (preferred). Registry configured to npmmirror.com via `.bunfig.toml`. Node >= 18, Bun >= 1.0.
+```bash
+bun run dev
+bun run build
+bun run build:electron
+bun run type-check
+bun run lint
+bun run format
+bun run format:check
+bun run test:unit
+bun run test:e2e
+```
 
 ## Architecture
 
-The app uses a classic Electron two-process architecture with three code areas:
+- `src/`: React renderer, Zustand stores, typed service wrappers and settings UI.
+- `electron/`: main process, preload bridge, adapters, caching, tray and updater.
+- `shared/`: IPC contracts, domain types and `electron-store` schema.
+- `tests/unit/`: Bun tests, run one file per process to isolate module mocks.
+- `tests/e2e/`: Playwright Electron tests against `dist/`.
 
-- **`src/`** — Vue 3 renderer process (views, components, Pinia stores, composables)
-- **`electron/`** — Electron main process (window management, IPC handlers, platform adapters, caching, tray)
-- **`shared/`** — Types, IPC channel definitions (`ipc-channels.ts`), and store schema shared between both processes
+## Completion Gate
 
-Each area has its own TypeScript config: `tsconfig.json` (renderer, ESNext) and `tsconfig.electron.json` (main process, CommonJS output to `electron-dist/`).
+Every module and user-visible function must be tested. Work is not complete
+until `type-check`, `lint`, `format:check`, `test:unit`, `test:e2e` and `build`
+all pass.
 
-Vite is configured with `base: './'` (relative asset paths, required for Electron file:// protocol). ECharts and zrender are split into a separate `echarts-vendor` chunk. `build:electron` also copies `electron/app.config.json` to `electron-dist/` — if you change that config, re-run `bun run build:electron`.
+## Key Rules
 
-### Platform Adapter Pattern
-
-Each OJ platform implements the `PlatformAdapter` interface from `electron/services/adapters/types.ts`. `BaseAdapter` provides shared Axios HTTP + Cheerio HTML parsing + error classification. Adapters are registered as singletons in `adapters/index.ts`. Aggregator services (`contest-aggregator.ts`, `rating-aggregator.ts`, `solved-aggregator.ts`) fire all adapters in parallel via `Promise.allSettled`. Adding a new platform means creating a new adapter file, implementing the interface, and registering it.
-
-### IPC Boundary
-
-`preload.ts` exposes whitelisted `window.api` and `window.store` to the renderer via `contextBridge`. Channel names and typed handler signatures are defined in `shared/ipc-channels.ts`. Renderer services in `src/services/` call `window.api.*` to reach the main process.
-
-### Caching & Request Deduplication
-
-Main process uses a TTL-based cache (contests: 2h, ratings: 6h, solved: 12h). Cached data is returned immediately while a background refresh is triggered. `request-dedup.ts` prevents concurrent duplicate fetches for the same data.
-
-### Streaming Contests
-
-The contest aggregator sends partial results to the renderer via `win.webContents.send(CONTESTS_PARTIAL, ...)` as each platform responds, enabling progressive UI updates.
-
-### State Management
-
-Two Pinia stores: `ui` (theme scheme: ocean/violet, color mode: auto/light/dark) and `contest` (contests, favorites, platform selection, crawl days). Theme uses CSS custom properties defined in `electron/app.config.json`.
-
-## Code Style
-
-- Prettier: singleQuote, trailingComma: all, printWidth: 100, tabWidth: 2, LF line endings, arrowParens: avoid, no Vue script/style indent
-- ESLint (flat config): `no-console` warns (except `console.warn`/`error`), `no-explicit-any` warns, `vue/multi-word-component-names` off
-- Vue components use `<script setup>` Composition API exclusively
-- TypeScript strict mode enforced in all three tsconfig files
-
-## Release Process
-
-Bump version in `package.json`, commit, push, then create and push a `v*` tag. GitHub Actions (`.github/workflows/release.yml`) builds for Windows/macOS/Linux and creates a draft GitHub Release.
+- Use typed `window.api`; never expose `ipcRenderer`.
+- Keep network/parsing in the main process.
+- Validate URLs, store keys and IPC inputs.
+- Use CSS variables in `src/styles/theme.css`; no hard-coded accent colors.
+- Preserve simple/full mode, auto/light/dark mode and ocean/ember accent options.
+- Use accessible names/tooltips on icon-only controls.
