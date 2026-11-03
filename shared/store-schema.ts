@@ -2,6 +2,7 @@ import type {
   AppFeatures,
   AppMode,
   LocalePreference,
+  PracticeProblem,
   ScheduleItem,
   SurfaceStyle,
   ThemeScheme,
@@ -73,6 +74,11 @@ export interface UserConfig {
 
   /** User-created dashboard schedule */
   schedule: ScheduleItem[];
+
+  /** Problems imported from Competitive Companion */
+  practice: {
+    problems: PracticeProblem[];
+  };
 
   /** Internal: migration flag */
   _migrated?: boolean;

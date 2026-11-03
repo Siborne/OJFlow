@@ -74,6 +74,7 @@ describe('electron store schema defaults', () => {
     expect(store.get('contest.showEmptyDay')).toBe(false);
     expect(store.get('notification.reminderMinutes')).toBe(15);
     expect(store.get('schedule')).toEqual([]);
+    expect(store.get('practice.problems')).toEqual([]);
     expect(FakeElectronStore.last).toBeDefined();
   });
 });

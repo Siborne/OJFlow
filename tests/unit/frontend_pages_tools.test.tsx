@@ -227,6 +227,20 @@ describe('Solved count page', () => {
     expect(localStorage.getItem('solved_results')).toContain('42');
     await click(view.container.querySelector('[aria-label="打开 Codeforces 题库"]'));
     expect(opened).toContain('https://codeforces.com/problemset');
+
+    await click(view.container.querySelector('[aria-label="查看 牛客 用户名说明"]'));
+    expect(view.container.textContent).toContain('编辑资料');
+    await click(findButton(view.container, '知道了'));
+
+    await click(view.container.querySelector('[aria-label="查看 力扣 用户名说明"]'));
+    expect(view.container.textContent).toContain('昵称下方的灰色文字');
+    await click(findButton(view.container, '知道了'));
+
+    await click(view.container.querySelector('[aria-label="查看 蓝桥云课 用户名说明"]'));
+    expect(view.container.textContent).toContain('实验性功能，访问很慢');
+    expect(view.container.textContent).toContain('地址栏 /users/ 后即为 ID');
+    await click(findButton(view.container, '知道了'));
+    expect(view.container.querySelector('[data-testid="solved-help-dialog"]')).toBeNull();
     await view.unmount();
   });
 

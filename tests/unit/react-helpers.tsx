@@ -33,10 +33,14 @@ export async function click(element: Element | null): Promise<void> {
   });
 }
 
-export async function type(input: HTMLInputElement, value: string): Promise<void> {
+export async function type(
+  input: HTMLInputElement | HTMLTextAreaElement,
+  value: string,
+): Promise<void> {
   await act(async () => {
     input.focus();
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    const prototype = Object.getPrototypeOf(input) as object;
+    const setter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
     setter?.call(input, value);
     Simulate.change(input, { target: { value } } as never);
   });

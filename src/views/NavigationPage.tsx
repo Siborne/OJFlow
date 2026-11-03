@@ -6,6 +6,7 @@ import {
   CalendarDays,
   CircleCheckBig,
   FileChartColumn,
+  Inbox,
   LayoutDashboard,
   LibraryBig,
   Settings,
@@ -36,6 +37,13 @@ const NAV_ITEMS: NavItem[] = [
     labelKey: 'nav.dashboard',
     icon: LayoutDashboard,
     path: '/dashboard',
+    section: 'explore',
+  },
+  {
+    key: 'practice',
+    labelKey: 'nav.practice',
+    icon: Inbox,
+    path: '/practice',
     section: 'explore',
   },
   {

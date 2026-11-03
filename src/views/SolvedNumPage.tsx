@@ -1,9 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BarChart3, HelpCircle, LibraryBig, PieChart, RefreshCw, Search, X } from 'lucide-react';
+import {
+  BarChart3,
+  CircleAlert,
+  HelpCircle,
+  Info,
+  LibraryBig,
+  PieChart,
+  RefreshCw,
+  Search,
+  X,
+} from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { DataDonut } from '@/components/dashboard/DataDonut';
 import { Button } from '@/components/ui/button';
-import { useI18n } from '@/i18n';
+import { cn } from '@/lib/utils';
+import { useI18n, type MessageKey } from '@/i18n';
 import { ContestService } from '@/services/contest';
 import { SolvedNumService } from '@/services/solved';
 import { getPlatformLabel } from '@/utils/platform-labels';
@@ -175,7 +186,13 @@ function splitUsers(value: string): string[] {
     .filter(Boolean);
 }
 
-function PlatformCard({ config }: { config: PlatformConfig }) {
+function PlatformCard({
+  config,
+  onShowHelp,
+}: {
+  config: PlatformConfig;
+  onShowHelp: (config: PlatformConfig) => void;
+}) {
   const { t, locale } = useI18n();
   const [username, setUsername] = useState(() => loadSavedUsernames()[config.name] || '');
   const [result, setResult] = useState<SolvedResult | null>(
@@ -237,7 +254,9 @@ function PlatformCard({ config }: { config: PlatformConfig }) {
     if (username.trim()) void query();
   }, [query, username]);
 
-  const hasSpecialHelp = config.name === '牛客' || config.name === '蓝桥云课';
+  const hasSpecialHelp =
+    config.name === '牛客' || config.name === '蓝桥云课' || config.name === '力扣';
+  const helpIsWarning = config.name === '蓝桥云课';
   const platformName = getPlatformLabel(config.name, locale);
 
   return (
@@ -253,16 +272,17 @@ function PlatformCard({ config }: { config: PlatformConfig }) {
         {hasSpecialHelp && (
           <button
             type="button"
-            onClick={() => {
-              void ContestService.openUrl(
-                config.name === '牛客'
-                  ? 'https://ac.nowcoder.com/acm/home'
-                  : 'https://www.lanqiao.cn/users/',
-              );
-            }}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--nav-hover-bg)] hover:text-[var(--color-primary)]"
+            onClick={() => onShowHelp(config)}
+            className={cn(
+              'flex h-7 w-7 items-center justify-center rounded-full hover:bg-[var(--nav-hover-bg)]',
+              helpIsWarning
+                ? 'text-[var(--color-error)]'
+                : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]',
+            )}
+            title={t('solved.helpAria', { platform: platformName })}
+            aria-label={t('solved.helpAria', { platform: platformName })}
           >
-            <HelpCircle size={16} />
+            {helpIsWarning ? <CircleAlert size={17} /> : <HelpCircle size={16} />}
           </button>
         )}
         <button
@@ -382,6 +402,7 @@ function PlatformCard({ config }: { config: PlatformConfig }) {
 
 export default function SolvedNumPage() {
   const { t, locale } = useI18n();
+  const [helpPlatform, setHelpPlatform] = useState<PlatformConfig | null>(null);
   const [pieData, setPieData] = useState<{
     platforms: { name: string; solved: number; color: string }[];
   } | null>(null);
@@ -449,7 +470,7 @@ export default function SolvedNumPage() {
       <div className="flex-1 overflow-y-auto p-3">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           {PLATFORMS.map(platform => (
-            <PlatformCard key={platform.name} config={platform} />
+            <PlatformCard key={platform.name} config={platform} onShowHelp={setHelpPlatform} />
           ))}
         </div>
       </div>
@@ -540,6 +561,66 @@ export default function SolvedNumPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {helpPlatform && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setHelpPlatform(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="solved-help-title"
+            data-testid="solved-help-dialog"
+            className="glass-panel relative z-10 w-full max-w-lg rounded-[var(--radius-xl)] border border-[var(--card-border)] p-6 shadow-[var(--shadow-3)]"
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className={cn(
+                  'flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px]',
+                  helpPlatform.name === '蓝桥云课'
+                    ? 'bg-[var(--color-error-weak)] text-[var(--color-error)]'
+                    : 'bg-[var(--color-primary-weak)] text-[var(--color-primary)]',
+                )}
+              >
+                {helpPlatform.name === '蓝桥云课' ? <CircleAlert size={22} /> : <Info size={22} />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3
+                  id="solved-help-title"
+                  className="text-xl font-[740] tracking-[-0.03em] text-[var(--color-text)]"
+                >
+                  {t(helpPlatform.name === '蓝桥云课' ? 'solved.helpWarning' : 'solved.helpTip')}
+                </h3>
+                <div className="mt-1 text-xs font-semibold text-[var(--color-text-muted)]">
+                  {getPlatformLabel(helpPlatform.name, locale)}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHelpPlatform(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--nav-hover-bg)] hover:text-[var(--color-text)]"
+                aria-label={t('common.close')}
+              >
+                <X size={17} />
+              </button>
+            </div>
+            <p className="mt-5 whitespace-pre-line text-sm leading-7 text-[var(--color-text)]">
+              {t(
+                (helpPlatform.name === '蓝桥云课'
+                  ? 'solved.helpLanqiao'
+                  : helpPlatform.name === '牛客'
+                    ? 'solved.helpNowcoder'
+                    : 'solved.helpLeetcode') as MessageKey,
+              )}
+            </p>
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => setHelpPlatform(null)}>{t('solved.helpClose')}</Button>
+            </div>
           </div>
         </div>
       )}

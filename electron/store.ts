@@ -45,6 +45,9 @@ const defaults: UserConfig = {
     reminderMinutes: 15,
   },
   schedule: [],
+  practice: {
+    problems: [],
+  },
 };
 
 const testConfigCwd =

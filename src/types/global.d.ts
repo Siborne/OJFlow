@@ -4,7 +4,10 @@ import type {
   ContestsPartialPayload,
   ProblemSearchRequest,
   ProblemSearchResult,
+  PracticeProblem,
+  PracticeProblemUpdate,
   RawContest,
+  CompanionStatus,
 } from '../../shared/types';
 
 declare global {
@@ -18,6 +21,15 @@ declare global {
     onRefreshContestsRequested(callback: () => void): () => void;
     searchProblems(payload: ProblemSearchRequest): Promise<ProblemSearchResult>;
     getCodeforcesReport(handle: string): Promise<CodeforcesReport>;
+    listPracticeProblems(): Promise<PracticeProblem[]>;
+    updatePracticeProblem(
+      id: string,
+      updates: PracticeProblemUpdate,
+    ): Promise<PracticeProblem | null>;
+    deletePracticeProblem(id: string): Promise<boolean>;
+    getCompanionStatus(): Promise<CompanionStatus>;
+    onPracticeImported(callback: (problem: PracticeProblem) => void): () => void;
+    copyText(text: string): Promise<void>;
     clearCache(): Promise<void>;
     minimizeWindow(): Promise<void>;
     toggleMaximizeWindow(): Promise<void>;

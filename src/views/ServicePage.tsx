@@ -1,7 +1,15 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
-import { Archive, ChevronRight, Trophy, BarChart3, FileText, LibraryBig } from 'lucide-react';
+import {
+  Archive,
+  ChevronRight,
+  Trophy,
+  BarChart3,
+  FileText,
+  Inbox,
+  LibraryBig,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/ui';
 import type { AppFeatures } from '../../shared/types';
@@ -29,6 +37,15 @@ const ALL_SERVICES: ServiceItem[] = [
     iconColor: '#0f766e',
     available: true,
     feature: 'enableProblemSearch',
+  },
+  {
+    titleKey: 'service.practiceTitle',
+    descKey: 'service.practiceDesc',
+    path: '/practice',
+    icon: Inbox,
+    iconBg: 'linear-gradient(135deg, #e0f2fe 0%, #7dd3fc 100%)',
+    iconColor: '#0369a1',
+    available: true,
   },
   {
     titleKey: 'service.solvedTitle',

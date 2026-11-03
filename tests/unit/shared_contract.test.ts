@@ -76,6 +76,7 @@ describe('URL and store key security', () => {
     expect(isAllowedStoreKey('ui.features')).toBe(true);
     expect(isAllowedStoreKey('ui.closeBehavior')).toBe(true);
     expect(isAllowedStoreKey('schedule')).toBe(true);
+    expect(isAllowedStoreKey('practice.problems')).toBe(true);
     expect(isAllowedStoreKey('contest.selectedPlatforms')).toBe(true);
     expect(isAllowedStoreKey('cache.ratings.Codeforces:user')).toBe(true);
     expect(isAllowedStoreKey('__proto__.polluted')).toBe(false);

@@ -29,6 +29,7 @@ describe('application shell', () => {
     expect(root.path).toBe('/');
     expect(root.children?.map(route => route.path).filter(Boolean)).toEqual([
       'dashboard',
+      'practice',
       'contest',
       'star',
       'problems',

@@ -5,6 +5,9 @@ import type {
   ContestsPartialPayload,
   ProblemSearchRequest,
   ProblemSearchResult,
+  PracticeProblem,
+  PracticeProblemUpdate,
+  CompanionStatus,
 } from '../shared/types';
 
 // Only expose whitelisted APIs, never expose ipcRenderer directly
@@ -45,6 +48,31 @@ const api = {
 
   getCodeforcesReport: (handle: string): Promise<CodeforcesReport> =>
     ipcRenderer.invoke(IPC_CHANNELS.GET_CF_REPORT, handle),
+
+  listPracticeProblems: (): Promise<PracticeProblem[]> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LIST_PRACTICE_PROBLEMS),
+
+  updatePracticeProblem: (
+    id: string,
+    updates: PracticeProblemUpdate,
+  ): Promise<PracticeProblem | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.UPDATE_PRACTICE_PROBLEM, id, updates),
+
+  deletePracticeProblem: (id: string): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.DELETE_PRACTICE_PROBLEM, id),
+
+  getCompanionStatus: (): Promise<CompanionStatus> =>
+    ipcRenderer.invoke(IPC_CHANNELS.GET_COMPANION_STATUS),
+
+  onPracticeImported: (callback: (problem: PracticeProblem) => void): (() => void) => {
+    const handler = (_event: unknown, problem: PracticeProblem) => callback(problem);
+    ipcRenderer.on(IPC_CHANNELS.PRACTICE_IMPORTED, handler);
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.PRACTICE_IMPORTED, handler);
+    };
+  },
+
+  copyText: (text: string): Promise<void> => ipcRenderer.invoke(IPC_CHANNELS.COPY_TEXT, text),
 
   clearCache: (): Promise<void> => ipcRenderer.invoke(IPC_CHANNELS.CLEAR_CACHE),
 

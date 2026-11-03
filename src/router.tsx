@@ -13,6 +13,7 @@ const RatingPage = lazy(() => import('./views/RatingPage'));
 const SolvedNumPage = lazy(() => import('./views/SolvedNumPage'));
 const ContestArchivePage = lazy(() => import('./views/ContestArchivePage'));
 const CfpReportPage = lazy(() => import('./views/CfpReportPage'));
+const PracticeInboxPage = lazy(() => import('./views/PracticeInboxPage'));
 
 function LazyRoute({ children }: { children: React.ReactNode }) {
   return (
@@ -39,6 +40,14 @@ export const router = createHashRouter([
         element: (
           <LazyRoute>
             <DashboardPage />
+          </LazyRoute>
+        ),
+      },
+      {
+        path: 'practice',
+        element: (
+          <LazyRoute>
+            <PracticeInboxPage />
           </LazyRoute>
         ),
       },

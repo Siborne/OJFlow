@@ -295,7 +295,7 @@ describe('Navigation page', () => {
     const full = await renderWithRouter('/contest', [...routes]);
     expect(full.container.textContent).toContain('题目');
     await act(async () => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: '3', ctrlKey: true }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: '4', ctrlKey: true }));
       await flushPromises();
     });
     expect(full.container.textContent).toContain('STAR CONTENT');

@@ -59,6 +59,11 @@ describe('preload bridge', () => {
     await api().installUpdate('https://example.com/app.exe');
     await api().searchProblems({ query: 'dp' });
     await api().getCodeforcesReport('tourist');
+    await api().listPracticeProblems();
+    await api().updatePracticeProblem('p1', { status: 'practicing' });
+    await api().deletePracticeProblem('p1');
+    await api().getCompanionStatus();
+    await api().copyText('sample');
     await api().clearCache();
     await api().minimizeWindow();
     await api().toggleMaximizeWindow();
@@ -84,6 +89,14 @@ describe('preload bridge', () => {
     expect(invokes).toContainEqual({
       channel: IPC_CHANNELS.STORE_SET,
       args: ['ui.appMode', 'full'],
+    });
+    expect(invokes).toContainEqual({
+      channel: IPC_CHANNELS.UPDATE_PRACTICE_PROBLEM,
+      args: ['p1', { status: 'practicing' }],
+    });
+    expect(invokes).toContainEqual({
+      channel: IPC_CHANNELS.COPY_TEXT,
+      args: ['sample'],
     });
     expect(invokes).toContainEqual({ channel: IPC_CHANNELS.WINDOW_MINIMIZE, args: [] });
     expect(invokes).toContainEqual({ channel: IPC_CHANNELS.WINDOW_CLOSE, args: [] });
@@ -127,5 +140,18 @@ describe('preload bridge', () => {
     expect(states).toEqual([{ maximized: true }]);
     unsubscribe();
     expect(listeners.get(IPC_CHANNELS.WINDOW_STATE_CHANGED)?.size).toBe(0);
+  });
+
+  test('subscribes and unsubscribes practice import events', () => {
+    const imported: unknown[] = [];
+    const unsubscribe = api().onPracticeImported((problem: unknown) =>
+      imported.push(problem),
+    ) as () => void;
+    for (const listener of listeners.get(IPC_CHANNELS.PRACTICE_IMPORTED) ?? []) {
+      listener({}, { id: 'p1', name: 'A' });
+    }
+    expect(imported).toEqual([{ id: 'p1', name: 'A' }]);
+    unsubscribe();
+    expect(listeners.get(IPC_CHANNELS.PRACTICE_IMPORTED)?.size).toBe(0);
   });
 });

@@ -184,6 +184,42 @@ export interface ScheduleItem {
   autoCreated?: boolean;
 }
 
+export type PracticeStatus = 'inbox' | 'practicing' | 'review' | 'solved';
+
+export interface PracticeSample {
+  input: string;
+  output: string;
+}
+
+export interface PracticeProblem {
+  id: string;
+  name: string;
+  group: string;
+  url: string;
+  source: string;
+  status: PracticeStatus;
+  notes: string;
+  samples: PracticeSample[];
+  timeLimitMs?: number;
+  memoryLimitMb?: number;
+  createdAt: number;
+  updatedAt: number;
+  startedAt?: number;
+  solvedAt?: number;
+  reviewAt?: number;
+}
+
+export interface PracticeProblemUpdate {
+  status?: PracticeStatus;
+  notes?: string;
+  reviewAt?: number | null;
+}
+
+export interface CompanionStatus {
+  running: boolean;
+  port: number | null;
+}
+
 export interface AppFeatures {
   liveContestUpdates: boolean;
   showQuickStats: boolean;

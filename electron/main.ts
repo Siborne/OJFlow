@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron';
+import { app, BrowserWindow, clipboard, ipcMain, shell, dialog } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Readable } from 'node:stream';
@@ -30,7 +30,19 @@ import {
   persistQuerySnapshot,
   waitForQueryDatabase,
 } from './services/query-store';
-import type { ContestFetchResponse, Rating, SolvedNum } from '../shared/types';
+import {
+  deletePracticeProblem,
+  listPracticeProblems,
+  updatePracticeProblem,
+} from './services/practice-service';
+import { startCompanionServer, type CompanionServerHandle } from './services/companion-server';
+import type {
+  CompanionStatus,
+  ContestFetchResponse,
+  PracticeProblemUpdate,
+  Rating,
+  SolvedNum,
+} from '../shared/types';
 
 export function loadDotEnv(dotenvPath: string): void {
   try {
@@ -357,6 +369,8 @@ if (isTest) {
   app.setPath('userData', path.join(app.getPath('temp'), `ojflow-e2e-${process.pid}`));
 }
 let isQuitting = false;
+let companionServer: CompanionServerHandle | null = null;
+let companionStatus: CompanionStatus = { running: false, port: null };
 
 export function getIconPath(): string {
   // Unpackaged runs use the project asset, including production previews with NODE_ENV=test.
@@ -426,6 +440,24 @@ app.whenReady().then(() => {
     console.warn('[query-store] SQLite initialization failed:', error);
   });
   const win = createWindow();
+  if (process.env.OJFLOW_DISABLE_COMPANION_SERVER !== '1') {
+    void startCompanionServer({
+      onImported: problem => {
+        if (!win.isDestroyed()) {
+          win.webContents.send(IPC_CHANNELS.PRACTICE_IMPORTED, problem);
+        }
+      },
+    })
+      .then(server => {
+        companionServer = server;
+        companionStatus = { running: true, port: server.port };
+        console.warn(`[companion] listening on 127.0.0.1:${server.port}`);
+      })
+      .catch(error => {
+        companionStatus = { running: false, port: null };
+        console.warn('[companion] receiver failed to start:', error);
+      });
+  }
   if (store.get('ui.startAtLogin')) {
     app.setLoginItemSettings({
       openAtLogin: true,
@@ -627,6 +659,36 @@ app.whenReady().then(() => {
     return getCodeforcesReport(handle);
   });
 
+  ipcMain.handle(IPC_CHANNELS.LIST_PRACTICE_PROBLEMS, () => {
+    return listPracticeProblems();
+  });
+
+  ipcMain.handle(
+    IPC_CHANNELS.UPDATE_PRACTICE_PROBLEM,
+    (_event, id: string, updates: PracticeProblemUpdate) => {
+      if (typeof id !== 'string' || id.length === 0 || !updates || typeof updates !== 'object') {
+        throw new Error('Invalid practice problem update');
+      }
+      return updatePracticeProblem(id, updates);
+    },
+  );
+
+  ipcMain.handle(IPC_CHANNELS.DELETE_PRACTICE_PROBLEM, (_event, id: string) => {
+    if (typeof id !== 'string' || id.length === 0) {
+      throw new Error('Invalid practice problem id');
+    }
+    return deletePracticeProblem(id);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GET_COMPANION_STATUS, () => companionStatus);
+
+  ipcMain.handle(IPC_CHANNELS.COPY_TEXT, (_event, text: string) => {
+    if (typeof text !== 'string' || text.length > 1_000_000) {
+      throw new Error('Invalid clipboard text');
+    }
+    clipboard.writeText(text);
+  });
+
   ipcMain.handle(IPC_CHANNELS.CLEAR_CACHE, () => {
     clearAllCache();
     clearProblemSearchCache();
@@ -723,6 +785,9 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  void companionServer?.close().catch(() => {});
+  companionServer = null;
+  companionStatus = { running: false, port: null };
   destroyTray();
   if (process.platform !== 'darwin') {
     app.quit();
@@ -731,6 +796,9 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  void companionServer?.close().catch(() => {});
+  companionServer = null;
+  companionStatus = { running: false, port: null };
   destroyTray();
   closeQueryDatabase();
 });

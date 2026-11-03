@@ -3,8 +3,11 @@ import type {
   ContestFetchResponse,
   ProblemSearchRequest,
   ProblemSearchResult,
+  PracticeProblem,
+  PracticeProblemUpdate,
   Rating,
   SolvedNum,
+  CompanionStatus,
 } from './types';
 
 export const IPC_CHANNELS = {
@@ -15,6 +18,11 @@ export const IPC_CHANNELS = {
   UPDATER_INSTALL: 'updater-install',
   SEARCH_PROBLEMS: 'search-problems',
   GET_CF_REPORT: 'get-cf-report',
+  LIST_PRACTICE_PROBLEMS: 'list-practice-problems',
+  UPDATE_PRACTICE_PROBLEM: 'update-practice-problem',
+  DELETE_PRACTICE_PROBLEM: 'delete-practice-problem',
+  GET_COMPANION_STATUS: 'get-companion-status',
+  COPY_TEXT: 'copy-text',
   CLEAR_CACHE: 'clear-cache',
   WINDOW_MINIMIZE: 'window-minimize',
   WINDOW_TOGGLE_MAXIMIZE: 'window-toggle-maximize',
@@ -32,6 +40,7 @@ export const IPC_CHANNELS = {
   // Streaming / push channels
   CONTESTS_PARTIAL: 'contests-partial',
   REFRESH_CONTESTS: 'refresh-contests',
+  PRACTICE_IMPORTED: 'practice-imported',
 
   // Notification
   NOTIFICATION_SET: 'notification-set',
@@ -69,6 +78,26 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.GET_CF_REPORT]: {
     args: [handle: string];
     return: CodeforcesReport;
+  };
+  [IPC_CHANNELS.LIST_PRACTICE_PROBLEMS]: {
+    args: [];
+    return: PracticeProblem[];
+  };
+  [IPC_CHANNELS.UPDATE_PRACTICE_PROBLEM]: {
+    args: [id: string, updates: PracticeProblemUpdate];
+    return: PracticeProblem | null;
+  };
+  [IPC_CHANNELS.DELETE_PRACTICE_PROBLEM]: {
+    args: [id: string];
+    return: boolean;
+  };
+  [IPC_CHANNELS.GET_COMPANION_STATUS]: {
+    args: [];
+    return: CompanionStatus;
+  };
+  [IPC_CHANNELS.COPY_TEXT]: {
+    args: [text: string];
+    return: void;
   };
   [IPC_CHANNELS.CLEAR_CACHE]: {
     args: [];

@@ -20,6 +20,10 @@ let loginItemSettings: { openAtLogin: boolean; path?: string; args?: string[] } 
 let dialogResponse = 1;
 let dialogCalls = 0;
 let mainModule: typeof import('../../electron/main');
+let practiceModule: typeof import('../../electron/services/practice-service');
+let copiedText = '';
+
+process.env.OJFLOW_DISABLE_COMPANION_SERVER = '1';
 
 class FakeElectronStore {
   private data: Record<string, unknown>;
@@ -164,6 +168,11 @@ mock.module('electron', () => ({
       return { response: dialogResponse };
     },
   },
+  clipboard: {
+    writeText: (text: string) => {
+      copiedText = text;
+    },
+  },
   nativeImage: {
     createFromPath: () => ({ resize: () => ({}) }),
   },
@@ -192,6 +201,7 @@ beforeAll(async () => {
     return originalSetTimeout(callback, delay, ...args);
   }) as typeof setTimeout;
   mainModule = await import('../../electron/main');
+  practiceModule = await import('../../electron/services/practice-service');
   await flushPromises();
 });
 
@@ -304,6 +314,37 @@ describe('electron main process wiring', () => {
     }
 
     await expect(invoke('get-cf-report', 'bad/handle' as never)).rejects.toThrow('格式不正确');
+  });
+
+  test('manages the practice inbox and clipboard through IPC', async () => {
+    const imported = practiceModule.importPracticeProblem({
+      name: 'A. Practice Round',
+      group: 'Codeforces Round',
+      url: 'https://codeforces.com/contest/1/problem/A',
+      tests: [{ input: '1 2', output: '3' }],
+    });
+    expect(imported).not.toBeNull();
+
+    const listed = (await invoke(IPC_CHANNELS.LIST_PRACTICE_PROBLEMS)) as Array<{
+      id: string;
+      status: string;
+    }>;
+    expect(listed).toHaveLength(1);
+    expect(listed[0].status).toBe('inbox');
+
+    const updated = (await invoke(IPC_CHANNELS.UPDATE_PRACTICE_PROBLEM, listed[0].id, {
+      status: 'practicing',
+      notes: 'think',
+    })) as { status: string; notes: string };
+    expect(updated).toMatchObject({ status: 'practicing', notes: 'think' });
+
+    await invoke(IPC_CHANNELS.COPY_TEXT, 'sample input');
+    expect(copiedText).toBe('sample input');
+    await expect(invoke(IPC_CHANNELS.GET_COMPANION_STATUS)).resolves.toEqual({
+      running: false,
+      port: null,
+    });
+    await expect(invoke(IPC_CHANNELS.DELETE_PRACTICE_PROBLEM, listed[0].id)).resolves.toBe(true);
   });
 
   test('clears cache and triggers quit cleanup', async () => {

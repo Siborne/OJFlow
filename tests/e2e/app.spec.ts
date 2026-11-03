@@ -139,3 +139,38 @@ test('工作台可以创建并持久化日程', async () => {
   await expect(page.getByRole('button', { name: '恢复待办' })).toBeVisible();
   await app.close();
 });
+
+test('练习收件箱可以接收 Competitive Companion 题目并保存状态', async () => {
+  const { app, page } = await launchApp();
+  await expect
+    .poll(() => page.evaluate(() => window.api.getCompanionStatus()))
+    .toMatchObject({ running: true });
+  const status = await page.evaluate(() => window.api.getCompanionStatus());
+  expect(status.port).toBeTruthy();
+  const response = await fetch(`http://127.0.0.1:${status.port}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'A. E2E Watermelon',
+      group: 'OJFlow E2E Round',
+      url: 'https://codeforces.com/contest/4/problem/A',
+      tests: [{ input: '8\n', output: 'YES\n' }],
+      timeLimit: 1000,
+      memoryLimit: 256,
+    }),
+  });
+  expect(response.ok).toBe(true);
+
+  await page.locator('[data-nav-key="practice"]').click();
+  await expect(page.getByRole('heading', { name: 'A. E2E Watermelon' })).toBeVisible();
+  await expect(page.getByText('YES', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '开始练习' }).click();
+  await expect(page.getByText('练习中', { exact: true }).first()).toBeVisible();
+  await page.getByPlaceholder('记录思路、错误原因、复杂度和下次复习重点...').fill('parity');
+  await page.getByRole('button', { name: '保存笔记' }).click();
+  await page.reload();
+  await page.waitForSelector('.app-bar');
+  await expect(page.getByRole('heading', { name: 'A. E2E Watermelon' })).toBeVisible();
+  await expect(page.locator('textarea')).toHaveValue('parity');
+  await app.close();
+});
