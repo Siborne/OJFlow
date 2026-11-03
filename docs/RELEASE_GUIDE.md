@@ -35,6 +35,9 @@
     git push origin main
     ```
 
+5.  新增 `docs/releases/v<版本号>.md` 发布说明。Release Workflow 会自动读取该文件作为
+    Release 正文；缺少文件时发布步骤会失败，避免生成空白版本说明。
+
 ## 3. 触发发布流程
 
 发布流程通过 **Git Tag** 触发。你需要打一个以 `v` 开头的标签并推送到远程仓库。
@@ -57,9 +60,8 @@ git push origin v1.0.2
 
 1.  进入 GitHub 仓库主页。
 2.  点击右侧的 **Releases**。
-3.  点击 **Draft a new release**。
-4.  点击 **Choose a tag**，输入 `v1.0.2` 并点击 **Create new tag**。
-5.  点击 **Publish release**（这也会触发 Workflow）。
+3.  点击 **Draft a new release**，输入 tag 并创建。
+4.  Workflow 完成后会自动发布并补齐安装包；不建议在 Workflow 完成前手动上传附件。
 
 ## 4. 发布流程自动化说明
 
@@ -67,22 +69,12 @@ git push origin v1.0.2
 
 1.  **构建应用**：在 Windows, macOS, Linux 上同时构建应用。
 2.  **创建 Release**：
-    *   构建完成后，会自动在 GitHub 的 [Releases 页面](https://github.com/Siborne/OJFlow/releases) 创建一个新的 Release（草稿状态）。
+    *   构建完成后，会自动在 GitHub 的 [Releases 页面](https://github.com/Siborne/OJFlow/releases) 创建一个新的正式 Release。
+    *   Release 正文来自 `docs/releases/v<版本号>.md`。
     *   **注意**：不是在 Tags 页面，而是在 Releases 页面。
 3.  **上传附件**：构建生成的安装包（`.exe`, `.dmg`, `.AppImage` 等）会自动上传到该 Release 中。
 
-### 您需要做的后续操作：
-
-1.  等待 GitHub Actions 运行完成（通常需要 5-10 分钟）。
-2.  访问 GitHub 仓库的 **Releases** 页面。
-3.  您会看到一个基于 tag（如 `v1.0.2`）的新 Release，通常标记为 `Draft`（草稿）。
-4.  点击 **Edit** 按钮：
-    *   检查自动生成的 Release Notes（更新日志）。
-    *   确认附件（Assets）中包含了预期的安装包。
-    *   取消勾选 `Set as a pre-release`（如果是正式版）。
-    *   点击 **Publish release** 按钮正式发布。
-
-这样，用户就可以在 Releases 页面直接下载安装包了。
+Workflow 成功后会直接发布正式 Release，用户可以在 Releases 页面下载安装包。
 
 ## 5. 常见问题排查
 
