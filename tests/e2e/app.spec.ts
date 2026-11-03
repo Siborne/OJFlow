@@ -8,7 +8,7 @@ import {
 
 async function launchApp(): Promise<{ app: ElectronApplication; page: Page }> {
   const app = await electron.launch({
-    args: ['electron-dist/electron/main.js'],
+    args: ['--no-sandbox', '--disable-dev-shm-usage', 'electron-dist/electron/main.js'],
     env: {
       ...process.env,
       NODE_ENV: 'test',
