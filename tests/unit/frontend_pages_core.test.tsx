@@ -238,7 +238,7 @@ describe('Service page', () => {
       { path: '/service', element: <ServicePage /> },
       { path: '/problems', element: <div>PROBLEMS ROUTE</div> },
     ]);
-    expect(full.container.textContent).toContain('CCPC/ICPC 获奖');
+    expect(full.container.textContent).toContain('竞赛档案');
     const problemCard = Array.from(full.container.querySelectorAll('[role="button"]')).find(
       element => element.textContent?.includes('题目检索'),
     );
@@ -254,7 +254,7 @@ describe('Service page', () => {
       { path: '/service', element: <ServicePage /> },
     ]);
     expect(simple.container.textContent).toContain('题目检索');
-    expect(simple.container.textContent).not.toContain('CCPC 获奖');
+    expect(simple.container.textContent).not.toContain('竞赛档案');
     expect(simple.container.textContent).not.toContain('CF 年度报告');
     await simple.unmount();
   });

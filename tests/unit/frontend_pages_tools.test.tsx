@@ -8,8 +8,7 @@ import ProblemsPage from '../../src/views/ProblemsPage';
 import RatingPage from '../../src/views/RatingPage';
 import SolvedNumPage from '../../src/views/SolvedNumPage';
 import CfpReportPage from '../../src/views/CfpReportPage';
-import CcpPage from '../../src/views/CcpPage';
-import OierPage from '../../src/views/OierPage';
+import ContestArchivePage from '../../src/views/ContestArchivePage';
 import { useUiStore } from '../../src/stores/ui';
 
 let dom: ReturnType<typeof installDom>;
@@ -24,6 +23,7 @@ afterAll(() => {
 
 beforeEach(() => {
   document.body.innerHTML = '';
+  localStorage.clear();
   installWindowStore();
   installWindowApi();
   resetFrontendStores();
@@ -151,6 +151,32 @@ describe('Rating page', () => {
     expect(view.container.textContent).toContain('2000');
     expect(view.container.textContent).toContain('Expert');
     expect(localStorage.getItem('rating_username_Codeforces')).toBe('tourist');
+    expect(localStorage.getItem('rating_result_Codeforces')).toContain('2000');
+    await view.unmount();
+  });
+
+  test('restores the previous result and refreshes it automatically', async () => {
+    localStorage.setItem('rating_username_Codeforces', 'tourist');
+    localStorage.setItem('rating_last_platform', 'Codeforces');
+    localStorage.setItem(
+      'rating_result_Codeforces',
+      JSON.stringify({
+        result: { name: 'tourist', rating: 2000, maxRating: 2200 },
+        fetchedAt: Date.now() - 60_000,
+      }),
+    );
+    let calls = 0;
+    installWindowApi({
+      getRating: async () => {
+        calls++;
+        return { name: 'tourist', curRating: 2100, maxRating: 2200 };
+      },
+    });
+    const view = await render(<RatingPage />);
+    expect(view.container.textContent).toContain('2000');
+    await waitFor(() => calls >= 1);
+    await waitFor(() => view.container.textContent?.includes('2100') ?? false);
+    expect(view.container.querySelector('input')?.value).toBe('tourist');
     await view.unmount();
   });
 
@@ -198,8 +224,38 @@ describe('Solved count page', () => {
     });
     expect(queried).toEqual(['a', 'b']);
     expect(view.container.textContent).toContain('42');
+    expect(localStorage.getItem('solved_results')).toContain('42');
     await click(view.container.querySelector('[aria-label="打开 Codeforces 题库"]'));
     expect(opened).toContain('https://codeforces.com/problemset');
+    await view.unmount();
+  });
+
+  test('restores saved platform results and auto refreshes them', async () => {
+    localStorage.setItem('solved_usernames', JSON.stringify({ Codeforces: 'tourist' }));
+    localStorage.setItem(
+      'solved_results',
+      JSON.stringify({
+        Codeforces: { result: { solved: 100, users: 1 }, fetchedAt: Date.now() - 60_000 },
+      }),
+    );
+    let calls = 0;
+    let resolveQuery: ((value: { name: string; solvedNum: number }) => void) | undefined;
+    installWindowApi({
+      getSolvedNum: async (_platform, name) => {
+        calls++;
+        return new Promise(resolve => {
+          resolveQuery = value => resolve({ ...value, name });
+        });
+      },
+    });
+    const view = await render(<SolvedNumPage />);
+    expect(view.container.textContent).toContain('100');
+    await waitFor(() => calls >= 1);
+    await act(async () => {
+      resolveQuery?.({ name: 'tourist', solvedNum: 125 });
+      await flushPromises();
+    });
+    await waitFor(() => view.container.textContent?.includes('125') ?? false);
     await view.unmount();
   });
 });
@@ -229,6 +285,7 @@ describe('Codeforces report page', () => {
     expect(view.container.textContent).toContain('动态规划 (8)');
     await view.unmount();
 
+    localStorage.clear();
     installWindowApi({
       getCodeforcesReport: async () => {
         throw new Error('report failed');
@@ -248,23 +305,50 @@ describe('Codeforces report page', () => {
     expect(errorView.container.textContent).toContain('report failed');
     await errorView.unmount();
   });
+
+  test('restores the last report and refreshes it automatically', async () => {
+    localStorage.setItem(
+      'cf_report_state',
+      JSON.stringify({
+        handle: 'tourist',
+        totalSolved: 20,
+        ratingStats: [{ rating: 800, count: 4 }],
+        tagStats: [{ tag: 'dp', count: 3 }],
+        fetchedAt: Date.now() - 60_000,
+      }),
+    );
+    let calls = 0;
+    installWindowApi({
+      getCodeforcesReport: async handle => {
+        calls++;
+        return {
+          handle,
+          totalSolved: 21,
+          ratingStats: [{ rating: 800, count: 5 }],
+          tagStats: [{ tag: 'dp', count: 4 }],
+        };
+      },
+    });
+    const view = await render(<CfpReportPage />);
+    expect(view.container.textContent).toContain('20');
+    await waitFor(() => calls >= 1);
+    await waitFor(() => view.container.textContent?.includes('21') ?? false);
+    await view.unmount();
+  });
 });
 
-describe('external tool pages', () => {
-  test('CCPC and OIER buttons open their services', async () => {
+describe('contest archive page', () => {
+  test('opens both archive services from one page', async () => {
     const opened: string[] = [];
     installWindowApi({
       openUrl: async url => {
         opened.push(url);
       },
     });
-    const ccp = await render(<CcpPage />);
-    await click(findButton(ccp.container, '在浏览器中打开 CPCFinder'));
-    await ccp.unmount();
-
-    const oier = await render(<OierPage />);
-    await click(findButton(oier.container, '在浏览器中打开 OIerDB'));
-    await oier.unmount();
+    const view = await render(<ContestArchivePage />);
+    await click(view.container.querySelector('[data-testid="archive-ccpc"] button'));
+    await click(view.container.querySelector('[data-testid="archive-oier"] button'));
+    await view.unmount();
     expect(opened).toEqual(['https://cpcfinder.com/', 'https://oier.baoshuo.dev/']);
   });
 });

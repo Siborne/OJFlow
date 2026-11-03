@@ -1,15 +1,7 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
-import {
-  ChevronRight,
-  Trophy,
-  BarChart3,
-  Award,
-  GraduationCap,
-  FileText,
-  LibraryBig,
-} from 'lucide-react';
+import { Archive, ChevronRight, Trophy, BarChart3, FileText, LibraryBig } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/ui';
 import type { AppFeatures } from '../../shared/types';
@@ -57,21 +49,10 @@ const ALL_SERVICES: ServiceItem[] = [
     available: true,
   },
   {
-    titleKey: 'service.ccpcTitle',
-    descKey: 'service.ccpcDesc',
-    path: '/ccpc',
-    icon: Award,
-    iconBg: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-    iconColor: '#d97706',
-    available: true,
-    feature: 'enableExternalTools',
-    fullOnly: true,
-  },
-  {
-    titleKey: 'service.oierTitle',
-    descKey: 'service.oierDesc',
-    path: '/oier',
-    icon: GraduationCap,
+    titleKey: 'service.archiveTitle',
+    descKey: 'service.archiveDesc',
+    path: '/archive',
+    icon: Archive,
     iconBg: 'linear-gradient(135deg, #fce7f3 0%, #f9a8d4 100%)',
     iconColor: '#db2777',
     available: true,

@@ -92,7 +92,10 @@ test('简洁模式仅显示图标，完整模式显示分组功能', async () =>
   await expect(page.getByText('数据', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'CF 报告' })).toBeVisible();
   await expect(page.getByRole('button', { name: '解题数' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'OIerDB' })).toBeVisible();
+  await page.getByRole('button', { name: '竞赛档案', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '竞赛档案' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '打开 CPCFinder' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '打开 OIerDB' })).toBeVisible();
   await app.close();
 });
 

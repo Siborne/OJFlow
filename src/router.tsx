@@ -11,8 +11,7 @@ const ServicePage = lazy(() => import('./views/ServicePage'));
 const Settings = lazy(() => import('./views/Settings'));
 const RatingPage = lazy(() => import('./views/RatingPage'));
 const SolvedNumPage = lazy(() => import('./views/SolvedNumPage'));
-const CcpPage = lazy(() => import('./views/CcpPage'));
-const OierPage = lazy(() => import('./views/OierPage'));
+const ContestArchivePage = lazy(() => import('./views/ContestArchivePage'));
 const CfpReportPage = lazy(() => import('./views/CfpReportPage'));
 
 function LazyRoute({ children }: { children: React.ReactNode }) {
@@ -100,20 +99,20 @@ export const router = createHashRouter([
         ),
       },
       {
-        path: 'ccpc',
+        path: 'archive',
         element: (
           <LazyRoute>
-            <CcpPage />
+            <ContestArchivePage />
           </LazyRoute>
         ),
       },
       {
+        path: 'ccpc',
+        element: <Navigate to="/archive" replace />,
+      },
+      {
         path: 'oier',
-        element: (
-          <LazyRoute>
-            <OierPage />
-          </LazyRoute>
-        ),
+        element: <Navigate to="/archive" replace />,
       },
       {
         path: 'cf_report',

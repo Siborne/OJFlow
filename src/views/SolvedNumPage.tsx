@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { BarChart3, HelpCircle, LibraryBig, PieChart, RefreshCw, Search, X } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { DataDonut } from '@/components/dashboard/DataDonut';
@@ -77,6 +77,10 @@ const images: Record<string, string> = {
 };
 
 const STORAGE_KEY = 'solved_usernames';
+const RESULT_STORAGE_KEY = 'solved_results';
+
+type SolvedResult = { solved: number; users: number };
+type SavedSolvedResult = { result: SolvedResult; fetchedAt: number };
 
 function loadSavedUsernames(): Record<string, string> {
   try {
@@ -102,6 +106,68 @@ function saveUsernames(data: Record<string, string>) {
   }
 }
 
+function loadSavedResults(): Record<string, SavedSolvedResult> {
+  try {
+    const raw = localStorage.getItem(RESULT_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed).flatMap(([platform, value]) => {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+        const record = value as Record<string, unknown>;
+        const result = record.result;
+        if (!result || typeof result !== 'object' || Array.isArray(result)) return [];
+        const counts = result as Record<string, unknown>;
+        if (
+          typeof counts.solved !== 'number' ||
+          typeof counts.users !== 'number' ||
+          typeof record.fetchedAt !== 'number'
+        ) {
+          return [];
+        }
+        return [
+          [
+            platform,
+            {
+              result: { solved: counts.solved, users: counts.users },
+              fetchedAt: record.fetchedAt,
+            },
+          ] as const,
+        ];
+      }),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function readSavedResult(platform: string): SavedSolvedResult | null {
+  return loadSavedResults()[platform] ?? null;
+}
+
+function saveSolvedResult(platform: string, result: SolvedResult): number {
+  const fetchedAt = Date.now();
+  const all = loadSavedResults();
+  all[platform] = { result, fetchedAt };
+  try {
+    localStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(all));
+  } catch {
+    // Result persistence is optional.
+  }
+  return fetchedAt;
+}
+
+function clearSavedResult(platform: string): void {
+  const all = loadSavedResults();
+  delete all[platform];
+  try {
+    localStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(all));
+  } catch {
+    // Result persistence is optional.
+  }
+}
+
 function splitUsers(value: string): string[] {
   return value
     .split(';')
@@ -112,12 +178,15 @@ function splitUsers(value: string): string[] {
 function PlatformCard({ config }: { config: PlatformConfig }) {
   const { t, locale } = useI18n();
   const [username, setUsername] = useState(() => loadSavedUsernames()[config.name] || '');
-  const [result, setResult] = useState<{
-    solved: number;
-    users: number;
-    failed?: boolean;
-  } | null>(null);
+  const [result, setResult] = useState<SolvedResult | null>(
+    () => readSavedResult(config.name)?.result ?? null,
+  );
+  const [fetchedAt, setFetchedAt] = useState<number | null>(
+    () => readSavedResult(config.name)?.fetchedAt ?? null,
+  );
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const autoQueryStarted = useRef(false);
 
   const save = useCallback(
     (value: string) => {
@@ -135,21 +204,23 @@ function PlatformCard({ config }: { config: PlatformConfig }) {
       const users = splitUsers(raw);
       if (users.length === 0) return;
       setLoading(true);
-      setResult(null);
+      setError('');
       try {
         let totalSolved = 0;
         for (const user of users) {
           const data = await SolvedNumService.getSolvedNum(config.name, user);
           totalSolved += Math.max(0, data.solvedNum);
         }
-        setResult({ solved: totalSolved, users: users.length });
+        const next = { solved: totalSolved, users: users.length };
+        setResult(next);
+        setFetchedAt(saveSolvedResult(config.name, next));
       } catch {
-        setResult({ solved: 0, users: users.length, failed: true });
+        setError(t('solved.queryFailed'));
       } finally {
         setLoading(false);
       }
     },
-    [config.name, username],
+    [config.name, t, username],
   );
 
   useEffect(() => {
@@ -159,6 +230,12 @@ function PlatformCard({ config }: { config: PlatformConfig }) {
     window.addEventListener('solved-query-all', handler as EventListener);
     return () => window.removeEventListener('solved-query-all', handler as EventListener);
   }, [config.name, query]);
+
+  useEffect(() => {
+    if (autoQueryStarted.current) return;
+    autoQueryStarted.current = true;
+    if (username.trim()) void query();
+  }, [query, username]);
 
   const hasSpecialHelp = config.name === '牛客' || config.name === '蓝桥云课';
   const platformName = getPlatformLabel(config.name, locale);
@@ -216,7 +293,7 @@ function PlatformCard({ config }: { config: PlatformConfig }) {
             value={username}
             onChange={event => {
               save(event.target.value);
-              setResult(null);
+              setError('');
             }}
             onKeyDown={event => {
               if (event.key === 'Enter' && username.trim() && !loading) void query();
@@ -235,6 +312,9 @@ function PlatformCard({ config }: { config: PlatformConfig }) {
               onClick={() => {
                 save('');
                 setResult(null);
+                setFetchedAt(null);
+                setError('');
+                clearSavedResult(config.name);
               }}
               className="absolute right-0 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
             >
@@ -270,19 +350,29 @@ function PlatformCard({ config }: { config: PlatformConfig }) {
           </div>
         )}
 
-        {result && !loading && (
-          <div
-            className={`rounded-md px-3 py-2 text-sm font-medium ${
-              result.failed
-                ? 'bg-[var(--color-warning-weak)] text-[var(--color-warning)]'
-                : 'bg-[var(--color-success-weak)] text-[var(--color-success)]'
-            }`}
-          >
-            {result.failed
-              ? t('solved.queryFailed')
-              : result.users > 1
+        {error && (
+          <div className="mb-2 rounded-md bg-[var(--color-warning-weak)] px-3 py-2 text-sm font-medium text-[var(--color-warning)]">
+            {error}
+          </div>
+        )}
+
+        {result && (
+          <div className="rounded-md bg-[var(--color-success-weak)] px-3 py-2 text-sm font-medium text-[var(--color-success)]">
+            <div>
+              {result.users > 1
                 ? t('solved.resultMulti', { count: result.solved, users: result.users })
                 : t('solved.resultSingle', { count: result.solved })}
+            </div>
+            {fetchedAt && (
+              <div className="mt-0.5 text-[10px] font-normal opacity-75">
+                {t('dashboard.updated', {
+                  time: new Date(fetchedAt).toLocaleTimeString(locale, {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }),
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>

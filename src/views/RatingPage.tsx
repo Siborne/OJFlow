@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Trophy } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { RatingService } from '@/services/rating';
@@ -9,6 +9,33 @@ import { getPlatformLabel } from '@/utils/platform-labels';
 
 const PLATFORMS = ['Codeforces', 'AtCoder', '力扣', '洛谷', '牛客'] as const;
 const STORAGE_PREFIX = 'rating_username_';
+const RESULT_PREFIX = 'rating_result_';
+const LAST_PLATFORM_KEY = 'rating_last_platform';
+
+type RatingPlatform = (typeof PLATFORMS)[number];
+type RatingResult = { rating: number; maxRating: number; name: string };
+type SavedRatingResult = { result: RatingResult; fetchedAt: number };
+
+function isRatingPlatform(value: string | null): value is RatingPlatform {
+  return value !== null && PLATFORMS.includes(value as RatingPlatform);
+}
+
+function readLastPlatform(): RatingPlatform {
+  try {
+    const value = localStorage.getItem(LAST_PLATFORM_KEY);
+    return isRatingPlatform(value) ? value : 'Codeforces';
+  } catch {
+    return 'Codeforces';
+  }
+}
+
+function saveLastPlatform(platform: RatingPlatform): void {
+  try {
+    localStorage.setItem(LAST_PLATFORM_KEY, platform);
+  } catch {
+    // Platform persistence is optional.
+  }
+}
 
 function readSavedUsername(platform: string): string {
   try {
@@ -26,46 +53,102 @@ function saveUsername(platform: string, username: string): void {
   }
 }
 
+function readSavedResult(platform: string): SavedRatingResult | null {
+  try {
+    const raw = localStorage.getItem(`${RESULT_PREFIX}${platform}`);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    const record = parsed as Record<string, unknown>;
+    const result = record.result;
+    if (!result || typeof result !== 'object' || Array.isArray(result)) return null;
+    const rating = result as Record<string, unknown>;
+    if (
+      typeof rating.name !== 'string' ||
+      typeof rating.rating !== 'number' ||
+      typeof rating.maxRating !== 'number' ||
+      typeof record.fetchedAt !== 'number'
+    ) {
+      return null;
+    }
+    return {
+      result: { name: rating.name, rating: rating.rating, maxRating: rating.maxRating },
+      fetchedAt: record.fetchedAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveResult(platform: string, result: RatingResult): number {
+  const fetchedAt = Date.now();
+  try {
+    localStorage.setItem(`${RESULT_PREFIX}${platform}`, JSON.stringify({ result, fetchedAt }));
+  } catch {
+    // Result persistence is optional.
+  }
+  return fetchedAt;
+}
+
 export default function RatingPage() {
   const { t, locale } = useI18n();
-  const [platform, setPlatform] = useState<(typeof PLATFORMS)[number]>('Codeforces');
-  const [username, setUsername] = useState(() => readSavedUsername('Codeforces'));
-  const [result, setResult] = useState<{
-    rating: number;
-    maxRating: number;
-    name: string;
-  } | null>(null);
+  const [platform, setPlatform] = useState<RatingPlatform>(readLastPlatform);
+  const [username, setUsername] = useState(() => readSavedUsername(readLastPlatform()));
+  const initialResult = useMemo(() => readSavedResult(readLastPlatform()), []);
+  const [result, setResult] = useState<RatingResult | null>(initialResult?.result ?? null);
+  const [fetchedAt, setFetchedAt] = useState<number | null>(initialResult?.fetchedAt ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const loadingRef = useRef(false);
+  const autoQueryStarted = useRef(false);
+  const initialPlatform = useRef(platform);
+  const initialUsername = useRef(username);
 
   useEffect(() => {
+    saveLastPlatform(platform);
     setUsername(readSavedUsername(platform));
-    setResult(null);
+    const saved = readSavedResult(platform);
+    setResult(saved?.result ?? null);
+    setFetchedAt(saved?.fetchedAt ?? null);
     setError('');
   }, [platform]);
 
-  const handleSearch = useCallback(async () => {
-    const handle = username.trim();
-    if (!handle || loading) return;
-    setLoading(true);
-    setError('');
-    setResult(null);
-    try {
-      const data = await RatingService.getRating(platform, handle);
-      saveUsername(platform, handle);
-      setResult({ rating: data.curRating, maxRating: data.maxRating, name: data.name });
-    } catch (caught) {
-      setError(
-        locale === 'en-US'
-          ? t('rating.queryFailed')
-          : caught instanceof Error
-            ? caught.message
-            : t('rating.queryFailed'),
-      );
-    } finally {
-      setLoading(false);
+  const handleSearch = useCallback(
+    async (platformOverride = platform, usernameOverride = username) => {
+      const handle = usernameOverride.trim();
+      if (!handle || loadingRef.current) return;
+      loadingRef.current = true;
+      setLoading(true);
+      setError('');
+      try {
+        const data = await RatingService.getRating(platformOverride, handle);
+        saveUsername(platformOverride, handle);
+        const next = { rating: data.curRating, maxRating: data.maxRating, name: data.name };
+        setResult(next);
+        setFetchedAt(saveResult(platformOverride, next));
+      } catch (caught) {
+        setError(
+          locale === 'en-US'
+            ? t('rating.queryFailed')
+            : caught instanceof Error
+              ? caught.message
+              : t('rating.queryFailed'),
+        );
+      } finally {
+        loadingRef.current = false;
+        setLoading(false);
+      }
+    },
+    [locale, platform, t, username],
+  );
+
+  useEffect(() => {
+    if (autoQueryStarted.current) return;
+    autoQueryStarted.current = true;
+    if (initialUsername.current.trim()) {
+      void handleSearch(initialPlatform.current, initialUsername.current);
     }
-  }, [loading, locale, platform, t, username]);
+  }, [handleSearch]);
 
   const ratingProgress = useMemo(
     () => (result ? Math.min(100, Math.max(3, (result.rating / 3000) * 100)) : 0),
@@ -85,7 +168,7 @@ export default function RatingPage() {
             <div className="flex flex-col gap-2 sm:flex-row">
               <select
                 value={platform}
-                onChange={event => setPlatform(event.target.value as (typeof PLATFORMS)[number])}
+                onChange={event => setPlatform(event.target.value as RatingPlatform)}
                 className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
                 aria-label={t('rating.selectPlatform')}
               >
@@ -99,8 +182,9 @@ export default function RatingPage() {
                 type="text"
                 value={username}
                 onChange={event => {
-                  setUsername(event.target.value);
-                  setResult(null);
+                  const next = event.target.value;
+                  setUsername(next);
+                  saveUsername(platform, next);
                   setError('');
                 }}
                 onKeyDown={event => {
@@ -111,7 +195,7 @@ export default function RatingPage() {
               />
               <Button
                 className="h-10 gap-2"
-                onClick={handleSearch}
+                onClick={() => void handleSearch()}
                 disabled={loading || !username.trim()}
               >
                 {loading ? (
@@ -138,6 +222,16 @@ export default function RatingPage() {
                   <div className="text-sm text-[var(--color-text-muted)]">
                     {getPlatformLabel(platform, locale)} · {result.name}
                   </div>
+                  {fetchedAt && (
+                    <div className="mt-1 text-[11px] text-[var(--color-text-muted)]">
+                      {t('dashboard.updated', {
+                        time: new Date(fetchedAt).toLocaleTimeString(locale, {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        }),
+                      })}
+                    </div>
+                  )}
                   <div
                     className="mt-2 text-5xl font-bold tracking-tight"
                     style={{ color: getRatingColor(result.rating) }}

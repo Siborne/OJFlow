@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, BarChart3, Download } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -7,40 +7,139 @@ import type { ProblemStats, TagStats } from '../../shared/types';
 import { useI18n } from '@/i18n';
 import { getProblemTagLabel } from '../../shared/problem-tags';
 
+const STORAGE_KEY = 'cf_report_state';
+
+interface SavedReport {
+  handle: string;
+  totalSolved: number;
+  ratingStats: ProblemStats[];
+  tagStats: TagStats[];
+  fetchedAt: number;
+}
+
+function loadSavedReport(): SavedReport | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    const record = parsed as Record<string, unknown>;
+    if (
+      typeof record.handle !== 'string' ||
+      typeof record.totalSolved !== 'number' ||
+      !Array.isArray(record.ratingStats) ||
+      !Array.isArray(record.tagStats) ||
+      typeof record.fetchedAt !== 'number'
+    ) {
+      return null;
+    }
+    return {
+      handle: record.handle,
+      totalSolved: record.totalSolved,
+      ratingStats: record.ratingStats as ProblemStats[],
+      tagStats: record.tagStats as TagStats[],
+      fetchedAt: record.fetchedAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveReport(report: Omit<SavedReport, 'fetchedAt'>): number {
+  const fetchedAt = Date.now();
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...report, fetchedAt }));
+  } catch {
+    // Report persistence is optional.
+  }
+  return fetchedAt;
+}
+
 export default function CfpReportPage() {
   const { t, locale } = useI18n();
-  const [handle, setHandle] = useState('');
+  const initialReport = useMemo(() => loadSavedReport(), []);
+  const [handle, setHandle] = useState(initialReport?.handle ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [totalSolved, setTotalSolved] = useState(0);
-  const [ratingStats, setRatingStats] = useState<ProblemStats[]>([]);
-  const [tagStats, setTagStats] = useState<TagStats[]>([]);
+  const [totalSolved, setTotalSolved] = useState(initialReport?.totalSolved ?? 0);
+  const [ratingStats, setRatingStats] = useState<ProblemStats[]>(initialReport?.ratingStats ?? []);
+  const [tagStats, setTagStats] = useState<TagStats[]>(initialReport?.tagStats ?? []);
+  const [fetchedAt, setFetchedAt] = useState<number | null>(initialReport?.fetchedAt ?? null);
+  const [reportLoaded, setReportLoaded] = useState(
+    Boolean(
+      initialReport &&
+      (initialReport.totalSolved > 0 ||
+        initialReport.ratingStats.length > 0 ||
+        initialReport.tagStats.length > 0),
+    ),
+  );
+  const loadingRef = useRef(false);
+  const autoQueryStarted = useRef(false);
 
-  const fetchReport = useCallback(async () => {
-    if (!handle.trim()) return;
-    setLoading(true);
-    setError('');
-    setRatingStats([]);
-    setTagStats([]);
-    setTotalSolved(0);
+  const fetchReport = useCallback(
+    async (handleOverride = handle) => {
+      const requestedHandle = handleOverride.trim();
+      if (!requestedHandle || loadingRef.current) return;
+      loadingRef.current = true;
+      setLoading(true);
+      setError('');
 
-    try {
-      const report = await ReportService.getCodeforcesReport(handle.trim());
-      setTotalSolved(report.totalSolved);
-      setRatingStats(report.ratingStats);
-      setTagStats(report.tagStats);
-    } catch (e) {
-      setError(
-        locale === 'en-US'
-          ? t('report.queryFailed')
-          : e instanceof Error
-            ? e.message
-            : t('report.queryFailed'),
-      );
-    } finally {
-      setLoading(false);
+      try {
+        const report = await ReportService.getCodeforcesReport(requestedHandle);
+        setTotalSolved(report.totalSolved);
+        setRatingStats(report.ratingStats);
+        setTagStats(report.tagStats);
+        setReportLoaded(true);
+        setHandle(requestedHandle);
+        setFetchedAt(
+          saveReport({
+            handle: requestedHandle,
+            totalSolved: report.totalSolved,
+            ratingStats: report.ratingStats,
+            tagStats: report.tagStats,
+          }),
+        );
+      } catch (e) {
+        setError(
+          locale === 'en-US'
+            ? t('report.queryFailed')
+            : e instanceof Error
+              ? e.message
+              : t('report.queryFailed'),
+        );
+      } finally {
+        loadingRef.current = false;
+        setLoading(false);
+      }
+    },
+    [handle, locale, t],
+  );
+
+  useEffect(() => {
+    if (autoQueryStarted.current) return;
+    autoQueryStarted.current = true;
+    if (initialReport?.handle.trim()) {
+      void fetchReport(initialReport.handle);
     }
-  }, [handle, locale, t]);
+  }, [fetchReport, initialReport]);
+
+  const saveHandleDraft = useCallback((next: string) => {
+    const current = loadSavedReport();
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          handle: next,
+          totalSolved: current?.totalSolved ?? 0,
+          ratingStats: current?.ratingStats ?? [],
+          tagStats: current?.tagStats ?? [],
+          fetchedAt: current?.fetchedAt ?? 0,
+        }),
+      );
+    } catch {
+      // Draft handle persistence is optional.
+    }
+  }, []);
 
   const maxCount = Math.max(1, ...ratingStats.map(r => r.count), ...tagStats.map(t => t.count));
 
@@ -73,12 +172,18 @@ export default function CfpReportPage() {
             <input
               type="text"
               value={handle}
-              onChange={e => setHandle(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && fetchReport()}
+              onChange={e => {
+                saveHandleDraft(e.target.value);
+                setHandle(e.target.value);
+                setError('');
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') void fetchReport();
+              }}
               placeholder={t('report.handlePlaceholder')}
               className="flex-1 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
             />
-            <Button onClick={fetchReport} disabled={loading || !handle.trim()}>
+            <Button onClick={() => void fetchReport()} disabled={loading || !handle.trim()}>
               {loading ? (
                 <div className="mr-1 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
@@ -94,7 +199,7 @@ export default function CfpReportPage() {
             </div>
           )}
 
-          {totalSolved > 0 && (
+          {reportLoaded && (
             <div className="space-y-4">
               {/* Summary card */}
               <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--card-border)] bg-[var(--card-bg)] p-6 shadow-[var(--card-shadow)]">
@@ -109,6 +214,16 @@ export default function CfpReportPage() {
                   <div className="mt-1 text-sm text-[var(--color-text-muted)]">
                     {t('report.totalAc')}
                   </div>
+                  {fetchedAt && (
+                    <div className="mt-1 text-[11px] text-[var(--color-text-muted)]">
+                      {t('dashboard.updated', {
+                        time: new Date(fetchedAt).toLocaleTimeString(locale, {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        }),
+                      })}
+                    </div>
+                  )}
                   <Button variant="outline" size="sm" className="mt-4 gap-2" onClick={exportReport}>
                     <Download size={14} />
                     {t('report.export')}

@@ -36,6 +36,7 @@ describe('application shell', () => {
       'setting',
       'rating',
       'solved_num',
+      'archive',
       'ccpc',
       'oier',
       'cf_report',

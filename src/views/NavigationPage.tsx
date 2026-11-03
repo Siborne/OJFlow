@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
+  Archive,
   BarChart3,
   CalendarDays,
   CircleCheckBig,
   FileChartColumn,
-  GraduationCap,
   LayoutDashboard,
   LibraryBig,
   Settings,
   Star,
-  Trophy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -81,12 +80,11 @@ const NAV_ITEMS: NavItem[] = [
     path: '/cf_report',
     section: 'insights',
   },
-  { key: 'ccpc', labelKey: 'nav.ccpc', icon: Trophy, path: '/ccpc', section: 'community' },
   {
-    key: 'oier',
-    labelKey: 'nav.oier',
-    icon: GraduationCap,
-    path: '/oier',
+    key: 'archive',
+    labelKey: 'nav.archive',
+    icon: Archive,
+    path: '/archive',
     section: 'community',
   },
 ];
@@ -127,7 +125,7 @@ export default function NavigationPage() {
       NAV_ITEMS.filter(item => {
         if (item.key === 'problems') return problemSearchEnabled;
         if (item.key === 'cf-report') return cfReportEnabled;
-        if (item.key === 'ccpc' || item.key === 'oier') return externalToolsEnabled;
+        if (item.key === 'archive') return externalToolsEnabled;
         return true;
       }),
     [cfReportEnabled, externalToolsEnabled, problemSearchEnabled],
