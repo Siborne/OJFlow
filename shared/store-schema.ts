@@ -10,6 +10,8 @@ import type {
   SharePosterSettings,
   SurfaceStyle,
   ThemeScheme,
+  TemplateExportOptions,
+  ShortcutSettings,
   WindowCloseBehavior,
 } from './types';
 
@@ -24,7 +26,8 @@ export interface UserConfig {
     closeBehavior: WindowCloseBehavior;
     appMode: AppMode;
     dashboardScheduleScope: DashboardScheduleScope;
-    templateShortcut: string;
+    shortcut: ShortcutSettings;
+    templatesExpanded: boolean;
     autoRefresh: AutoRefreshSettings;
     autoCheckUpdates: boolean;
     sharePoster: SharePosterSettings;
@@ -91,6 +94,7 @@ export interface UserConfig {
 
   /** Reusable competitive-programming code templates */
   templates: CodeTemplate[];
+  templateExport: TemplateExportOptions;
 
   /** Internal: migration flag */
   _migrated?: boolean;

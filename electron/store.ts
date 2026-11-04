@@ -13,7 +13,12 @@ const defaults: UserConfig = {
     closeBehavior: 'tray',
     appMode: 'simple',
     dashboardScheduleScope: 'today',
-    templateShortcut: 'CommandOrControl+Shift+T',
+    shortcut: {
+      enabled: true,
+      accelerator: 'CommandOrControl+Shift+T',
+      target: 'last',
+    },
+    templatesExpanded: true,
     autoRefresh: {
       enabled: true,
       intervalMinutes: 15,
@@ -68,6 +73,11 @@ const defaults: UserConfig = {
     problems: [],
   },
   templates: [],
+  templateExport: {
+    includeTitle: true,
+    includeLanguage: true,
+    includeCategory: true,
+  },
 };
 
 const testConfigCwd =

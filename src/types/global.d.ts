@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   CodeforcesReport,
   ContestFetchResponse,
   ContestsPartialPayload,
@@ -8,6 +8,7 @@ import type {
   PracticeProblemUpdate,
   RawContest,
   CompanionStatus,
+  ShortcutSettings,
 } from '../../shared/types';
 
 declare global {
@@ -40,7 +41,8 @@ declare global {
     onWindowStateChanged(callback: (state: { maximized: boolean }) => void): () => void;
     getAutoLaunch(): Promise<boolean>;
     setAutoLaunch(enabled: boolean): Promise<void>;
-    setGlobalTemplateShortcut(accelerator: string): Promise<{ success: boolean; error?: string }>;
+    setShortcutSettings(settings: ShortcutSettings): Promise<{ success: boolean; error?: string }>;
+    exportTemplateMarkdown(payload: { markdown: string; fileName: string }): Promise<boolean>;
     setNotification(config: { enabled: boolean; reminderMinutes: number }): Promise<void>;
     getNotification(): Promise<{ enabled: boolean; reminderMinutes: number }>;
   }

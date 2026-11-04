@@ -10,6 +10,8 @@ import type {
   SharePosterSettings,
   SurfaceStyle,
   ThemeScheme,
+  TemplateExportOptions,
+  ShortcutSettings,
 } from '../../shared/types';
 import appConfig from '../../electron/app.config.json';
 
@@ -41,6 +43,9 @@ const DEFAULT_AUTO_REFRESH: AutoRefreshSettings = {
 const AUTO_REFRESH_KEY = 'auto_refresh_settings';
 const AUTO_CHECK_UPDATES_KEY = 'auto_check_updates';
 const DASHBOARD_SCHEDULE_SCOPE_KEY = 'dashboard_schedule_scope';
+const SHORTCUT_KEY = 'shortcut_settings';
+const TEMPLATES_EXPANDED_KEY = 'templates_expanded';
+const TEMPLATE_EXPORT_KEY = 'template_export_settings';
 
 const DEFAULT_SHARE_POSTER: SharePosterSettings = {
   showRating: true,
@@ -50,6 +55,12 @@ const DEFAULT_SHARE_POSTER: SharePosterSettings = {
 };
 
 const SHARE_POSTER_KEY = 'share_poster_settings';
+
+const DEFAULT_TEMPLATE_EXPORT: TemplateExportOptions = {
+  includeTitle: true,
+  includeLanguage: true,
+  includeCategory: true,
+};
 
 const FEATURE_KEYS = Object.keys(DEFAULT_FEATURES) as (keyof AppFeatures)[];
 
@@ -186,6 +197,53 @@ function persistSharePoster(settings: SharePosterSettings): void {
   }
 }
 
+function normalizeShortcut(value: unknown): ShortcutSettings {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { enabled: true, accelerator: 'CommandOrControl+Shift+T', target: 'last' };
+  }
+  const source = value as Record<string, unknown>;
+  return {
+    enabled: typeof source.enabled === 'boolean' ? source.enabled : true,
+    accelerator: typeof source.accelerator === 'string' ? source.accelerator : '',
+    target: source.target === 'templates' || source.target === 'dashboard' ? source.target : 'last',
+  };
+}
+function persistShortcut(settings: ShortcutSettings): void {
+  try {
+    localStorage.setItem(SHORTCUT_KEY, JSON.stringify(settings));
+  } catch {
+    // Ignore storage quota errors.
+  }
+}
+function normalizeTemplateExport(value: unknown): TemplateExportOptions {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return DEFAULT_TEMPLATE_EXPORT;
+  }
+  const source = value as Record<string, unknown>;
+  return {
+    includeTitle:
+      typeof source.includeTitle === 'boolean'
+        ? source.includeTitle
+        : DEFAULT_TEMPLATE_EXPORT.includeTitle,
+    includeLanguage:
+      typeof source.includeLanguage === 'boolean'
+        ? source.includeLanguage
+        : DEFAULT_TEMPLATE_EXPORT.includeLanguage,
+    includeCategory:
+      typeof source.includeCategory === 'boolean'
+        ? source.includeCategory
+        : DEFAULT_TEMPLATE_EXPORT.includeCategory,
+  };
+}
+
+function persistTemplateExport(settings: TemplateExportOptions): void {
+  try {
+    localStorage.setItem(TEMPLATE_EXPORT_KEY, JSON.stringify(settings));
+  } catch {
+    // Ignore storage quota errors.
+  }
+}
+
 function readLocalStorage(): Partial<UiState> {
   if (typeof localStorage === 'undefined') return {};
   const patch: Partial<UiState> = {};
@@ -199,7 +257,10 @@ function readLocalStorage(): Partial<UiState> {
     const rawAutoRefresh = localStorage.getItem(AUTO_REFRESH_KEY);
     const rawAutoCheckUpdates = localStorage.getItem(AUTO_CHECK_UPDATES_KEY);
     const dashboardScheduleScope = localStorage.getItem(DASHBOARD_SCHEDULE_SCOPE_KEY);
+    const templatesExpanded = localStorage.getItem(TEMPLATES_EXPANDED_KEY);
+    const rawTemplateExport = localStorage.getItem(TEMPLATE_EXPORT_KEY);
     const rawSharePoster = localStorage.getItem(SHARE_POSTER_KEY);
+    const rawShortcut = localStorage.getItem(SHORTCUT_KEY);
 
     if (scheme) patch.themeScheme = scheme;
     if (isColorMode(mode)) patch.colorMode = mode;
@@ -215,7 +276,16 @@ function readLocalStorage(): Partial<UiState> {
     if (isDashboardScheduleScope(dashboardScheduleScope)) {
       patch.dashboardScheduleScope = dashboardScheduleScope;
     }
+    if (templatesExpanded === 'true' || templatesExpanded === 'false') {
+      patch.templatesExpanded = templatesExpanded === 'true';
+    }
+    if (rawTemplateExport) {
+      patch.templateExport = normalizeTemplateExport(JSON.parse(rawTemplateExport));
+    }
     if (rawSharePoster) {
+      if (rawShortcut) {
+        patch.shortcut = normalizeShortcut(JSON.parse(rawShortcut));
+      }
       patch.sharePoster = normalizeSharePoster(JSON.parse(rawSharePoster));
     }
     if (rawFeatures) {
@@ -242,6 +312,9 @@ interface UiState {
   surfaceStyle: SurfaceStyle;
   appMode: AppMode;
   dashboardScheduleScope: DashboardScheduleScope;
+  templatesExpanded: boolean;
+  shortcut: ShortcutSettings;
+  templateExport: TemplateExportOptions;
   autoRefresh: AutoRefreshSettings;
   autoCheckUpdates: boolean;
   sharePoster: SharePosterSettings;
@@ -255,6 +328,9 @@ interface UiState {
   setSurfaceStyle: (style: SurfaceStyle) => Promise<void>;
   setAppMode: (mode: AppMode) => Promise<void>;
   setDashboardScheduleScope: (scope: DashboardScheduleScope) => Promise<void>;
+  setTemplatesExpanded: (expanded: boolean) => Promise<void>;
+  setShortcutSettings: (settings: ShortcutSettings) => Promise<void>;
+  setTemplateExportOption: (key: keyof TemplateExportOptions, enabled: boolean) => Promise<void>;
   setAutoRefreshEnabled: (enabled: boolean) => Promise<void>;
   setAutoRefreshInterval: (minutes: number) => Promise<void>;
   setAutoRefreshModule: (module: AutoRefreshModule, enabled: boolean) => Promise<void>;
@@ -283,6 +359,13 @@ export const useUiStore = create<UiState>((set, get) => ({
       : 'glass',
   appMode: localDefaults.appMode ?? 'simple',
   dashboardScheduleScope: localDefaults.dashboardScheduleScope ?? 'today',
+  templatesExpanded: localDefaults.templatesExpanded ?? true,
+  shortcut: localDefaults.shortcut ?? {
+    enabled: true,
+    accelerator: 'CommandOrControl+Shift+T',
+    target: 'last' as const,
+  },
+  templateExport: localDefaults.templateExport ?? DEFAULT_TEMPLATE_EXPORT,
   autoRefresh: localDefaults.autoRefresh ?? DEFAULT_AUTO_REFRESH,
   autoCheckUpdates: localDefaults.autoCheckUpdates ?? true,
   sharePoster: localDefaults.sharePoster ?? DEFAULT_SHARE_POSTER,
@@ -303,6 +386,9 @@ export const useUiStore = create<UiState>((set, get) => ({
               surfaceStyle?: unknown;
               appMode?: unknown;
               dashboardScheduleScope?: unknown;
+              templatesExpanded?: unknown;
+              shortcut?: unknown;
+              templateExport?: unknown;
               autoRefresh?: unknown;
               autoCheckUpdates?: unknown;
               sharePoster?: unknown;
@@ -319,6 +405,15 @@ export const useUiStore = create<UiState>((set, get) => ({
           if (isAppMode(ui.appMode)) patch.appMode = ui.appMode;
           if (isDashboardScheduleScope(ui.dashboardScheduleScope)) {
             patch.dashboardScheduleScope = ui.dashboardScheduleScope;
+          }
+          if (ui.shortcut !== undefined) {
+            patch.shortcut = normalizeShortcut(ui.shortcut);
+          }
+          if (typeof ui.templatesExpanded === 'boolean') {
+            patch.templatesExpanded = ui.templatesExpanded;
+          }
+          if (ui.templateExport !== undefined) {
+            patch.templateExport = normalizeTemplateExport(ui.templateExport);
           }
           if (ui.autoRefresh !== undefined) {
             patch.autoRefresh = normalizeAutoRefresh(ui.autoRefresh);
@@ -452,6 +547,42 @@ export const useUiStore = create<UiState>((set, get) => ({
     }
   },
 
+  setTemplatesExpanded: async (expanded: boolean) => {
+    set({ templatesExpanded: expanded });
+    try {
+      await getElectronStore()?.set('ui.templatesExpanded', expanded);
+    } catch {
+      // Ignore persistence errors.
+    }
+    try {
+      localStorage.setItem(TEMPLATES_EXPANDED_KEY, String(expanded));
+    } catch {
+      // Ignore storage quota errors.
+    }
+  },
+
+  setShortcutSettings: async (settings: ShortcutSettings) => {
+    const normalized = normalizeShortcut(settings);
+    set({ shortcut: normalized });
+    persistShortcut(normalized);
+    try {
+      await getElectronStore()?.set('ui.shortcut', normalized);
+    } catch {
+      // Keep the active preference even if persistence is unavailable.
+    }
+  },
+
+  setTemplateExportOption: async (key: keyof TemplateExportOptions, enabled: boolean) => {
+    const templateExport = { ...get().templateExport, [key]: enabled };
+    set({ templateExport });
+    persistTemplateExport(templateExport);
+    try {
+      await getElectronStore()?.set('ui.templateExport', templateExport);
+    } catch {
+      // Ignore persistence errors.
+    }
+  },
+
   setAutoRefreshEnabled: async (enabled: boolean) => {
     const autoRefresh = { ...get().autoRefresh, enabled };
     set({ autoRefresh });
@@ -459,7 +590,7 @@ export const useUiStore = create<UiState>((set, get) => ({
     try {
       await getElectronStore()?.set('ui.autoRefresh', autoRefresh);
     } catch {
-      // Keep the active preference even if persistence is unavailable.
+      // Ignore persistence errors.
     }
   },
 
@@ -471,7 +602,7 @@ export const useUiStore = create<UiState>((set, get) => ({
     try {
       await getElectronStore()?.set('ui.autoRefresh', autoRefresh);
     } catch {
-      // Keep the active preference even if persistence is unavailable.
+      // Ignore persistence errors.
     }
   },
 
@@ -485,7 +616,7 @@ export const useUiStore = create<UiState>((set, get) => ({
     try {
       await getElectronStore()?.set('ui.autoRefresh', autoRefresh);
     } catch {
-      // Keep the active preference even if persistence is unavailable.
+      // Ignore persistence errors.
     }
   },
 
@@ -494,7 +625,7 @@ export const useUiStore = create<UiState>((set, get) => ({
     try {
       await getElectronStore()?.set('ui.autoCheckUpdates', enabled);
     } catch {
-      // Keep the active preference even if persistence is unavailable.
+      // Ignore persistence errors.
     }
     try {
       localStorage.setItem(AUTO_CHECK_UPDATES_KEY, String(enabled));
@@ -510,7 +641,7 @@ export const useUiStore = create<UiState>((set, get) => ({
     try {
       await getElectronStore()?.set('ui.sharePoster', sharePoster);
     } catch {
-      // Keep the active preference even if persistence is unavailable.
+      // Ignore persistence errors.
     }
   },
 

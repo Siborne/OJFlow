@@ -99,6 +99,14 @@ export function installDom(): Window {
     unobserve() {}
     disconnect() {}
   } as unknown as typeof IntersectionObserver;
+  globals.MutationObserver = class {
+    takeRecords() {
+      return [];
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof MutationObserver;
   globals.requestAnimationFrame = (callback: FrameRequestCallback) =>
     setTimeout(() => callback(Date.now()), 0) as unknown as number;
   globals.cancelAnimationFrame = (id: number) => clearTimeout(id);

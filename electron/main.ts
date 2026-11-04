@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, ipcMain, shell, dialog, globalShortcut } from 'electron';
+﻿import { app, BrowserWindow, clipboard, ipcMain, shell, dialog, globalShortcut } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Readable } from 'node:stream';
@@ -39,6 +39,7 @@ import {
 import { startCompanionServer, type CompanionServerHandle } from './services/companion-server';
 import type {
   CompanionStatus,
+  ShortcutSettings,
   ContestFetchResponse,
   PracticeProblemUpdate,
   Rating,
@@ -380,40 +381,60 @@ let companionServer: CompanionServerHandle | null = null;
 let companionStatus: CompanionStatus = { running: false, port: null };
 let registeredTemplateShortcut = '';
 
-export const TEMPLATE_SHORTCUTS = [
-  '',
-  'CommandOrControl+Shift+T',
-  'CommandOrControl+Shift+O',
-  'CommandOrControl+Alt+T',
-  'Alt+T',
-] as const;
+export const TEMPLATE_SHORTCUT_PATTERN =
+  /^(CommandOrControl|Ctrl|Alt|Shift|Meta)(\+(CommandOrControl|Ctrl|Alt|Shift|Meta))*$/i;
 
+export function normalizeTemplateShortcut(value: string): string {
+  if (typeof value !== 'string') return '';
+  const parts = value
+    .split('+')
+    .map(part => part.trim())
+    .filter(Boolean)
+    .map(part => (/^(command|ctrl)$/i.test(part) ? 'CommandOrControl' : part))
+    .map(part =>
+      /^(CommandOrControl|Ctrl|Alt|Shift|Meta)$/i.test(part)
+        ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+        : part,
+    );
+  if (parts.length < 2) return '';
+  const modifiers = [...new Set(parts.slice(0, -1).map(part => part.toLowerCase()))].join('+');
+  const key = parts[parts.length - 1];
+  if (key.length !== 1 || !/[a-z0-9]/i.test(key)) return '';
+  if (!modifiers.includes('commandorcontrol') && !modifiers.includes('alt')) return '';
+  return `${modifiers}+${key.toUpperCase()}`;
+}
 export function registerTemplateShortcut(
   win: BrowserWindow,
-  accelerator: string,
+  settings: ShortcutSettings,
 ): { success: boolean; error?: string } {
   if (registeredTemplateShortcut) {
     globalShortcut.unregister(registeredTemplateShortcut);
     registeredTemplateShortcut = '';
   }
-  if (!accelerator) return { success: true };
-  if (!(TEMPLATE_SHORTCUTS as readonly string[]).includes(accelerator)) {
+  if (!settings.enabled) return { success: true };
+  const normalized = normalizeTemplateShortcut(settings.accelerator);
+  if (!normalized) {
     return { success: false, error: 'Unsupported shortcut' };
   }
-  const success = globalShortcut.register(accelerator, () => {
+  if (normalized === registeredTemplateShortcut) return { success: true };
+  const target = settings.target === 'templates' ? '/templates' : null;
+  const success = globalShortcut.register(normalized, () => {
     if (!win.isDestroyed()) {
+      if (win.isVisible() && win.isFocused()) {
+        win.hide();
+        return;
+      }
       win.show();
       win.focus();
-      win.webContents.send(IPC_CHANNELS.NAVIGATE_TO, '/templates');
+      if (target) win.webContents.send(IPC_CHANNELS.NAVIGATE_TO, target);
     }
   });
   if (!success) return { success: false, error: 'Shortcut is already in use' };
-  registeredTemplateShortcut = accelerator;
+  registeredTemplateShortcut = normalized;
   return { success: true };
 }
 
 export function getIconPath(): string {
-  // Unpackaged runs use the project asset, including production previews with NODE_ENV=test.
   if (!app.isPackaged) {
     return path.join(__dirname, '../../src/assets/icon.png');
   }
@@ -480,10 +501,10 @@ app.whenReady().then(() => {
     console.warn('[query-store] SQLite initialization failed:', error);
   });
   const win = createWindow();
-  const templateShortcut = store.get('ui.templateShortcut');
+  const storedShortcut = store.get('ui.shortcut') as ShortcutSettings | undefined;
   const shortcutResult = registerTemplateShortcut(
     win,
-    typeof templateShortcut === 'string' ? templateShortcut : 'CommandOrControl+Shift+T',
+    storedShortcut ?? { enabled: true, accelerator: 'CommandOrControl+Shift+T', target: 'last' },
   );
   if (!shortcutResult.success) {
     console.warn('[shortcut] Failed to register template shortcut:', shortcutResult.error);
@@ -791,14 +812,42 @@ app.whenReady().then(() => {
     store.set('ui.startAtLogin', enabled);
   });
 
-  ipcMain.handle(IPC_CHANNELS.SET_TEMPLATE_SHORTCUT, (_event, accelerator: string) => {
-    if (typeof accelerator !== 'string') {
-      return { success: false, error: 'Invalid shortcut' };
+  ipcMain.handle(IPC_CHANNELS.SET_SHORTCUT_SETTINGS, (_event, settings: ShortcutSettings) => {
+    if (!settings || typeof settings !== 'object') {
+      return { success: false, error: 'Invalid shortcut settings' };
     }
-    const result = registerTemplateShortcut(win, accelerator);
-    if (result.success) store.set('ui.templateShortcut', accelerator);
+    const result = registerTemplateShortcut(win, settings);
+    if (result.success) {
+      store.set('ui.shortcut', {
+        enabled: settings.enabled !== false,
+        accelerator: typeof settings.accelerator === 'string' ? settings.accelerator : '',
+        target: settings.target === 'templates' ? 'templates' : 'last',
+      });
+    }
     return result;
   });
+
+  ipcMain.handle(
+    IPC_CHANNELS.EXPORT_TEMPLATE_MARKDOWN,
+    async (_event, payload: { markdown?: unknown; fileName?: unknown }) => {
+      const markdown = typeof payload?.markdown === 'string' ? payload.markdown : '';
+      const fileName = typeof payload?.fileName === 'string' ? payload.fileName : '';
+      if (!markdown || !/^[a-z0-9_-]+\.md$/i.test(fileName)) {
+        throw new Error('Invalid template export');
+      }
+      const result = await dialog.showSaveDialog(win, {
+        title: 'Export templates as Markdown',
+        defaultPath: fileName,
+        filters: [{ name: 'Markdown', extensions: ['md'] }],
+      });
+      if (result.canceled || !result.filePath) return false;
+      if (!result.filePath.toLowerCase().endsWith('.md')) {
+        throw new Error('Template export must use .md');
+      }
+      await fs.promises.writeFile(result.filePath, markdown, 'utf8');
+      return true;
+    },
+  );
 
   // Store IPC handlers
   ipcMain.handle(IPC_CHANNELS.STORE_GET, (_event, key: string) => {

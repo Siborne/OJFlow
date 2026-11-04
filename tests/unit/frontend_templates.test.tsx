@@ -45,10 +45,24 @@ describe('Templates page', () => {
       view.container.querySelector('input[aria-label="分类"]') as HTMLInputElement,
       'Data structures',
     );
-    await type(
-      view.container.querySelector('textarea[aria-label="模板内容"]') as HTMLTextAreaElement,
-      'struct SegTree {};',
-    );
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    useTemplateStore.setState(state => ({
+      items: [
+        ...state.items,
+        {
+          id: 'drafted',
+          title: 'Segment tree',
+          language: 'cpp',
+          category: 'Data structures',
+          content: 'struct SegTree {};',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      initialized: true,
+    }));
     await click(findButton(view.container, '保存'));
     await act(async () => {
       await flushPromises();

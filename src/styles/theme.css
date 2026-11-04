@@ -621,6 +621,25 @@ textarea {
   display: none;
 }
 
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 140, 150, 0.34) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 140, 150, 0.34);
+  border-radius: 999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .glass-panel {
   border: 1px solid var(--glass-border);
   background: linear-gradient(145deg, var(--glass-highlight), transparent 38%), var(--card-bg);

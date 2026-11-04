@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+﻿import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { act } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { installDom, flushPromises, createContest } from './helpers';
@@ -179,8 +179,8 @@ describe('Settings page', () => {
       setAutoLaunch: async enabled => {
         autoLaunch = enabled;
       },
-      setGlobalTemplateShortcut: async accelerator => {
-        templateShortcut = accelerator;
+      setShortcutSettings: async settings => {
+        templateShortcut = settings.accelerator;
         return { success: true };
       },
     });
@@ -252,7 +252,7 @@ describe('Settings page', () => {
     await click(view.container.querySelector('[data-testid="settings-share-poster-showTopics"]'));
     expect(useUiStore.getState().sharePoster.showTopics).toBe(false);
 
-    await click(findButton(view.container, '清除本地缓存'));
+    await click(findButton(view.container, '清除查询缓存'));
     await act(async () => {
       await flushPromises();
     });
@@ -262,12 +262,12 @@ describe('Settings page', () => {
     await click(view.container.querySelector('[aria-label="开机自动启动"]'));
     await click(view.container.querySelector('[aria-label="自动检查更新"]'));
     await click(findButton(view.container, '直接退出'));
-    const shortcutSelect = view.container.querySelector(
-      'select[aria-label="模板库全局快捷键"]',
-    ) as HTMLSelectElement;
+    const shortcutButton = view.container.querySelector(
+      '[aria-label="模板库全局快捷键"]',
+    ) as HTMLButtonElement;
+    await click(shortcutButton);
     await act(async () => {
-      shortcutSelect.value = 'Alt+T';
-      shortcutSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 't', altKey: true }));
       await flushPromises();
     });
     expect(autoLaunch).toBe(true);
@@ -347,7 +347,7 @@ describe('Navigation page', () => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: '4', ctrlKey: true }));
       await flushPromises();
     });
-    expect(full.container.textContent).toContain('SCHEDULE CONTENT');
+    expect(full.container.textContent).toContain('STAR CONTENT');
     await full.unmount();
   });
 });

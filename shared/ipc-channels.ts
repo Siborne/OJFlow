@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   CodeforcesReport,
   ContestFetchResponse,
   ProblemSearchRequest,
@@ -8,6 +8,7 @@ import type {
   Rating,
   SolvedNum,
   CompanionStatus,
+  ShortcutSettings,
 } from './types';
 
 export const IPC_CHANNELS = {
@@ -32,7 +33,8 @@ export const IPC_CHANNELS = {
   WINDOW_STATE_CHANGED: 'window-state-changed',
   AUTO_LAUNCH_GET: 'auto-launch-get',
   AUTO_LAUNCH_SET: 'auto-launch-set',
-  SET_TEMPLATE_SHORTCUT: 'set-template-shortcut',
+  SET_SHORTCUT_SETTINGS: 'set-shortcut-settings',
+  EXPORT_TEMPLATE_MARKDOWN: 'export-template-markdown',
 
   // Store management
   STORE_GET: 'store-get',
@@ -134,9 +136,13 @@ export interface IpcHandlerMap {
     args: [enabled: boolean];
     return: void;
   };
-  [IPC_CHANNELS.SET_TEMPLATE_SHORTCUT]: {
-    args: [accelerator: string];
+  [IPC_CHANNELS.SET_SHORTCUT_SETTINGS]: {
+    args: [settings: ShortcutSettings];
     return: { success: boolean; error?: string };
+  };
+  [IPC_CHANNELS.EXPORT_TEMPLATE_MARKDOWN]: {
+    args: [payload: { markdown: string; fileName: string }];
+    return: boolean;
   };
   [IPC_CHANNELS.STORE_GET]: {
     args: [key: string];

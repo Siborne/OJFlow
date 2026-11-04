@@ -1,4 +1,4 @@
-import { useContestStore } from '../../src/stores/contest';
+﻿import { useContestStore } from '../../src/stores/contest';
 import { useUiStore } from '../../src/stores/ui';
 import { useScheduleStore } from '../../src/stores/schedule';
 import { useTemplateStore } from '../../src/stores/templates';
@@ -54,7 +54,8 @@ export function installWindowApi(overrides: Partial<ElectronApi> = {}): Electron
     onWindowStateChanged: () => () => {},
     getAutoLaunch: async () => false,
     setAutoLaunch: async () => {},
-    setGlobalTemplateShortcut: async () => ({ success: true }),
+    setShortcutSettings: async () => ({ success: true }),
+    exportTemplateMarkdown: async () => true,
     setNotification: async () => {},
     getNotification: async () => ({ enabled: false, reminderMinutes: 15 }),
     ...overrides,

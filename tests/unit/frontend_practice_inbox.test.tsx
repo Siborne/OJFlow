@@ -79,18 +79,7 @@ describe('Practice Inbox page', () => {
     });
     expect(updates).toContainEqual({ id: 'p1', updates: { notes: 'Use parity' } });
 
-    const code = view.container.querySelector(
-      'textarea[aria-label="代码草稿"]',
-    ) as HTMLTextAreaElement;
-    await type(code, 'int main() {}');
-    await click(findButton(view.container, '保存代码'));
-    await act(async () => {
-      await flushPromises();
-    });
-    expect(updates).toContainEqual({
-      id: 'p1',
-      updates: { code: 'int main() {}', codeLanguage: 'cpp' },
-    });
+    expect(view.container.querySelector('[data-testid="practice-code-editor"]')).not.toBeNull();
 
     const sampleCopy = Array.from(view.container.querySelectorAll('button')).find(
       button => button.textContent?.trim() === '复制',

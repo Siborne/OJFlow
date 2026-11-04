@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+﻿import { contextBridge, ipcRenderer } from 'electron';
 import { IPC_CHANNELS } from '../shared/ipc-channels';
 import type {
   CodeforcesReport,
@@ -8,6 +8,7 @@ import type {
   PracticeProblem,
   PracticeProblemUpdate,
   CompanionStatus,
+  ShortcutSettings,
 } from '../shared/types';
 
 // Only expose whitelisted APIs, never expose ipcRenderer directly
@@ -108,8 +109,13 @@ const api = {
   setAutoLaunch: (enabled: boolean): Promise<void> =>
     ipcRenderer.invoke(IPC_CHANNELS.AUTO_LAUNCH_SET, enabled),
 
-  setGlobalTemplateShortcut: (accelerator: string): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke(IPC_CHANNELS.SET_TEMPLATE_SHORTCUT, accelerator),
+  setShortcutSettings: (
+    settings: ShortcutSettings,
+  ): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.SET_SHORTCUT_SETTINGS, settings),
+
+  exportTemplateMarkdown: (payload: { markdown: string; fileName: string }): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_CHANNELS.EXPORT_TEMPLATE_MARKDOWN, payload),
 
   /** Set notification preferences */
   setNotification: (payload: { enabled: boolean; reminderMinutes: number }): Promise<void> =>

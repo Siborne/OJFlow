@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test';
+﻿import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test';
 import { promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { flushPromises, jsonResponse } from './helpers';
@@ -374,10 +374,22 @@ describe('electron main process wiring', () => {
     expect(created.code).toBe('');
     expect(created.codeLanguage).toBe('cpp');
 
-    const result = await invoke(IPC_CHANNELS.SET_TEMPLATE_SHORTCUT, 'CommandOrControl+Shift+T');
+    const result = await invoke(IPC_CHANNELS.SET_SHORTCUT_SETTINGS, {
+      enabled: true,
+      accelerator: 'CommandOrControl+Shift+T',
+      target: 'last',
+    });
     expect(result).toEqual({ success: true });
-    expect(registeredShortcuts.has('CommandOrControl+Shift+T')).toBe(true);
-    await expect(invoke(IPC_CHANNELS.SET_TEMPLATE_SHORTCUT, 'Bad+Shortcut')).resolves.toEqual({
+    expect(registeredShortcuts.has(mainModule.normalizeTemplateShortcut('Ctrl+Shift+T'))).toBe(
+      true,
+    );
+    await expect(
+      invoke(IPC_CHANNELS.SET_SHORTCUT_SETTINGS, {
+        enabled: true,
+        accelerator: 'Bad+Shortcut',
+        target: 'last',
+      }),
+    ).resolves.toEqual({
       success: false,
       error: 'Unsupported shortcut',
     });

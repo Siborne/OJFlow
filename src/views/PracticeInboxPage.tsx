@@ -24,6 +24,7 @@ import type {
   PracticeStatus,
 } from '../../shared/types';
 import { PLATFORM_LOGOS } from '@/utils/platform-assets';
+import { CodeEditor } from '@/components/CodeEditor';
 import { cn } from '@/lib/utils';
 
 const FILTERS: Array<{ id: PracticeStatus | 'all'; key: MessageKey }> = [
@@ -559,13 +560,14 @@ export default function PracticeInboxPage() {
                         </Button>
                       </div>
                     </div>
-                    <textarea
+                    <CodeEditor
                       value={codeDraft}
-                      onChange={event => setCodeDraft(event.target.value)}
+                      onChange={setCodeDraft}
                       aria-label={t('practice.code')}
+                      language={languageDraft}
+                      testId="practice-code-editor"
                       placeholder={t('practice.codePlaceholder')}
-                      spellCheck={false}
-                      className="scrollbar-thin min-h-[250px] flex-1 resize-none rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[#111827] px-3 py-2 font-mono text-xs leading-5 text-slate-100 outline-none focus:border-[var(--color-primary)]"
+                      className="min-h-[250px] flex-1 overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)]"
                     />
                     <p className="mt-2 text-[10px] leading-4 text-[var(--color-text-muted)]">
                       {t('practice.codeHint')}

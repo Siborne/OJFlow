@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from 'bun:test';
+﻿import { describe, expect, mock, test } from 'bun:test';
 import { IPC_CHANNELS } from '../../shared/ipc-channels';
 
 type InvokeCall = { channel: string; args: unknown[] };
@@ -108,7 +108,7 @@ describe('preload bridge', () => {
     expect(invokes).toContainEqual({ channel: IPC_CHANNELS.WINDOW_CLOSE, args: [] });
     expect(invokes).toContainEqual({ channel: IPC_CHANNELS.AUTO_LAUNCH_SET, args: [true] });
     expect(invokes).toContainEqual({
-      channel: IPC_CHANNELS.SET_TEMPLATE_SHORTCUT,
+      channel: IPC_CHANNELS.SET_SHORTCUT_SETTINGS,
       args: ['CommandOrControl+Shift+T'],
     });
   });

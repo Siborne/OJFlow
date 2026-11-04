@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useState } from 'react';
 import {
   Bell,
+  Braces,
   Box,
   CalendarDays,
   Check,
@@ -16,6 +17,7 @@ import {
   MonitorCog,
   Moon,
   RefreshCw,
+  RotateCcw,
   SlidersHorizontal,
   Sparkles,
   Sun,
@@ -40,6 +42,7 @@ import type {
   SharePosterSettings,
   ThemeScheme,
   WindowCloseBehavior,
+  ShortcutSettings,
 } from '../../shared/types';
 
 type ToastState = { type: 'success' | 'error' | 'warning'; text: string } | null;
@@ -47,13 +50,6 @@ type ToastState = { type: 'success' | 'error' | 'warning'; text: string } | null
 const PERIOD_OPTIONS = [7, 15, 30];
 const AUTO_REFRESH_INTERVALS = [5, 15, 30, 60];
 const REMINDER_OPTIONS = [5, 10, 15, 30, 60];
-const TEMPLATE_SHORTCUT_OPTIONS = [
-  '',
-  'CommandOrControl+Shift+T',
-  'CommandOrControl+Shift+O',
-  'CommandOrControl+Alt+T',
-  'Alt+T',
-];
 const AUTO_REFRESH_MODULES: Array<{ key: AutoRefreshModule; labelKey: MessageKey }> = [
   { key: 'dashboard', labelKey: 'settings.autoRefreshDashboard' },
   { key: 'rating', labelKey: 'settings.autoRefreshRating' },
@@ -279,6 +275,8 @@ export default function Settings() {
   const autoRefresh = useUiStore(state => state.autoRefresh);
   const autoCheckUpdates = useUiStore(state => state.autoCheckUpdates);
   const dashboardScheduleScope = useUiStore(state => state.dashboardScheduleScope);
+  const templatesExpanded = useUiStore(state => state.templatesExpanded);
+  const templateExport = useUiStore(state => state.templateExport);
   const sharePoster = useUiStore(state => state.sharePoster);
   const setAppMode = useUiStore(state => state.setAppMode);
   const setColorMode = useUiStore(state => state.setColorMode);
@@ -290,7 +288,11 @@ export default function Settings() {
   const setAutoRefreshInterval = useUiStore(state => state.setAutoRefreshInterval);
   const setAutoRefreshModule = useUiStore(state => state.setAutoRefreshModule);
   const setAutoCheckUpdates = useUiStore(state => state.setAutoCheckUpdates);
+  const shortcut = useUiStore(state => state.shortcut);
+  const setShortcutSettings = useUiStore(state => state.setShortcutSettings);
   const setDashboardScheduleScope = useUiStore(state => state.setDashboardScheduleScope);
+  const setTemplatesExpanded = useUiStore(state => state.setTemplatesExpanded);
+  const setTemplateExportOption = useUiStore(state => state.setTemplateExportOption);
   const setSharePosterSection = useUiStore(state => state.setSharePosterSection);
 
   const [isUpdatingDays, setIsUpdatingDays] = useState(false);
@@ -302,7 +304,7 @@ export default function Settings() {
   const [isClearingCache, setIsClearingCache] = useState(false);
   const [activeSection, setActiveSection] = useState('appearance');
   const [startAtLogin, setStartAtLogin] = useState(false);
-  const [templateShortcut, setTemplateShortcut] = useState('CommandOrControl+Shift+T');
+  const [shortcutListening, setShortcutListening] = useState(false);
   const [closeBehavior, setCloseBehavior] = useState<WindowCloseBehavior>('tray');
 
   const showToast = useCallback((type: NonNullable<ToastState>['type'], text: string) => {
@@ -337,12 +339,6 @@ export default function Settings() {
       .get('ui.closeBehavior')
       .then(value => {
         if (value === 'tray' || value === 'quit') setCloseBehavior(value);
-      })
-      .catch(() => {});
-    window.store
-      .get('ui.templateShortcut')
-      .then(value => {
-        if (typeof value === 'string') setTemplateShortcut(value);
       })
       .catch(() => {});
   }, []);
@@ -489,21 +485,70 @@ export default function Settings() {
     [showToast, t],
   );
 
-  const updateTemplateShortcut = useCallback(
-    async (accelerator: string) => {
-      const previous = templateShortcut;
-      setTemplateShortcut(accelerator);
+  const resetAllSettings = useCallback(async () => {
+    if (!window.confirm(t('settings.resetAllConfirm'))) return;
+    try {
+      await window.store.set('ui', {});
+      await window.store.set('contest', {});
+      await window.store.set('favorites', []);
+      await window.store.set('usernames', {});
+      await window.store.set('cache', {});
+      await window.store.set('schedule', []);
+      await window.store.set('templates', []);
+      await window.store.set('templateExport', {
+        includeTitle: true,
+        includeLanguage: true,
+        includeCategory: true,
+      });
+      await window.api.setShortcutSettings({
+        enabled: true,
+        accelerator: 'CommandOrControl+Shift+T',
+        target: 'last',
+      });
+      localStorage.clear();
+      showToast('success', t('settings.resetAllDone'));
+      window.location.reload();
+    } catch {
+      showToast('error', t('settings.resetAllFailed'));
+    }
+  }, [showToast, t]);
+  const updateShortcut = useCallback(
+    async (patch: Partial<ShortcutSettings>) => {
+      const previous = shortcut;
+      const next = { ...previous, ...patch };
+      setShortcutSettings(next);
       try {
-        const result = await window.api.setGlobalTemplateShortcut(accelerator);
+        const result = await window.api.setShortcutSettings(next);
         if (!result.success) throw new Error(result.error ?? '');
         showToast('success', t('settings.shortcutSaved'));
       } catch {
-        setTemplateShortcut(previous);
+        setShortcutSettings(previous);
         showToast('error', t('settings.shortcutSaveFailed'));
       }
     },
-    [showToast, t, templateShortcut],
+    [shortcut, setShortcutSettings, showToast, t],
   );
+
+  useEffect(() => {
+    if (!shortcutListening) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const key = event.key.length === 1 ? event.key : '';
+      if (!key) return;
+      const parts: string[] = [];
+      if (event.metaKey) parts.push('Meta');
+      else if (event.ctrlKey) parts.push('CommandOrControl');
+      if (parts.length === 0) return;
+      if (event.altKey) parts.push('Alt');
+      if (event.shiftKey) parts.push('Shift');
+      parts.push(key.toUpperCase());
+      setShortcutListening(false);
+      void updateShortcut({ accelerator: parts.join('+') });
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [shortcutListening, updateShortcut]);
 
   const periods = PERIOD_OPTIONS.includes(day) ? PERIOD_OPTIONS : [...PERIOD_OPTIONS, day];
 
@@ -777,6 +822,52 @@ export default function Settings() {
             )}
           >
             <SettingRow
+              icon={Braces}
+              title={t('templates.expandCode')}
+              desc={t('templates.expandCodeDesc')}
+              testId="settings-templates-expanded"
+            >
+              <Switch
+                checked={templatesExpanded}
+                onCheckedChange={enabled => void setTemplatesExpanded(enabled)}
+                aria-label={t('templates.expandCode')}
+              />
+            </SettingRow>
+            <SettingRow
+              icon={Braces}
+              title={t('templates.export')}
+              desc={t('templates.exportEmpty')}
+              wide
+            >
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    { key: 'includeTitle', labelKey: 'templates.templateTitle' },
+                    { key: 'includeLanguage', labelKey: 'templates.language' },
+                    { key: 'includeCategory', labelKey: 'templates.category' },
+                  ] as const
+                ).map(section => (
+                  <button
+                    key={section.key}
+                    type="button"
+                    data-testid={`settings-template-export-${section.key}`}
+                    onClick={() =>
+                      void setTemplateExportOption(section.key, !templateExport[section.key])
+                    }
+                    aria-pressed={templateExport[section.key]}
+                    className={cn(
+                      'rounded-full border px-3 py-1.5 text-xs font-semibold transition',
+                      templateExport[section.key]
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-weak)] text-[var(--color-primary)]'
+                        : 'border-[var(--color-border)] text-[var(--color-text-muted)]',
+                    )}
+                  >
+                    {t(section.labelKey)}
+                  </button>
+                ))}
+              </div>
+            </SettingRow>
+            <SettingRow
               icon={RefreshCw}
               title={t('settings.autoRefresh')}
               desc={t('settings.autoRefreshDesc')}
@@ -944,20 +1035,32 @@ export default function Settings() {
               desc={t('settings.templateShortcutDesc')}
               testId="settings-template-shortcut"
             >
-              <select
-                value={templateShortcut}
-                onChange={event => void updateTemplateShortcut(event.target.value)}
-                aria-label={t('settings.templateShortcut')}
-                className="h-9 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm text-[var(--color-text)] outline-none"
-              >
-                {TEMPLATE_SHORTCUT_OPTIONS.map(option => (
-                  <option key={option || 'off'} value={option}>
-                    {option === ''
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={shortcut.enabled}
+                  onCheckedChange={enabled => void updateShortcut({ enabled })}
+                  aria-label={t('settings.templateShortcut')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShortcutListening(true)}
+                  aria-label={t('settings.templateShortcut')}
+                  className={cn(
+                    'h-9 rounded-[var(--radius-sm)] border px-3 text-sm transition',
+                    shortcutListening
+                      ? 'border-[var(--color-primary)] bg-[var(--color-primary-weak)] text-[var(--color-primary)]'
+                      : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]',
+                  )}
+                >
+                  {shortcutListening
+                    ? t('settings.shortcutListening')
+                    : shortcut.accelerator === ''
                       ? t('settings.shortcutOff')
-                      : option.replace('CommandOrControl', 'Ctrl/Cmd').replaceAll('+', ' + ')}
-                  </option>
-                ))}
-              </select>
+                      : shortcut.accelerator
+                          .replace('CommandOrControl', 'Ctrl/Cmd')
+                          .replaceAll('+', ' + ')}
+                </button>
+              </div>
             </SettingRow>
             <SettingRow
               icon={RefreshCw}
@@ -985,6 +1088,16 @@ export default function Settings() {
                 ]}
                 onChange={behavior => void updateCloseBehavior(behavior)}
               />
+            </SettingRow>
+            <SettingRow
+              icon={RotateCcw}
+              title={t('settings.resetAll')}
+              desc={t('settings.resetAllDesc')}
+              testId="settings-reset-all"
+            >
+              <Button variant="destructive" size="sm" onClick={() => void resetAllSettings()}>
+                {t('settings.resetAll')}
+              </Button>
             </SettingRow>
           </section>
 

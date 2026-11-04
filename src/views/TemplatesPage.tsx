@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Braces,
   Check,
@@ -6,6 +6,7 @@ import {
   Code2,
   Pencil,
   Plus,
+  Save,
   Search,
   Tag,
   Trash2,
@@ -16,6 +17,9 @@ import { Button } from '@/components/ui/button';
 import { useI18n } from '@/i18n';
 import { useTemplateStore } from '@/stores/templates';
 import type { CodeTemplate } from '../../shared/types';
+import { templatesToMarkdown } from '@/utils/template-markdown';
+import { useUiStore } from '@/stores/ui';
+import { CodeEditor } from '@/components/CodeEditor';
 import { cn } from '@/lib/utils';
 
 const LANGUAGES = [
@@ -40,6 +44,10 @@ function languageLabel(value: string): string {
   return LANGUAGES.find(language => language.value === value)?.label ?? value;
 }
 
+function CodePreview({ content, className }: { content: string; className?: string }) {
+  return <CodeEditor value={content} language="other" className={className} onChange={() => {}} />;
+}
+
 export default function TemplatesPage() {
   const { t } = useI18n();
   const items = useTemplateStore(state => state.items);
@@ -47,6 +55,7 @@ export default function TemplatesPage() {
   const addItem = useTemplateStore(state => state.addItem);
   const updateItem = useTemplateStore(state => state.updateItem);
   const removeItem = useTemplateStore(state => state.removeItem);
+  const templatesExpanded = useUiStore(state => state.templatesExpanded);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [language, setLanguage] = useState('all');
@@ -56,6 +65,7 @@ export default function TemplatesPage() {
   const [copied, setCopied] = useState(false);
   const [notice, setNotice] = useState('');
   const [form, setForm] = useState(EMPTY_FORM);
+  const editorRef = useRef<{ insertText: (text: string) => void } | null>(null);
 
   useEffect(() => {
     void init();
@@ -125,15 +135,48 @@ export default function TemplatesPage() {
     window.setTimeout(() => setCopied(false), 1400);
   };
 
+  const exportMarkdown = async () => {
+    if (filtered.length === 0) {
+      setNotice(t('templates.exportEmpty'));
+      return;
+    }
+    try {
+      const markdown = templatesToMarkdown(filtered, useUiStore.getState().templateExport);
+      const exported = await window.api.exportTemplateMarkdown({
+        markdown,
+        fileName: 'ojflow-templates.md',
+      });
+      setNotice(exported ? t('templates.exported') : t('templates.exportFailed'));
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : t('templates.exportFailed'));
+    }
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-transparent">
       <PageHeader
         title={t('templates.title')}
         actions={
-          <Button size="sm" className="gap-1.5" onClick={openCreate} data-testid="template-create">
-            <Plus size={15} />
-            {t('templates.add')}
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => void exportMarkdown()}
+            >
+              <Save size={15} />
+              {t('templates.export')}
+            </Button>
+            <Button
+              size="sm"
+              className="gap-1.5"
+              onClick={openCreate}
+              data-testid="template-create"
+            >
+              <Plus size={15} />
+              {t('templates.add')}
+            </Button>
+          </>
         }
       />
 
@@ -296,9 +339,13 @@ export default function TemplatesPage() {
                   </div>
                 </div>
                 <div className="scrollbar-thin min-h-0 flex-1 overflow-auto bg-[#111827] p-4">
-                  <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-5 text-slate-100">
-                    {selected.content}
-                  </pre>
+                  {templatesExpanded ? (
+                    <CodePreview content={selected.content} />
+                  ) : (
+                    <div className="flex h-full min-h-[220px] items-center justify-center text-xs text-slate-300">
+                      {t('templates.expandCode')}
+                    </div>
+                  )}
                 </div>
               </section>
             ) : (
@@ -378,15 +425,29 @@ export default function TemplatesPage() {
                   ))}
                 </datalist>
               </div>
-              <textarea
+              <CodeEditor
                 value={form.content}
-                onChange={event =>
-                  setForm(current => ({ ...current, content: event.target.value }))
-                }
+                onChange={content => setForm(current => ({ ...current, content }))}
+                language={form.language}
                 placeholder={t('templates.contentPlaceholder')}
                 aria-label={t('templates.content')}
-                spellCheck={false}
-                className="scrollbar-thin min-h-[360px] w-full resize-y rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[#111827] px-3 py-2 font-mono text-xs leading-5 text-slate-100 outline-none focus:border-[var(--color-primary)]"
+                data-testid="template-content"
+                onReady={view => {
+                  editorRef.current = {
+                    insertText: (text: string) => {
+                      const editorView = view as unknown as {
+                        dispatch: (payload: unknown) => void;
+                        state: { selection: { main: number } };
+                      };
+                      const pos = editorView.state.selection.main;
+                      editorView.dispatch({
+                        changes: { from: pos, to: pos, insert: text },
+                        selection: { anchor: pos + text.length },
+                      });
+                    },
+                  };
+                }}
+                className="min-h-[360px] overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)]"
               />
             </div>
             <div className="flex justify-end gap-2 border-t border-[var(--color-border)] p-4">

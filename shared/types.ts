@@ -172,6 +172,7 @@ export type SurfaceStyle = 'glass' | 'flat' | 'cloud' | 'clay';
 export type WindowCloseBehavior = 'tray' | 'quit';
 export type AutoRefreshModule = 'dashboard' | 'rating' | 'solved' | 'report';
 export type DashboardScheduleScope = 'today' | 'upcoming';
+export type ShortcutTarget = 'dashboard' | 'templates' | 'last';
 
 export interface AutoRefreshSettings {
   enabled: boolean;
@@ -244,6 +245,18 @@ export interface CodeTemplate {
   content: string;
   createdAt: number;
   updatedAt: number;
+}
+
+export interface TemplateExportOptions {
+  includeTitle: boolean;
+  includeLanguage: boolean;
+  includeCategory: boolean;
+}
+
+export interface ShortcutSettings {
+  enabled: boolean;
+  accelerator: string;
+  target: ShortcutTarget;
 }
 
 export interface CompanionStatus {
