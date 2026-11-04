@@ -1,4 +1,4 @@
-import {
+﻿import {
   _electron as electron,
   expect,
   test,
@@ -172,15 +172,14 @@ test('练习收件箱可以接收 Competitive Companion 题目并保存状态', 
   await expect(page.getByText('练习中', { exact: true }).first()).toBeVisible();
   await page.getByPlaceholder('记录思路、错误原因、复杂度和下次复习重点...').fill('parity');
   await page.getByRole('button', { name: '保存笔记' }).click();
-  await page.getByLabel('代码草稿').fill('int main() { return 0; }');
+  await page.locator('[data-testid="practice-code-editor"] .cm-content').click();
+  await page.keyboard.type('int main() { return 0; }');
   await page.getByRole('button', { name: '保存代码' }).click();
   await page.reload();
   await page.waitForSelector('.app-bar');
   await expect(page.getByRole('heading', { name: 'A. E2E Watermelon' })).toBeVisible();
   await expect(page.locator('textarea[aria-label="练习笔记"]')).toHaveValue('parity');
-  await expect(page.locator('textarea[aria-label="代码草稿"]')).toHaveValue(
-    'int main() { return 0; }',
-  );
+  await expect(page.locator('[data-testid="practice-code-editor"]')).toContainText('int main()');
   await app.close();
 });
 
@@ -190,7 +189,8 @@ test('模板库可以创建、搜索和复制模板', async () => {
   await page.getByTestId('template-create').click();
   await page.getByLabel('模板标题').fill('E2E Segment Tree');
   await page.getByLabel('分类').fill('E2E');
-  await page.getByLabel('模板内容').fill('struct SegTree {};');
+  await page.locator('[data-testid="template-content"] .cm-content').click();
+  await page.keyboard.type('struct SegTree {};');
   await page.getByRole('button', { name: '保存' }).click();
   await expect(page.getByRole('heading', { name: 'E2E Segment Tree' })).toBeVisible();
   await page.getByRole('button', { name: '复制模板' }).click();

@@ -72,7 +72,11 @@ describe('preload bridge', () => {
     await api().getWindowState();
     await api().getAutoLaunch();
     await api().setAutoLaunch(true);
-    await api().setGlobalTemplateShortcut('CommandOrControl+Shift+T');
+    await api().setShortcutSettings({
+      enabled: true,
+      accelerator: 'CommandOrControl+Shift+T',
+      target: 'last',
+    });
     await api().setNotification({ enabled: true, reminderMinutes: 15 });
     await api().getNotification();
     await storeApi().get('ui');
@@ -109,7 +113,7 @@ describe('preload bridge', () => {
     expect(invokes).toContainEqual({ channel: IPC_CHANNELS.AUTO_LAUNCH_SET, args: [true] });
     expect(invokes).toContainEqual({
       channel: IPC_CHANNELS.SET_SHORTCUT_SETTINGS,
-      args: ['CommandOrControl+Shift+T'],
+      args: [{ enabled: true, accelerator: 'CommandOrControl+Shift+T', target: 'last' }],
     });
   });
 
