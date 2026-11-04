@@ -608,6 +608,37 @@ footer {
   padding: 16px;
 }
 
+.bento-inbox {
+  grid-column: span 12;
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  border-radius: 1.1rem;
+  background: color-mix(in srgb, var(--theme-primary, #087f8c) 12%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--theme-primary, #087f8c) 22%, transparent);
+}
+
+.bento-inbox b {
+  font-size: 0.95rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bento-inbox span {
+  font-size: 0.68rem;
+  color: #5c6b74;
+}
+
+.bento-inbox i {
+  justify-self: end;
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--theme-primary, #087f8c);
+}
+
 .bento-schedule div {
   display: flex;
   gap: 7px;

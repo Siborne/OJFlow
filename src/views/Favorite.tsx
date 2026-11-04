@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Star, Search, SortAsc, Edit3, Plus, Trash2, X } from 'lucide-react';
+import { Star, Search, SortAsc, Edit3, Plus, Trash2, X, Timer } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { useContestStore } from '@/stores/contest';
 import { ContestService } from '@/services/contest';
@@ -10,6 +10,7 @@ import { ContestUtils } from '@/utils/contest_utils';
 import { useUiStore } from '@/stores/ui';
 import { useI18n } from '@/i18n';
 import { getPlatformLabel } from '@/utils/platform-labels';
+import { VirtualContestDialog } from '@/components/contest/VirtualContestDialog';
 
 const images: Record<string, string> = {
   Codeforces: new URL('../assets/platforms/Codeforces.jpg', import.meta.url).href,
@@ -66,6 +67,7 @@ export default function Favorite() {
     contest: null,
   });
   const [showManualDialog, setShowManualDialog] = useState(false);
+  const [vpContest, setVpContest] = useState<Contest | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [toast, setToast] = useState('');
   const [manualForm, setManualForm] = useState({
@@ -314,12 +316,26 @@ export default function Favorite() {
             </div>
           </div>
           {!isBatchMode && (
-            <button
-              onClick={() => store.toggleFavorite(contest)}
-              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full hover:bg-[var(--color-surface-muted)]"
-            >
-              <Star size={20} className="fill-[var(--color-warning)] text-[var(--color-warning)]" />
-            </button>
+            <>
+              <button
+                onClick={() => setVpContest(contest)}
+                aria-label={t('vp.button')}
+                title={t('vp.button')}
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[var(--color-primary)] hover:bg-[var(--color-primary-weak)]"
+              >
+                <Timer size={17} />
+              </button>
+              <button
+                onClick={() => store.toggleFavorite(contest)}
+                aria-label={t('contest.unfavorite')}
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full hover:bg-[var(--color-surface-muted)]"
+              >
+                <Star
+                  size={20}
+                  className="fill-[var(--color-warning)] text-[var(--color-warning)]"
+                />
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -562,6 +578,8 @@ export default function Favorite() {
           {toast}
         </div>
       )}
+
+      {vpContest && <VirtualContestDialog contest={vpContest} onClose={() => setVpContest(null)} />}
 
       {showManualDialog && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center p-4">

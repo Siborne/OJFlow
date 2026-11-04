@@ -170,6 +170,7 @@ describe('Settings page', () => {
   test('updates appearance, feature flags, preferences and cache', async () => {
     let cleared = 0;
     let autoLaunch = false;
+    let templateShortcut = '';
     const storeWrites: Array<[string, unknown]> = [];
     installWindowApi({
       clearCache: async () => {
@@ -177,6 +178,10 @@ describe('Settings page', () => {
       },
       setAutoLaunch: async enabled => {
         autoLaunch = enabled;
+      },
+      setGlobalTemplateShortcut: async accelerator => {
+        templateShortcut = accelerator;
+        return { success: true };
       },
     });
     installWindowStore({
@@ -257,7 +262,16 @@ describe('Settings page', () => {
     await click(view.container.querySelector('[aria-label="开机自动启动"]'));
     await click(view.container.querySelector('[aria-label="自动检查更新"]'));
     await click(findButton(view.container, '直接退出'));
+    const shortcutSelect = view.container.querySelector(
+      'select[aria-label="模板库全局快捷键"]',
+    ) as HTMLSelectElement;
+    await act(async () => {
+      shortcutSelect.value = 'Alt+T';
+      shortcutSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      await flushPromises();
+    });
     expect(autoLaunch).toBe(true);
+    expect(templateShortcut).toBe('Alt+T');
     expect(useUiStore.getState().autoCheckUpdates).toBe(false);
     expect(storeWrites).toContainEqual(['ui.closeBehavior', 'quit']);
     await view.unmount();
@@ -300,7 +314,10 @@ describe('Navigation page', () => {
         element: <NavigationPage />,
         children: [
           { path: 'dashboard', element: <div>DASHBOARD CONTENT</div> },
+          { path: 'practice', element: <div>PRACTICE CONTENT</div> },
           { path: 'contest', element: <div>CONTEST CONTENT</div> },
+          { path: 'schedule', element: <div>SCHEDULE CONTENT</div> },
+          { path: 'templates', element: <div>TEMPLATES CONTENT</div> },
           { path: 'star', element: <div>STAR CONTENT</div> },
           { path: 'problems', element: <div>PROBLEMS CONTENT</div> },
           { path: 'service', element: <div>SERVICE CONTENT</div> },
@@ -330,7 +347,7 @@ describe('Navigation page', () => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: '4', ctrlKey: true }));
       await flushPromises();
     });
-    expect(full.container.textContent).toContain('STAR CONTENT');
+    expect(full.container.textContent).toContain('SCHEDULE CONTENT');
     await full.unmount();
   });
 });

@@ -3,6 +3,8 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Archive,
   BarChart3,
+  Braces,
+  CalendarClock,
   CalendarDays,
   CircleCheckBig,
   FileChartColumn,
@@ -51,6 +53,20 @@ const NAV_ITEMS: NavItem[] = [
     labelKey: 'nav.contest',
     icon: CalendarDays,
     path: '/contest',
+    section: 'explore',
+  },
+  {
+    key: 'schedule',
+    labelKey: 'nav.schedule',
+    icon: CalendarClock,
+    path: '/schedule',
+    section: 'explore',
+  },
+  {
+    key: 'templates',
+    labelKey: 'nav.templates',
+    icon: Braces,
+    path: '/templates',
     section: 'explore',
   },
   {
@@ -159,6 +175,12 @@ export default function NavigationPage() {
     window.addEventListener('resize', checkLayout);
     return () => window.removeEventListener('resize', checkLayout);
   }, []);
+
+  useEffect(() => {
+    return window.api.onNavigateTo(path => {
+      if (path === '/templates') navigate(path);
+    });
+  }, [navigate]);
 
   const renderNavButton = (item: NavItem, mobile = false) => {
     const Icon = item.icon;

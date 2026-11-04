@@ -1,4 +1,6 @@
-import { afterEach, describe, expect, mock, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
+import { Readable } from 'node:stream';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { PracticeProblem } from '../../shared/types';
 
 class FakeElectronStore {
@@ -13,14 +15,30 @@ class FakeElectronStore {
 
 mock.module('electron-store', () => ({ default: FakeElectronStore }));
 
-const { startCompanionServer } = await import('../../electron/services/companion-server');
+const { createCompanionRequestHandler } = await import('../../electron/services/companion-server');
 
-let closeServer: (() => Promise<void>) | undefined;
+class FakeResponse {
+  status = 0;
+  headers: Record<string, string> = {};
+  body = '';
 
-afterEach(async () => {
-  if (closeServer) await closeServer();
-  closeServer = undefined;
-});
+  writeHead(status: number, headers: Record<string, string>) {
+    this.status = status;
+    this.headers = headers;
+    return this;
+  }
+
+  end(body?: string) {
+    this.body = body ?? '';
+  }
+}
+
+function createRequest(method: string, payload?: unknown): IncomingMessage {
+  const body = payload === undefined ? '' : JSON.stringify(payload);
+  const request = Readable.from(body ? [Buffer.from(body)] : []) as IncomingMessage;
+  request.method = method;
+  return request;
+}
 
 describe('Competitive Companion receiver', () => {
   test('accepts problem payloads and reports invalid requests', async () => {
@@ -33,39 +51,41 @@ describe('Competitive Companion receiver', () => {
       source: 'Codeforces',
       status: 'inbox',
       notes: '',
+      code: '',
+      codeLanguage: 'cpp',
       samples: [{ input: '1', output: '2' }],
       createdAt: 1,
       updatedAt: 1,
     };
-    const server = await startCompanionServer({
-      ports: [0],
-      importProblem: payload =>
-        (payload as { name?: string }).name === 'A. Test' ? problem : null,
-      onImported: item => imported.push(item),
-    });
-    closeServer = server.close;
+    const handler = createCompanionRequestHandler(
+      item => imported.push(item),
+      payload => ((payload as { name?: string }).name === 'A. Test' ? problem : null),
+    );
 
-    const ready = await fetch(`http://127.0.0.1:${server.port}`);
+    const ready = new FakeResponse();
+    await handler(createRequest('GET'), ready as unknown as ServerResponse);
     expect(ready.status).toBe(200);
-    expect(await ready.json()).toMatchObject({ name: 'OJFlow', ready: true });
+    expect(JSON.parse(ready.body)).toMatchObject({ name: 'OJFlow', ready: true });
 
-    const accepted = await fetch(`http://127.0.0.1:${server.port}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'A. Test' }),
-    });
+    const accepted = new FakeResponse();
+    await handler(
+      createRequest('POST', { name: 'A. Test' }),
+      accepted as unknown as ServerResponse,
+    );
     expect(accepted.status).toBe(200);
-    expect(await accepted.json()).toEqual({ status: 'ok', id: 'problem-1' });
+    expect(JSON.parse(accepted.body)).toEqual({ status: 'ok', id: 'problem-1' });
     expect(imported).toEqual([problem]);
 
-    const invalid = await fetch(`http://127.0.0.1:${server.port}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'bad' }),
-    });
+    const invalid = new FakeResponse();
+    await handler(createRequest('POST', { name: 'bad' }), invalid as unknown as ServerResponse);
     expect(invalid.status).toBe(400);
 
-    const unsupported = await fetch(`http://127.0.0.1:${server.port}`, { method: 'PUT' });
+    const unsupported = new FakeResponse();
+    await handler(createRequest('PUT'), unsupported as unknown as ServerResponse);
     expect(unsupported.status).toBe(405);
+
+    const options = new FakeResponse();
+    await handler(createRequest('OPTIONS'), options as unknown as ServerResponse);
+    expect(options.status).toBe(204);
   });
 });

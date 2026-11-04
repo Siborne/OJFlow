@@ -19,6 +19,7 @@ export const IPC_CHANNELS = {
   SEARCH_PROBLEMS: 'search-problems',
   GET_CF_REPORT: 'get-cf-report',
   LIST_PRACTICE_PROBLEMS: 'list-practice-problems',
+  CREATE_PRACTICE_PROBLEM: 'create-practice-problem',
   UPDATE_PRACTICE_PROBLEM: 'update-practice-problem',
   DELETE_PRACTICE_PROBLEM: 'delete-practice-problem',
   GET_COMPANION_STATUS: 'get-companion-status',
@@ -31,6 +32,7 @@ export const IPC_CHANNELS = {
   WINDOW_STATE_CHANGED: 'window-state-changed',
   AUTO_LAUNCH_GET: 'auto-launch-get',
   AUTO_LAUNCH_SET: 'auto-launch-set',
+  SET_TEMPLATE_SHORTCUT: 'set-template-shortcut',
 
   // Store management
   STORE_GET: 'store-get',
@@ -41,6 +43,7 @@ export const IPC_CHANNELS = {
   CONTESTS_PARTIAL: 'contests-partial',
   REFRESH_CONTESTS: 'refresh-contests',
   PRACTICE_IMPORTED: 'practice-imported',
+  NAVIGATE_TO: 'navigate-to',
 
   // Notification
   NOTIFICATION_SET: 'notification-set',
@@ -82,6 +85,10 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.LIST_PRACTICE_PROBLEMS]: {
     args: [];
     return: PracticeProblem[];
+  };
+  [IPC_CHANNELS.CREATE_PRACTICE_PROBLEM]: {
+    args: [payload: unknown];
+    return: PracticeProblem | null;
   };
   [IPC_CHANNELS.UPDATE_PRACTICE_PROBLEM]: {
     args: [id: string, updates: PracticeProblemUpdate];
@@ -126,6 +133,10 @@ export interface IpcHandlerMap {
   [IPC_CHANNELS.AUTO_LAUNCH_SET]: {
     args: [enabled: boolean];
     return: void;
+  };
+  [IPC_CHANNELS.SET_TEMPLATE_SHORTCUT]: {
+    args: [accelerator: string];
+    return: { success: boolean; error?: string };
   };
   [IPC_CHANNELS.STORE_GET]: {
     args: [key: string];

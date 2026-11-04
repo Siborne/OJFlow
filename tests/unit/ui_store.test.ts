@@ -32,6 +32,7 @@ function resetUiStore(): void {
     effectiveLocale: 'zh-CN',
     surfaceStyle: 'glass',
     appMode: 'simple',
+    dashboardScheduleScope: 'today',
     autoRefresh: {
       enabled: true,
       intervalMinutes: 15,
@@ -81,6 +82,7 @@ describe('ui store', () => {
           colorMode: 'dark',
           surfaceStyle: 'clay',
           appMode: 'full',
+          dashboardScheduleScope: 'upcoming',
           autoRefresh: {
             enabled: false,
             intervalMinutes: 30,
@@ -99,6 +101,7 @@ describe('ui store', () => {
     expect(state.colorMode).toBe('dark');
     expect(state.surfaceStyle).toBe('clay');
     expect(state.appMode).toBe('full');
+    expect(state.dashboardScheduleScope).toBe('upcoming');
     expect(state.autoRefresh).toMatchObject({
       enabled: false,
       intervalMinutes: 30,
@@ -180,15 +183,18 @@ describe('ui store', () => {
       getAll: async () => ({}),
     });
     await useUiStore.getState().setAppMode('full');
+    await useUiStore.getState().setDashboardScheduleScope('upcoming');
     await useUiStore.getState().setThemeScheme('ember');
     await useUiStore.getState().setSurfaceStyle('cloud');
     expect(document.documentElement.dataset.mode).toBe('full');
     expect(document.documentElement.dataset.scheme).toBe('ember');
     expect(localStorage.getItem('app_mode')).toBe('full');
+    expect(localStorage.getItem('dashboard_schedule_scope')).toBe('upcoming');
     expect(localStorage.getItem('theme_scheme')).toBe('ember');
     expect(localStorage.getItem('surface_style')).toBe('cloud');
     expect(document.documentElement.dataset.surface).toBe('cloud');
     expect(writes).toContainEqual(['ui.appMode', 'full']);
+    expect(writes).toContainEqual(['ui.dashboardScheduleScope', 'upcoming']);
     expect(writes).toContainEqual(['ui.themeScheme', 'ember']);
     expect(writes).toContainEqual(['ui.surfaceStyle', 'cloud']);
   });

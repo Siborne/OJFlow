@@ -15,6 +15,7 @@ interface HtmlProblemConfig {
   baseUrl: string;
   selector: string;
   hrefPrefix: string;
+  idPattern: RegExp;
 }
 
 function parseAnchorProblems(html: string, config: HtmlProblemConfig): ProblemSummary[] {
@@ -25,7 +26,14 @@ function parseAnchorProblems(html: string, config: HtmlProblemConfig): ProblemSu
     const href = cleanText($(element).attr('href'));
     if (!href.includes(config.hrefPrefix)) return;
 
-    const id = extractNumericId(href);
+    let pathname = href;
+    try {
+      pathname = new URL(href, config.baseUrl).pathname;
+    } catch {
+      return;
+    }
+    const id = pathname.match(config.idPattern)?.[1] ?? extractNumericId(pathname);
+    if (!/^\d+$/.test(id)) return;
     const name =
       cleanText($(element).text()) ||
       cleanText($(element).attr('title')) ||
@@ -56,6 +64,7 @@ export function parseNowcoderProblems(html: string): ProblemSummary[] {
     baseUrl: 'https://ac.nowcoder.com',
     selector: 'a[href*="/acm/problem/"]',
     hrefPrefix: '/acm/problem/',
+    idPattern: /^\/acm\/problem\/(\d+)(?:\/|$)/,
   });
 }
 
@@ -65,6 +74,7 @@ export function parseQojProblems(html: string): ProblemSummary[] {
     baseUrl: 'https://qoj.ac',
     selector: 'a[href*="/problem/"]',
     hrefPrefix: '/problem/',
+    idPattern: /^\/problem\/(\d+)(?:\/|$)/,
   });
 }
 

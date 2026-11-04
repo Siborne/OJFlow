@@ -172,6 +172,7 @@ describe('Luogu problem provider', () => {
 describe('HTML problem providers', () => {
   test('parses Nowcoder and QOJ problem links without duplicates', () => {
     const nowcoder = parseNowcoderProblems(`
+      <a href="/acm/problem/list">题库</a>
       <a href="/acm/problem/123">牛客练习 A</a>
       <a href="/acm/problem/123">重复</a>
       <a href="/acm/problem/456" title="练习 B"></a>

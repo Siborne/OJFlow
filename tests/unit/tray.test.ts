@@ -72,6 +72,12 @@ afterEach(() => {
 });
 
 describe('tray reminders', () => {
+  test('uses the native Windows icon format for the tray', () => {
+    expect(
+      tray.getTrayIconPath().endsWith(process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
+    ).toBe(true);
+  });
+
   test('builds only reminders within the next 24 hours', () => {
     const now = Date.now();
     const contests: RawContest[] = [

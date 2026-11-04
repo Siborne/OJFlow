@@ -16,6 +16,8 @@ const problem: PracticeProblem = {
   source: 'Codeforces',
   status: 'inbox',
   notes: '',
+  code: '',
+  codeLanguage: 'cpp',
   samples: [{ input: '8\n', output: 'YES\n' }],
   timeLimitMs: 1000,
   memoryLimitMb: 256,
@@ -67,7 +69,9 @@ describe('Practice Inbox page', () => {
     });
     expect(updates).toContainEqual({ id: 'p1', updates: { status: 'practicing' } });
 
-    const notes = view.container.querySelector('textarea') as HTMLTextAreaElement;
+    const notes = view.container.querySelector(
+      'textarea[aria-label="练习笔记"]',
+    ) as HTMLTextAreaElement;
     await type(notes, 'Use parity');
     await click(findButton(view.container, '保存笔记'));
     await act(async () => {
@@ -75,8 +79,24 @@ describe('Practice Inbox page', () => {
     });
     expect(updates).toContainEqual({ id: 'p1', updates: { notes: 'Use parity' } });
 
-    await click(findButton(view.container, '复制'));
-    expect(copied).toContain('8\n');
+    const code = view.container.querySelector(
+      'textarea[aria-label="代码草稿"]',
+    ) as HTMLTextAreaElement;
+    await type(code, 'int main() {}');
+    await click(findButton(view.container, '保存代码'));
+    await act(async () => {
+      await flushPromises();
+    });
+    expect(updates).toContainEqual({
+      id: 'p1',
+      updates: { code: 'int main() {}', codeLanguage: 'cpp' },
+    });
+
+    const sampleCopy = Array.from(view.container.querySelectorAll('button')).find(
+      button => button.textContent?.trim() === '复制',
+    );
+    await click(sampleCopy ?? null);
+    expect(copied.some(value => value.includes('8\n') && value.includes('YES\n'))).toBe(true);
     await view.unmount();
   });
 
@@ -98,6 +118,43 @@ describe('Practice Inbox page', () => {
       await flushPromises();
     });
     expect(view.container.textContent).toContain('B. Imported');
+    await view.unmount();
+  });
+
+  test('adds a problem manually with an optional sample', async () => {
+    const created: PracticeProblem = {
+      ...problem,
+      id: 'manual',
+      name: 'C. Manual',
+      group: 'Local contest',
+      url: 'https://codeforces.com/contest/9/problem/C',
+    };
+    installWindowApi({
+      listPracticeProblems: async () => [],
+      getCompanionStatus: async () => ({ running: true, port: 10043 }),
+      createPracticeProblem: async () => created,
+    });
+    const view = await render(<PracticeInboxPage />);
+    await waitFor(() => view.container.textContent?.includes('还没有导入题目') ?? false);
+
+    await click(findButton(view.container, '手动添加题目'));
+    await type(
+      view.container.querySelector('input[aria-label="题目名称"]') as HTMLInputElement,
+      'C. Manual',
+    );
+    await type(
+      view.container.querySelector('input[aria-label="题目链接"]') as HTMLInputElement,
+      'https://codeforces.com/contest/9/problem/C',
+    );
+    await type(
+      view.container.querySelector('input[aria-label="比赛或来源"]') as HTMLInputElement,
+      'Local contest',
+    );
+    await click(findButton(view.container, '保存'));
+    await act(async () => {
+      await flushPromises();
+    });
+    expect(view.container.textContent).toContain('C. Manual');
     await view.unmount();
   });
 });

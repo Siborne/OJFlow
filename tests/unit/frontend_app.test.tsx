@@ -31,6 +31,8 @@ describe('application shell', () => {
       'dashboard',
       'practice',
       'contest',
+      'schedule',
+      'templates',
       'star',
       'problems',
       'service',

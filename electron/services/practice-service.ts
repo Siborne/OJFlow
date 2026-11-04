@@ -12,6 +12,8 @@ const MAX_PROBLEMS = 1000;
 const MAX_SAMPLES = 50;
 const MAX_SAMPLE_CHARS = 250_000;
 const MAX_NOTES_CHARS = 20_000;
+const MAX_CODE_CHARS = 100_000;
+const DEFAULT_CODE_LANGUAGE = 'cpp';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface CompanionProblemData {
@@ -100,7 +102,16 @@ export function createPracticeProblemId(data: CompanionProblemData): string {
 
 function readProblems(): PracticeProblem[] {
   const stored = store.get('practice.problems');
-  return Array.isArray(stored) ? (stored as PracticeProblem[]) : [];
+  if (!Array.isArray(stored)) return [];
+  return (stored as Array<Partial<PracticeProblem>>).map(problem => ({
+    ...(problem as PracticeProblem),
+    notes: typeof problem.notes === 'string' ? problem.notes : '',
+    code: typeof problem.code === 'string' ? problem.code : '',
+    codeLanguage:
+      typeof problem.codeLanguage === 'string' && problem.codeLanguage
+        ? problem.codeLanguage
+        : DEFAULT_CODE_LANGUAGE,
+  }));
 }
 
 function writeProblems(problems: PracticeProblem[]): void {
@@ -139,6 +150,8 @@ export function importPracticeProblem(payload: unknown, now = Date.now()): Pract
         source: data.source,
         status: 'inbox',
         notes: '',
+        code: '',
+        codeLanguage: DEFAULT_CODE_LANGUAGE,
         samples: data.samples,
         timeLimitMs: data.timeLimitMs,
         memoryLimitMb: data.memoryLimitMb,
@@ -170,6 +183,11 @@ export function updatePracticeProblem(
     ...current,
     notes:
       typeof updates.notes === 'string' ? clampText(updates.notes, MAX_NOTES_CHARS) : current.notes,
+    code: typeof updates.code === 'string' ? clampText(updates.code, MAX_CODE_CHARS) : current.code,
+    codeLanguage:
+      typeof updates.codeLanguage === 'string' && updates.codeLanguage.trim()
+        ? clampText(updates.codeLanguage.trim(), 24)
+        : current.codeLanguage,
     updatedAt: now,
   };
 

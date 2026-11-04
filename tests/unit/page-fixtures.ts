@@ -1,6 +1,7 @@
 import { useContestStore } from '../../src/stores/contest';
 import { useUiStore } from '../../src/stores/ui';
 import { useScheduleStore } from '../../src/stores/schedule';
+import { useTemplateStore } from '../../src/stores/templates';
 
 export function installWindowApi(overrides: Partial<ElectronApi> = {}): ElectronApi {
   const api: ElectronApi = {
@@ -38,10 +39,12 @@ export function installWindowApi(overrides: Partial<ElectronApi> = {}): Electron
       tagStats: [],
     }),
     listPracticeProblems: async () => [],
+    createPracticeProblem: async () => null,
     updatePracticeProblem: async () => null,
     deletePracticeProblem: async () => false,
     getCompanionStatus: async () => ({ running: true, port: 10043 }),
     onPracticeImported: () => () => {},
+    onNavigateTo: () => () => {},
     copyText: async () => {},
     clearCache: async () => {},
     minimizeWindow: async () => {},
@@ -51,6 +54,7 @@ export function installWindowApi(overrides: Partial<ElectronApi> = {}): Electron
     onWindowStateChanged: () => () => {},
     getAutoLaunch: async () => false,
     setAutoLaunch: async () => {},
+    setGlobalTemplateShortcut: async () => ({ success: true }),
     setNotification: async () => {},
     getNotification: async () => ({ enabled: false, reminderMinutes: 15 }),
     ...overrides,
@@ -101,6 +105,7 @@ export function resetFrontendStores(): void {
     effectiveLocale: 'zh-CN',
     surfaceStyle: 'glass',
     appMode: 'full',
+    dashboardScheduleScope: 'today',
     autoRefresh: {
       enabled: true,
       intervalMinutes: 15,
@@ -127,6 +132,10 @@ export function resetFrontendStores(): void {
     initialized: true,
   });
   useScheduleStore.setState({
+    items: [],
+    initialized: true,
+  });
+  useTemplateStore.setState({
     items: [],
     initialized: true,
   });

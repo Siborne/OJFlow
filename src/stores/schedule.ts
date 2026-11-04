@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Contest, ScheduleItem } from '../../shared/types';
+import { isScheduleExpired } from '../utils/schedule';
 
 const SCHEDULE_KEY = 'ojflow_schedule';
 
@@ -20,6 +21,7 @@ interface ScheduleState {
   addItem: (item: NewScheduleItem) => ScheduleItem;
   toggleCompleted: (id: string) => void;
   removeItem: (id: string) => void;
+  removeExpired: (now?: number) => number;
   syncFavoriteContest: (contest: Contest, shouldExist: boolean) => void;
 }
 
@@ -130,6 +132,17 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     const items = get().items.filter(item => item.id !== id);
     set({ items });
     persist(items);
+  },
+
+  removeExpired: (now = Date.now()) => {
+    const current = get().items;
+    const items = current.filter(item => !isScheduleExpired(item, now));
+    const removed = current.length - items.length;
+    if (removed > 0) {
+      set({ items });
+      persist(items);
+    }
+    return removed;
   },
 
   syncFavoriteContest: (contest, shouldExist) => {

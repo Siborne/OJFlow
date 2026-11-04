@@ -60,6 +60,7 @@ describe('preload bridge', () => {
     await api().searchProblems({ query: 'dp' });
     await api().getCodeforcesReport('tourist');
     await api().listPracticeProblems();
+    await api().createPracticeProblem({ name: 'Manual' });
     await api().updatePracticeProblem('p1', { status: 'practicing' });
     await api().deletePracticeProblem('p1');
     await api().getCompanionStatus();
@@ -71,6 +72,7 @@ describe('preload bridge', () => {
     await api().getWindowState();
     await api().getAutoLaunch();
     await api().setAutoLaunch(true);
+    await api().setGlobalTemplateShortcut('CommandOrControl+Shift+T');
     await api().setNotification({ enabled: true, reminderMinutes: 15 });
     await api().getNotification();
     await storeApi().get('ui');
@@ -95,12 +97,20 @@ describe('preload bridge', () => {
       args: ['p1', { status: 'practicing' }],
     });
     expect(invokes).toContainEqual({
+      channel: IPC_CHANNELS.CREATE_PRACTICE_PROBLEM,
+      args: [{ name: 'Manual' }],
+    });
+    expect(invokes).toContainEqual({
       channel: IPC_CHANNELS.COPY_TEXT,
       args: ['sample'],
     });
     expect(invokes).toContainEqual({ channel: IPC_CHANNELS.WINDOW_MINIMIZE, args: [] });
     expect(invokes).toContainEqual({ channel: IPC_CHANNELS.WINDOW_CLOSE, args: [] });
     expect(invokes).toContainEqual({ channel: IPC_CHANNELS.AUTO_LAUNCH_SET, args: [true] });
+    expect(invokes).toContainEqual({
+      channel: IPC_CHANNELS.SET_TEMPLATE_SHORTCUT,
+      args: ['CommandOrControl+Shift+T'],
+    });
   });
 
   test('subscribes and unsubscribes streaming listeners', () => {
@@ -153,5 +163,18 @@ describe('preload bridge', () => {
     expect(imported).toEqual([{ id: 'p1', name: 'A' }]);
     unsubscribe();
     expect(listeners.get(IPC_CHANNELS.PRACTICE_IMPORTED)?.size).toBe(0);
+  });
+
+  test('subscribes and unsubscribes app navigation events', () => {
+    const paths: string[] = [];
+    const unsubscribe = api().onNavigateTo((path: unknown) =>
+      paths.push(String(path)),
+    ) as () => void;
+    for (const listener of listeners.get(IPC_CHANNELS.NAVIGATE_TO) ?? []) {
+      listener({}, '/templates');
+    }
+    expect(paths).toEqual(['/templates']);
+    unsubscribe();
+    expect(listeners.get(IPC_CHANNELS.NAVIGATE_TO)?.size).toBe(0);
   });
 });

@@ -113,4 +113,45 @@ describe('schedule store', () => {
     useScheduleStore.getState().syncFavoriteContest(contest, false);
     expect(useScheduleStore.getState().items).toHaveLength(0);
   });
+
+  test('removes expired unfinished schedules without touching completed items', () => {
+    useScheduleStore.setState({
+      items: [
+        {
+          id: 'expired',
+          title: 'Missed practice',
+          startsAt: '2026-11-01T10:00',
+          durationMinutes: 60,
+          kind: 'practice',
+          completed: false,
+          createdAt: 1,
+        },
+        {
+          id: 'completed',
+          title: 'Finished review',
+          startsAt: '2026-11-01T11:00',
+          durationMinutes: 60,
+          kind: 'review',
+          completed: true,
+          createdAt: 1,
+        },
+        {
+          id: 'future',
+          title: 'Future contest',
+          startsAt: '2026-11-05T10:00',
+          durationMinutes: 120,
+          kind: 'contest',
+          completed: false,
+          createdAt: 1,
+        },
+      ],
+      initialized: true,
+    });
+
+    const removed = useScheduleStore
+      .getState()
+      .removeExpired(new Date('2026-11-03T12:00').getTime());
+    expect(removed).toBe(1);
+    expect(useScheduleStore.getState().items.map(item => item.id)).toEqual(['completed', 'future']);
+  });
 });

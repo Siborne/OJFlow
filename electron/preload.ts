@@ -52,6 +52,9 @@ const api = {
   listPracticeProblems: (): Promise<PracticeProblem[]> =>
     ipcRenderer.invoke(IPC_CHANNELS.LIST_PRACTICE_PROBLEMS),
 
+  createPracticeProblem: (payload: unknown): Promise<PracticeProblem | null> =>
+    ipcRenderer.invoke(IPC_CHANNELS.CREATE_PRACTICE_PROBLEM, payload),
+
   updatePracticeProblem: (
     id: string,
     updates: PracticeProblemUpdate,
@@ -69,6 +72,14 @@ const api = {
     ipcRenderer.on(IPC_CHANNELS.PRACTICE_IMPORTED, handler);
     return () => {
       ipcRenderer.removeListener(IPC_CHANNELS.PRACTICE_IMPORTED, handler);
+    };
+  },
+
+  onNavigateTo: (callback: (path: string) => void): (() => void) => {
+    const handler = (_event: unknown, path: string) => callback(path);
+    ipcRenderer.on(IPC_CHANNELS.NAVIGATE_TO, handler);
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.NAVIGATE_TO, handler);
     };
   },
 
@@ -96,6 +107,9 @@ const api = {
 
   setAutoLaunch: (enabled: boolean): Promise<void> =>
     ipcRenderer.invoke(IPC_CHANNELS.AUTO_LAUNCH_SET, enabled),
+
+  setGlobalTemplateShortcut: (accelerator: string): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke(IPC_CHANNELS.SET_TEMPLATE_SHORTCUT, accelerator),
 
   /** Set notification preferences */
   setNotification: (payload: { enabled: boolean; reminderMinutes: number }): Promise<void> =>

@@ -171,6 +171,7 @@ export type ThemeScheme = 'ocean' | 'ember' | 'forest' | 'berry' | 'sky' | 'sand
 export type SurfaceStyle = 'glass' | 'flat' | 'cloud' | 'clay';
 export type WindowCloseBehavior = 'tray' | 'quit';
 export type AutoRefreshModule = 'dashboard' | 'rating' | 'solved' | 'report';
+export type DashboardScheduleScope = 'today' | 'upcoming';
 
 export interface AutoRefreshSettings {
   enabled: boolean;
@@ -215,6 +216,8 @@ export interface PracticeProblem {
   source: string;
   status: PracticeStatus;
   notes: string;
+  code: string;
+  codeLanguage: string;
   samples: PracticeSample[];
   timeLimitMs?: number;
   memoryLimitMb?: number;
@@ -228,7 +231,19 @@ export interface PracticeProblem {
 export interface PracticeProblemUpdate {
   status?: PracticeStatus;
   notes?: string;
+  code?: string;
+  codeLanguage?: string;
   reviewAt?: number | null;
+}
+
+export interface CodeTemplate {
+  id: string;
+  title: string;
+  language: string;
+  category: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface CompanionStatus {

@@ -34,6 +34,7 @@ import { cn } from '@/lib/utils';
 import type {
   AppFeatures,
   AutoRefreshModule,
+  DashboardScheduleScope,
   LocalePreference,
   SurfaceStyle,
   SharePosterSettings,
@@ -45,6 +46,14 @@ type ToastState = { type: 'success' | 'error' | 'warning'; text: string } | null
 
 const PERIOD_OPTIONS = [7, 15, 30];
 const AUTO_REFRESH_INTERVALS = [5, 15, 30, 60];
+const REMINDER_OPTIONS = [5, 10, 15, 30, 60];
+const TEMPLATE_SHORTCUT_OPTIONS = [
+  '',
+  'CommandOrControl+Shift+T',
+  'CommandOrControl+Shift+O',
+  'CommandOrControl+Alt+T',
+  'Alt+T',
+];
 const AUTO_REFRESH_MODULES: Array<{ key: AutoRefreshModule; labelKey: MessageKey }> = [
   { key: 'dashboard', labelKey: 'settings.autoRefreshDashboard' },
   { key: 'rating', labelKey: 'settings.autoRefreshRating' },
@@ -269,6 +278,7 @@ export default function Settings() {
   const features = useUiStore(state => state.features);
   const autoRefresh = useUiStore(state => state.autoRefresh);
   const autoCheckUpdates = useUiStore(state => state.autoCheckUpdates);
+  const dashboardScheduleScope = useUiStore(state => state.dashboardScheduleScope);
   const sharePoster = useUiStore(state => state.sharePoster);
   const setAppMode = useUiStore(state => state.setAppMode);
   const setColorMode = useUiStore(state => state.setColorMode);
@@ -280,6 +290,7 @@ export default function Settings() {
   const setAutoRefreshInterval = useUiStore(state => state.setAutoRefreshInterval);
   const setAutoRefreshModule = useUiStore(state => state.setAutoRefreshModule);
   const setAutoCheckUpdates = useUiStore(state => state.setAutoCheckUpdates);
+  const setDashboardScheduleScope = useUiStore(state => state.setDashboardScheduleScope);
   const setSharePosterSection = useUiStore(state => state.setSharePosterSection);
 
   const [isUpdatingDays, setIsUpdatingDays] = useState(false);
@@ -291,6 +302,7 @@ export default function Settings() {
   const [isClearingCache, setIsClearingCache] = useState(false);
   const [activeSection, setActiveSection] = useState('appearance');
   const [startAtLogin, setStartAtLogin] = useState(false);
+  const [templateShortcut, setTemplateShortcut] = useState('CommandOrControl+Shift+T');
   const [closeBehavior, setCloseBehavior] = useState<WindowCloseBehavior>('tray');
 
   const showToast = useCallback((type: NonNullable<ToastState>['type'], text: string) => {
@@ -325,6 +337,12 @@ export default function Settings() {
       .get('ui.closeBehavior')
       .then(value => {
         if (value === 'tray' || value === 'quit') setCloseBehavior(value);
+      })
+      .catch(() => {});
+    window.store
+      .get('ui.templateShortcut')
+      .then(value => {
+        if (typeof value === 'string') setTemplateShortcut(value);
       })
       .catch(() => {});
   }, []);
@@ -469,6 +487,22 @@ export default function Settings() {
       }
     },
     [showToast, t],
+  );
+
+  const updateTemplateShortcut = useCallback(
+    async (accelerator: string) => {
+      const previous = templateShortcut;
+      setTemplateShortcut(accelerator);
+      try {
+        const result = await window.api.setGlobalTemplateShortcut(accelerator);
+        if (!result.success) throw new Error(result.error ?? '');
+        showToast('success', t('settings.shortcutSaved'));
+      } catch {
+        setTemplateShortcut(previous);
+        showToast('error', t('settings.shortcutSaveFailed'));
+      }
+    },
+    [showToast, t, templateShortcut],
   );
 
   const periods = PERIOD_OPTIONS.includes(day) ? PERIOD_OPTIONS : [...PERIOD_OPTIONS, day];
@@ -663,6 +697,28 @@ export default function Settings() {
             )}
           >
             <SettingRow
+              icon={CalendarDays}
+              title={t('settings.dashboardScheduleScope')}
+              desc={t('settings.dashboardScheduleScopeDesc')}
+            >
+              <Segmented<DashboardScheduleScope>
+                value={dashboardScheduleScope}
+                options={[
+                  {
+                    value: 'today',
+                    label: t('settings.scheduleScopeToday'),
+                    icon: CalendarDays,
+                  },
+                  {
+                    value: 'upcoming',
+                    label: t('settings.scheduleScopeUpcoming'),
+                    icon: Clock3,
+                  },
+                ]}
+                onChange={scope => void setDashboardScheduleScope(scope)}
+              />
+            </SettingRow>
+            <SettingRow
               icon={RefreshCw}
               title={t('settings.queryPeriod')}
               desc={t('settings.queryPeriodDesc')}
@@ -825,21 +881,23 @@ export default function Settings() {
               title={t('settings.reminderLead')}
               desc={t('settings.reminderLeadDesc')}
             >
-              <input
-                type="number"
-                min={1}
-                max={1440}
+              <select
                 value={reminderMinutes}
                 disabled={!notificationsEnabled || isSavingNotifications}
-                onChange={event => setReminderMinutes(Number(event.target.value))}
-                onBlur={() => void saveNotifications(notificationsEnabled, reminderMinutes)}
-                onKeyDown={event => {
-                  if (event.key === 'Enter')
-                    void saveNotifications(notificationsEnabled, reminderMinutes);
+                onChange={event => {
+                  const minutes = Number(event.target.value);
+                  setReminderMinutes(minutes);
+                  void saveNotifications(notificationsEnabled, minutes);
                 }}
-                className="h-9 w-[86px] rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm text-[var(--color-text)] outline-none disabled:opacity-50"
+                className="h-9 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm text-[var(--color-text)] outline-none disabled:opacity-50"
                 aria-label={t('settings.reminderLead')}
-              />
+              >
+                {REMINDER_OPTIONS.map(minutes => (
+                  <option key={minutes} value={minutes}>
+                    {t('settings.minutes', { count: minutes })}
+                  </option>
+                ))}
+              </select>
             </SettingRow>
             <SettingRow
               icon={Database}
@@ -879,6 +937,27 @@ export default function Settings() {
                 onCheckedChange={enabled => void updateAutoLaunch(enabled)}
                 aria-label={t('settings.startAtLogin')}
               />
+            </SettingRow>
+            <SettingRow
+              icon={Keyboard}
+              title={t('settings.templateShortcut')}
+              desc={t('settings.templateShortcutDesc')}
+              testId="settings-template-shortcut"
+            >
+              <select
+                value={templateShortcut}
+                onChange={event => void updateTemplateShortcut(event.target.value)}
+                aria-label={t('settings.templateShortcut')}
+                className="h-9 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm text-[var(--color-text)] outline-none"
+              >
+                {TEMPLATE_SHORTCUT_OPTIONS.map(option => (
+                  <option key={option || 'off'} value={option}>
+                    {option === ''
+                      ? t('settings.shortcutOff')
+                      : option.replace('CommandOrControl', 'Ctrl/Cmd').replaceAll('+', ' + ')}
+                  </option>
+                ))}
+              </select>
             </SettingRow>
             <SettingRow
               icon={RefreshCw}

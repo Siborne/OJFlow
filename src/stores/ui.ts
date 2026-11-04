@@ -5,6 +5,7 @@ import type {
   AppMode,
   AutoRefreshModule,
   AutoRefreshSettings,
+  DashboardScheduleScope,
   LocalePreference,
   SharePosterSettings,
   SurfaceStyle,
@@ -39,6 +40,7 @@ const DEFAULT_AUTO_REFRESH: AutoRefreshSettings = {
 
 const AUTO_REFRESH_KEY = 'auto_refresh_settings';
 const AUTO_CHECK_UPDATES_KEY = 'auto_check_updates';
+const DASHBOARD_SCHEDULE_SCOPE_KEY = 'dashboard_schedule_scope';
 
 const DEFAULT_SHARE_POSTER: SharePosterSettings = {
   showRating: true,
@@ -73,6 +75,10 @@ function isAppMode(value: unknown): value is AppMode {
 
 function isSurfaceStyle(value: unknown): value is SurfaceStyle {
   return value === 'glass' || value === 'flat' || value === 'cloud' || value === 'clay';
+}
+
+function isDashboardScheduleScope(value: unknown): value is DashboardScheduleScope {
+  return value === 'today' || value === 'upcoming';
 }
 
 function isLocale(value: unknown): value is AppLocale {
@@ -192,6 +198,7 @@ function readLocalStorage(): Partial<UiState> {
     const rawFeatures = localStorage.getItem('feature_flags');
     const rawAutoRefresh = localStorage.getItem(AUTO_REFRESH_KEY);
     const rawAutoCheckUpdates = localStorage.getItem(AUTO_CHECK_UPDATES_KEY);
+    const dashboardScheduleScope = localStorage.getItem(DASHBOARD_SCHEDULE_SCOPE_KEY);
     const rawSharePoster = localStorage.getItem(SHARE_POSTER_KEY);
 
     if (scheme) patch.themeScheme = scheme;
@@ -204,6 +211,9 @@ function readLocalStorage(): Partial<UiState> {
     }
     if (rawAutoCheckUpdates === 'true' || rawAutoCheckUpdates === 'false') {
       patch.autoCheckUpdates = rawAutoCheckUpdates === 'true';
+    }
+    if (isDashboardScheduleScope(dashboardScheduleScope)) {
+      patch.dashboardScheduleScope = dashboardScheduleScope;
     }
     if (rawSharePoster) {
       patch.sharePoster = normalizeSharePoster(JSON.parse(rawSharePoster));
@@ -231,6 +241,7 @@ interface UiState {
   effectiveLocale: AppLocale;
   surfaceStyle: SurfaceStyle;
   appMode: AppMode;
+  dashboardScheduleScope: DashboardScheduleScope;
   autoRefresh: AutoRefreshSettings;
   autoCheckUpdates: boolean;
   sharePoster: SharePosterSettings;
@@ -243,6 +254,7 @@ interface UiState {
   setLocale: (locale: LocalePreference) => Promise<void>;
   setSurfaceStyle: (style: SurfaceStyle) => Promise<void>;
   setAppMode: (mode: AppMode) => Promise<void>;
+  setDashboardScheduleScope: (scope: DashboardScheduleScope) => Promise<void>;
   setAutoRefreshEnabled: (enabled: boolean) => Promise<void>;
   setAutoRefreshInterval: (minutes: number) => Promise<void>;
   setAutoRefreshModule: (module: AutoRefreshModule, enabled: boolean) => Promise<void>;
@@ -270,6 +282,7 @@ export const useUiStore = create<UiState>((set, get) => ({
       ? appConfig.theme.defaultSurface
       : 'glass',
   appMode: localDefaults.appMode ?? 'simple',
+  dashboardScheduleScope: localDefaults.dashboardScheduleScope ?? 'today',
   autoRefresh: localDefaults.autoRefresh ?? DEFAULT_AUTO_REFRESH,
   autoCheckUpdates: localDefaults.autoCheckUpdates ?? true,
   sharePoster: localDefaults.sharePoster ?? DEFAULT_SHARE_POSTER,
@@ -289,6 +302,7 @@ export const useUiStore = create<UiState>((set, get) => ({
               locale?: unknown;
               surfaceStyle?: unknown;
               appMode?: unknown;
+              dashboardScheduleScope?: unknown;
               autoRefresh?: unknown;
               autoCheckUpdates?: unknown;
               sharePoster?: unknown;
@@ -303,6 +317,9 @@ export const useUiStore = create<UiState>((set, get) => ({
           if (isLocalePreference(ui.locale)) patch.locale = ui.locale;
           if (isSurfaceStyle(ui.surfaceStyle)) patch.surfaceStyle = ui.surfaceStyle;
           if (isAppMode(ui.appMode)) patch.appMode = ui.appMode;
+          if (isDashboardScheduleScope(ui.dashboardScheduleScope)) {
+            patch.dashboardScheduleScope = ui.dashboardScheduleScope;
+          }
           if (ui.autoRefresh !== undefined) {
             patch.autoRefresh = normalizeAutoRefresh(ui.autoRefresh);
           }
@@ -416,6 +433,20 @@ export const useUiStore = create<UiState>((set, get) => ({
     }
     try {
       localStorage.setItem('app_mode', mode);
+    } catch {
+      // Ignore storage quota errors.
+    }
+  },
+
+  setDashboardScheduleScope: async (scope: DashboardScheduleScope) => {
+    set({ dashboardScheduleScope: scope });
+    try {
+      await getElectronStore()?.set('ui.dashboardScheduleScope', scope);
+    } catch {
+      // Ignore persistence errors.
+    }
+    try {
+      localStorage.setItem(DASHBOARD_SCHEDULE_SCOPE_KEY, scope);
     } catch {
       // Ignore storage quota errors.
     }

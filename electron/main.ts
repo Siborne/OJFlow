@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, ipcMain, shell, dialog } from 'electron';
+import { app, BrowserWindow, clipboard, ipcMain, shell, dialog, globalShortcut } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Readable } from 'node:stream';
@@ -32,6 +32,7 @@ import {
 } from './services/query-store';
 import {
   deletePracticeProblem,
+  importPracticeProblem,
   listPracticeProblems,
   updatePracticeProblem,
 } from './services/practice-service';
@@ -377,6 +378,39 @@ if (isTest) {
 let isQuitting = false;
 let companionServer: CompanionServerHandle | null = null;
 let companionStatus: CompanionStatus = { running: false, port: null };
+let registeredTemplateShortcut = '';
+
+export const TEMPLATE_SHORTCUTS = [
+  '',
+  'CommandOrControl+Shift+T',
+  'CommandOrControl+Shift+O',
+  'CommandOrControl+Alt+T',
+  'Alt+T',
+] as const;
+
+export function registerTemplateShortcut(
+  win: BrowserWindow,
+  accelerator: string,
+): { success: boolean; error?: string } {
+  if (registeredTemplateShortcut) {
+    globalShortcut.unregister(registeredTemplateShortcut);
+    registeredTemplateShortcut = '';
+  }
+  if (!accelerator) return { success: true };
+  if (!(TEMPLATE_SHORTCUTS as readonly string[]).includes(accelerator)) {
+    return { success: false, error: 'Unsupported shortcut' };
+  }
+  const success = globalShortcut.register(accelerator, () => {
+    if (!win.isDestroyed()) {
+      win.show();
+      win.focus();
+      win.webContents.send(IPC_CHANNELS.NAVIGATE_TO, '/templates');
+    }
+  });
+  if (!success) return { success: false, error: 'Shortcut is already in use' };
+  registeredTemplateShortcut = accelerator;
+  return { success: true };
+}
 
 export function getIconPath(): string {
   // Unpackaged runs use the project asset, including production previews with NODE_ENV=test.
@@ -446,6 +480,14 @@ app.whenReady().then(() => {
     console.warn('[query-store] SQLite initialization failed:', error);
   });
   const win = createWindow();
+  const templateShortcut = store.get('ui.templateShortcut');
+  const shortcutResult = registerTemplateShortcut(
+    win,
+    typeof templateShortcut === 'string' ? templateShortcut : 'CommandOrControl+Shift+T',
+  );
+  if (!shortcutResult.success) {
+    console.warn('[shortcut] Failed to register template shortcut:', shortcutResult.error);
+  }
   if (process.env.OJFLOW_DISABLE_COMPANION_SERVER !== '1') {
     void startCompanionServer({
       onImported: problem => {
@@ -669,6 +711,13 @@ app.whenReady().then(() => {
     return listPracticeProblems();
   });
 
+  ipcMain.handle(IPC_CHANNELS.CREATE_PRACTICE_PROBLEM, (_event, payload: unknown) => {
+    if (!payload || typeof payload !== 'object') {
+      throw new Error('Invalid practice problem payload');
+    }
+    return importPracticeProblem(payload);
+  });
+
   ipcMain.handle(
     IPC_CHANNELS.UPDATE_PRACTICE_PROBLEM,
     (_event, id: string, updates: PracticeProblemUpdate) => {
@@ -742,6 +791,15 @@ app.whenReady().then(() => {
     store.set('ui.startAtLogin', enabled);
   });
 
+  ipcMain.handle(IPC_CHANNELS.SET_TEMPLATE_SHORTCUT, (_event, accelerator: string) => {
+    if (typeof accelerator !== 'string') {
+      return { success: false, error: 'Invalid shortcut' };
+    }
+    const result = registerTemplateShortcut(win, accelerator);
+    if (result.success) store.set('ui.templateShortcut', accelerator);
+    return result;
+  });
+
   // Store IPC handlers
   ipcMain.handle(IPC_CHANNELS.STORE_GET, (_event, key: string) => {
     if (!isAllowedStoreKey(key)) throw new Error('Invalid store key');
@@ -802,6 +860,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  globalShortcut.unregisterAll();
   void companionServer?.close().catch(() => {});
   companionServer = null;
   companionStatus = { running: false, port: null };

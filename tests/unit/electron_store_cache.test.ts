@@ -69,12 +69,15 @@ describe('electron store schema defaults', () => {
     expect(store.get('ui.startAtLogin')).toBe(false);
     expect(store.get('ui.closeBehavior')).toBe('tray');
     expect(store.get('ui.appMode')).toBe('simple');
+    expect(store.get('ui.dashboardScheduleScope')).toBe('today');
+    expect(store.get('ui.templateShortcut')).toBe('CommandOrControl+Shift+T');
     expect(store.get('ui.features.enableProblemSearch')).toBe(true);
     expect(store.get('contest.maxCrawlDays')).toBe(7);
     expect(store.get('contest.showEmptyDay')).toBe(false);
     expect(store.get('notification.reminderMinutes')).toBe(15);
     expect(store.get('schedule')).toEqual([]);
     expect(store.get('practice.problems')).toEqual([]);
+    expect(store.get('templates')).toEqual([]);
     expect(store.get('ui.autoRefresh')).toMatchObject({
       enabled: true,
       intervalMinutes: 15,

@@ -135,6 +135,10 @@ test('工作台可以创建并持久化日程', async () => {
   await page.reload();
   await page.waitForSelector('.app-bar');
   await expect(page.getByText('E2E DP plan')).toBeVisible();
+  await page.locator('[data-nav-key="schedule"]').click();
+  await expect(page.getByRole('heading', { name: '日程中心' })).toBeVisible();
+  await expect(page.getByText('E2E DP plan')).toBeVisible();
+  await page.locator('[data-nav-key="dashboard"]').click();
   await page.getByRole('button', { name: '标记完成' }).click();
   await expect(page.getByRole('button', { name: '恢复待办' })).toBeVisible();
   await app.close();
@@ -168,9 +172,28 @@ test('练习收件箱可以接收 Competitive Companion 题目并保存状态', 
   await expect(page.getByText('练习中', { exact: true }).first()).toBeVisible();
   await page.getByPlaceholder('记录思路、错误原因、复杂度和下次复习重点...').fill('parity');
   await page.getByRole('button', { name: '保存笔记' }).click();
+  await page.getByLabel('代码草稿').fill('int main() { return 0; }');
+  await page.getByRole('button', { name: '保存代码' }).click();
   await page.reload();
   await page.waitForSelector('.app-bar');
   await expect(page.getByRole('heading', { name: 'A. E2E Watermelon' })).toBeVisible();
-  await expect(page.locator('textarea')).toHaveValue('parity');
+  await expect(page.locator('textarea[aria-label="练习笔记"]')).toHaveValue('parity');
+  await expect(page.locator('textarea[aria-label="代码草稿"]')).toHaveValue(
+    'int main() { return 0; }',
+  );
+  await app.close();
+});
+
+test('模板库可以创建、搜索和复制模板', async () => {
+  const { app, page } = await launchApp();
+  await page.locator('[data-nav-key="templates"]').click();
+  await page.getByTestId('template-create').click();
+  await page.getByLabel('模板标题').fill('E2E Segment Tree');
+  await page.getByLabel('分类').fill('E2E');
+  await page.getByLabel('模板内容').fill('struct SegTree {};');
+  await page.getByRole('button', { name: '保存' }).click();
+  await expect(page.getByRole('heading', { name: 'E2E Segment Tree' })).toBeVisible();
+  await page.getByRole('button', { name: '复制模板' }).click();
+  await expect(page.getByText('模板已复制')).toBeVisible();
   await app.close();
 });

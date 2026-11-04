@@ -12,6 +12,8 @@ const defaults: UserConfig = {
     startAtLogin: false,
     closeBehavior: 'tray',
     appMode: 'simple',
+    dashboardScheduleScope: 'today',
+    templateShortcut: 'CommandOrControl+Shift+T',
     autoRefresh: {
       enabled: true,
       intervalMinutes: 15,
@@ -65,6 +67,7 @@ const defaults: UserConfig = {
   practice: {
     problems: [],
   },
+  templates: [],
 };
 
 const testConfigCwd =

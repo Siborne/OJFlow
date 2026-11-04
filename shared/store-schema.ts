@@ -2,6 +2,8 @@ import type {
   AppFeatures,
   AppMode,
   AutoRefreshSettings,
+  CodeTemplate,
+  DashboardScheduleScope,
   LocalePreference,
   PracticeProblem,
   ScheduleItem,
@@ -21,6 +23,8 @@ export interface UserConfig {
     startAtLogin: boolean;
     closeBehavior: WindowCloseBehavior;
     appMode: AppMode;
+    dashboardScheduleScope: DashboardScheduleScope;
+    templateShortcut: string;
     autoRefresh: AutoRefreshSettings;
     autoCheckUpdates: boolean;
     sharePoster: SharePosterSettings;
@@ -84,6 +88,9 @@ export interface UserConfig {
   practice: {
     problems: PracticeProblem[];
   };
+
+  /** Reusable competitive-programming code templates */
+  templates: CodeTemplate[];
 
   /** Internal: migration flag */
   _migrated?: boolean;

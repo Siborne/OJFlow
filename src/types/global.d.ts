@@ -22,6 +22,7 @@ declare global {
     searchProblems(payload: ProblemSearchRequest): Promise<ProblemSearchResult>;
     getCodeforcesReport(handle: string): Promise<CodeforcesReport>;
     listPracticeProblems(): Promise<PracticeProblem[]>;
+    createPracticeProblem(payload: unknown): Promise<PracticeProblem | null>;
     updatePracticeProblem(
       id: string,
       updates: PracticeProblemUpdate,
@@ -29,6 +30,7 @@ declare global {
     deletePracticeProblem(id: string): Promise<boolean>;
     getCompanionStatus(): Promise<CompanionStatus>;
     onPracticeImported(callback: (problem: PracticeProblem) => void): () => void;
+    onNavigateTo(callback: (path: string) => void): () => void;
     copyText(text: string): Promise<void>;
     clearCache(): Promise<void>;
     minimizeWindow(): Promise<void>;
@@ -38,6 +40,7 @@ declare global {
     onWindowStateChanged(callback: (state: { maximized: boolean }) => void): () => void;
     getAutoLaunch(): Promise<boolean>;
     setAutoLaunch(enabled: boolean): Promise<void>;
+    setGlobalTemplateShortcut(accelerator: string): Promise<{ success: boolean; error?: string }>;
     setNotification(config: { enabled: boolean; reminderMinutes: number }): Promise<void>;
     getNotification(): Promise<{ enabled: boolean; reminderMinutes: number }>;
   }

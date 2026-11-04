@@ -22,6 +22,8 @@ let dialogCalls = 0;
 let mainModule: typeof import('../../electron/main');
 let practiceModule: typeof import('../../electron/services/practice-service');
 let copiedText = '';
+const registeredShortcuts = new Map<string, () => void>();
+const unregisteredShortcuts: string[] = [];
 
 process.env.OJFLOW_DISABLE_COMPANION_SERVER = '1';
 
@@ -175,6 +177,20 @@ mock.module('electron', () => ({
   },
   nativeImage: {
     createFromPath: () => ({ resize: () => ({}) }),
+  },
+  globalShortcut: {
+    register: (accelerator: string, callback: () => void) => {
+      if (registeredShortcuts.has(accelerator)) return false;
+      registeredShortcuts.set(accelerator, callback);
+      return true;
+    },
+    unregister: (accelerator: string) => {
+      unregisteredShortcuts.push(accelerator);
+      registeredShortcuts.delete(accelerator);
+    },
+    unregisterAll: () => {
+      registeredShortcuts.clear();
+    },
   },
   Menu: {
     buildFromTemplate: (template: unknown) => template,
@@ -345,6 +361,26 @@ describe('electron main process wiring', () => {
       port: null,
     });
     await expect(invoke(IPC_CHANNELS.DELETE_PRACTICE_PROBLEM, listed[0].id)).resolves.toBe(true);
+  });
+
+  test('creates manual practice problems and manages the template shortcut', async () => {
+    const created = (await invoke(IPC_CHANNELS.CREATE_PRACTICE_PROBLEM, {
+      name: 'Manual problem',
+      group: 'Local',
+      url: 'https://codeforces.com/contest/1/problem/A',
+      tests: [{ input: '1', output: '2' }],
+    })) as { id: string; name: string; code: string; codeLanguage: string };
+    expect(created.name).toBe('Manual problem');
+    expect(created.code).toBe('');
+    expect(created.codeLanguage).toBe('cpp');
+
+    const result = await invoke(IPC_CHANNELS.SET_TEMPLATE_SHORTCUT, 'CommandOrControl+Shift+T');
+    expect(result).toEqual({ success: true });
+    expect(registeredShortcuts.has('CommandOrControl+Shift+T')).toBe(true);
+    await expect(invoke(IPC_CHANNELS.SET_TEMPLATE_SHORTCUT, 'Bad+Shortcut')).resolves.toEqual({
+      success: false,
+      error: 'Unsupported shortcut',
+    });
   });
 
   test('clears cache and triggers quit cleanup', async () => {

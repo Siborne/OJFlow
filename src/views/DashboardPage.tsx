@@ -32,7 +32,13 @@ import { useScheduleStore } from '@/stores/schedule';
 import { useUiStore } from '@/stores/ui';
 import { ContestService } from '@/services/contest';
 import { getPlatformLabel } from '@/utils/platform-labels';
+import { PLATFORM_LOGOS } from '@/utils/platform-assets';
 import { getRatingColor, getRatingColorHex, getRatingTierName } from '@/utils/rating-colors';
+import {
+  getDashboardSchedules,
+  resolveSchedulePlatform,
+  resolveScheduleUrl,
+} from '@/utils/schedule';
 import {
   createSharePosterDataUrl,
   downloadSharePosterPng,
@@ -40,7 +46,7 @@ import {
   type SharePosterStyle,
 } from '@/utils/share-poster';
 import { getProblemTagLabel } from '../../shared/problem-tags';
-import type { Contest, ScheduleItem } from '../../shared/types';
+import type { ScheduleItem } from '../../shared/types';
 import { cn } from '@/lib/utils';
 
 const appLogo = new URL('../assets/icon.png', import.meta.url).href;
@@ -57,30 +63,6 @@ const PLATFORM_COLORS: Record<string, string> = {
   蓝桥云课: '#06b6d4',
   QOJ: '#ec4899',
 };
-
-const PLATFORM_LOGOS: Record<string, string> = {
-  Codeforces: new URL('../assets/platforms/Codeforces.jpg', import.meta.url).href,
-  AtCoder: new URL('../assets/platforms/AtCoder.jpg', import.meta.url).href,
-  力扣: new URL('../assets/platforms/LeetCode.jpg', import.meta.url).href,
-  洛谷: new URL('../assets/platforms/Luogu.jpg', import.meta.url).href,
-  牛客: new URL('../assets/platforms/Nowcoder.jpg', import.meta.url).href,
-  VJudge: new URL('../assets/platforms/VJudge.jpg', import.meta.url).href,
-  HDU: new URL('../assets/platforms/hdu.jpg', import.meta.url).href,
-  POJ: new URL('../assets/platforms/poj.jpg', import.meta.url).href,
-  蓝桥云课: new URL('../assets/platforms/Lanqiao.jpg', import.meta.url).href,
-  QOJ: new URL('../assets/platforms/qoj.jpg', import.meta.url).href,
-};
-
-function resolveSchedulePlatform(item: ScheduleItem, contests: Contest[]): string | undefined {
-  if (item.platform) return item.platform;
-  if (item.note && PLATFORM_LOGOS[item.note]) return item.note;
-  return contests.find(contest => contest.name === item.title)?.platform;
-}
-
-function resolveScheduleUrl(item: ScheduleItem, contests: Contest[]): string | undefined {
-  if (item.url) return item.url;
-  return contests.find(contest => contest.name === item.title)?.link;
-}
 
 function toDateTimeLocal(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0');
@@ -125,6 +107,7 @@ export default function DashboardPage() {
   const deleteSchedule = useScheduleStore(state => state.removeItem);
   const dashboard = useDashboardData();
   const sharePoster = useUiStore(state => state.sharePoster);
+  const dashboardScheduleScope = useUiStore(state => state.dashboardScheduleScope);
   const contestAutoRefreshEnabled = useModuleAutoRefresh('dashboard', () => {
     void fetchContests();
   });
@@ -166,7 +149,10 @@ export default function DashboardPage() {
   const nextContest = upcomingContests[0] ?? null;
   const topRating = dashboard.ratings[0] ?? null;
   const topicStats = dashboard.report?.tagStats.slice(0, 10) ?? [];
-  const visibleSchedule = scheduleItems.slice(0, 6);
+  const visibleSchedule = useMemo(
+    () => getDashboardSchedules(scheduleItems, dashboardScheduleScope).slice(0, 6),
+    [dashboardScheduleScope, scheduleItems],
+  );
   const totalSolved = dashboard.totalSolved;
 
   const solvedSegments = dashboard.solved.map(item => ({
@@ -574,7 +560,7 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          <section className="glass-panel col-span-12 rounded-[var(--radius-xl)] p-4 md:col-span-7">
+          <section className="glass-panel col-span-12 self-start rounded-[var(--radius-xl)] p-4 md:col-span-7">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <div className="text-sm font-semibold text-[var(--color-text)]">
@@ -631,7 +617,7 @@ export default function DashboardPage() {
             )}
           </section>
 
-          <section className="glass-panel col-span-12 rounded-[var(--radius-xl)] p-4 md:col-span-5">
+          <section className="glass-panel col-span-12 self-start rounded-[var(--radius-xl)] p-4 md:col-span-5">
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <div className="text-sm font-semibold text-[var(--color-text)]">
@@ -641,17 +627,28 @@ export default function DashboardPage() {
                   {t('dashboard.scheduleDesc')}
                 </div>
               </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                aria-label={t('dashboard.addSchedule')}
-                title={t('dashboard.addSchedule')}
-                onClick={() => setShowScheduleDialog(true)}
-              >
-                <Plus size={18} />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="hidden gap-1 sm:inline-flex"
+                  onClick={() => navigate('/schedule')}
+                >
+                  {t('dashboard.allSchedules')}
+                  <ArrowUpRight size={13} />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label={t('dashboard.addSchedule')}
+                  title={t('dashboard.addSchedule')}
+                  onClick={() => setShowScheduleDialog(true)}
+                >
+                  <Plus size={18} />
+                </Button>
+              </div>
             </div>
-            <div className="space-y-2">
+            <div className="scrollbar-thin max-h-[292px] space-y-2 overflow-y-auto pr-1">
               {visibleSchedule.length > 0 ? (
                 visibleSchedule.map(item => {
                   const platform = resolveSchedulePlatform(item, contests);

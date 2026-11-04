@@ -1,5 +1,5 @@
 const STORE_KEY_PATTERN =
-  /^(ui|contest|favorites|usernames|cache|notification|schedule|practice|_migrated)(\.[A-Za-z0-9_:-]+)*$/;
+  /^(ui|contest|favorites|usernames|cache|notification|schedule|practice|templates|_migrated)(\.[A-Za-z0-9_:-]+)*$/;
 
 export function isSafeExternalUrl(url: unknown): url is string {
   if (typeof url !== 'string' || url.length === 0 || url.length > 2048) return false;

@@ -78,10 +78,16 @@ describe('practice service', () => {
 
     const practicing = practice.updatePracticeProblem(
       created!.id,
-      { status: 'practicing', notes: 'math' },
+      { status: 'practicing', notes: 'math', code: 'int main() {}', codeLanguage: 'cpp' },
       3000,
     );
-    expect(practicing).toMatchObject({ status: 'practicing', notes: 'math', startedAt: 3000 });
+    expect(practicing).toMatchObject({
+      status: 'practicing',
+      notes: 'math',
+      code: 'int main() {}',
+      codeLanguage: 'cpp',
+      startedAt: 3000,
+    });
 
     const review = practice.updatePracticeProblem(created!.id, { status: 'review' }, 4000);
     expect(review?.reviewAt).toBe(4000 + 24 * 60 * 60 * 1000);

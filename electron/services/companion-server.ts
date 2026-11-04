@@ -45,7 +45,7 @@ async function readBody(request: IncomingMessage): Promise<string> {
   });
 }
 
-function createCompanionRequestHandler(
+export function createCompanionRequestHandler(
   onImported?: (problem: PracticeProblem) => void,
   importProblem = importPracticeProblem,
 ) {

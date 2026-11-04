@@ -27,21 +27,22 @@ export function buildReminderSchedule(
     .filter(item => item.delay > 0 && item.delay < 24 * 60 * 60 * 1000);
 }
 
-function getIconPath(): string {
+export function getTrayIconPath(): string {
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+  const iconName = process.platform === 'win32' ? 'icon.ico' : 'icon.png';
   if (isDev) {
-    return path.join(__dirname, '../../src/assets/icon.png');
+    return path.join(__dirname, '../../src/assets', iconName);
   }
-  return path.join(process.resourcesPath, 'src/assets/icon.png');
+  return path.join(process.resourcesPath, 'src/assets', iconName);
 }
 
 export function createTray(win: BrowserWindow): Tray {
   if (tray) return tray;
 
-  const iconPath = getIconPath();
+  const iconPath = getTrayIconPath();
   const icon = nativeImage.createFromPath(iconPath);
 
-  tray = new Tray(icon.resize({ width: 16, height: 16 }));
+  tray = new Tray(process.platform === 'win32' ? icon : icon.resize({ width: 22, height: 22 }));
   tray.setToolTip('OJFlow - 比赛助手');
 
   const contextMenu = Menu.buildFromTemplate([
@@ -140,7 +141,7 @@ export function showContestNotification(contest: RawContest): void {
   const notification = new Notification({
     title: `比赛即将开始`,
     body: `${contest.name}\n${contest.platform} - ${timeStr}`,
-    icon: getIconPath(),
+    icon: getTrayIconPath(),
   });
 
   notification.show();
