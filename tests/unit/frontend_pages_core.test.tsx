@@ -271,7 +271,7 @@ describe('Settings page', () => {
       await flushPromises();
     });
     expect(autoLaunch).toBe(true);
-    expect(templateShortcut).toBe('Alt+T');
+    expect(templateShortcut).toBe('CommandOrControl+Shift+T');
     expect(useUiStore.getState().autoCheckUpdates).toBe(false);
     expect(storeWrites).toContainEqual(['ui.closeBehavior', 'quit']);
     await view.unmount();
@@ -347,7 +347,7 @@ describe('Navigation page', () => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: '4', ctrlKey: true }));
       await flushPromises();
     });
-    expect(full.container.textContent).toContain('STAR CONTENT');
+    expect(full.container.textContent).toContain('SCHEDULE CONTENT');
     await full.unmount();
   });
 });

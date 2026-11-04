@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+﻿import { beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
 import type { ContestFetchResponse, Rating, SolvedNum } from '../../shared/types';
 
 function clone<T>(value: T): T {
@@ -70,7 +70,11 @@ describe('electron store schema defaults', () => {
     expect(store.get('ui.closeBehavior')).toBe('tray');
     expect(store.get('ui.appMode')).toBe('simple');
     expect(store.get('ui.dashboardScheduleScope')).toBe('today');
-    expect(store.get('ui.templateShortcut')).toBe('CommandOrControl+Shift+T');
+    expect(store.get('ui.shortcut')).toMatchObject({
+      enabled: true,
+      accelerator: 'CommandOrControl+Shift+T',
+      target: 'last',
+    });
     expect(store.get('ui.features.enableProblemSearch')).toBe(true);
     expect(store.get('contest.maxCrawlDays')).toBe(7);
     expect(store.get('contest.showEmptyDay')).toBe(false);
