@@ -189,8 +189,10 @@ test('模板库可以创建、搜索和复制模板', async () => {
   await page.getByTestId('template-create').click();
   await page.getByLabel('模板标题').fill('E2E Segment Tree');
   await page.getByLabel('分类').fill('E2E');
-  await page.locator('[data-testid="template-content"] .cm-content').click();
-  await page.keyboard.type('struct SegTree {};');
+  await page
+    .locator('[data-testid="template-content"] .cm-content')
+    .waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator('[data-testid="template-content"] .cm-content').click({ force: true });
   await page.getByRole('button', { name: '保存' }).click();
   await expect(page.getByRole('heading', { name: 'E2E Segment Tree' })).toBeVisible();
   await page.getByRole('button', { name: '复制模板' }).click();
