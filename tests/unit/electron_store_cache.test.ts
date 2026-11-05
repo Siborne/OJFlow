@@ -1,4 +1,4 @@
-﻿import { beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
 import type { ContestFetchResponse, Rating, SolvedNum } from '../../shared/types';
 
 function clone<T>(value: T): T {

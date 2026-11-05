@@ -1,4 +1,4 @@
-﻿import {
+import {
   _electron as electron,
   expect,
   test,

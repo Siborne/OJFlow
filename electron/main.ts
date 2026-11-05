@@ -1,4 +1,4 @@
-﻿import { app, BrowserWindow, clipboard, ipcMain, shell, dialog, globalShortcut } from 'electron';
+import { app, BrowserWindow, clipboard, ipcMain, shell, dialog, globalShortcut } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Readable } from 'node:stream';

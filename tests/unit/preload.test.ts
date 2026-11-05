@@ -1,4 +1,4 @@
-﻿import { describe, expect, mock, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 import { IPC_CHANNELS } from '../../shared/ipc-channels';
 
 type InvokeCall = { channel: string; args: unknown[] };

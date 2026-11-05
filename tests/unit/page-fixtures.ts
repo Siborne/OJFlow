@@ -1,4 +1,4 @@
-﻿import { useContestStore } from '../../src/stores/contest';
+import { useContestStore } from '../../src/stores/contest';
 import { useUiStore } from '../../src/stores/ui';
 import { useScheduleStore } from '../../src/stores/schedule';
 import { useTemplateStore } from '../../src/stores/templates';
